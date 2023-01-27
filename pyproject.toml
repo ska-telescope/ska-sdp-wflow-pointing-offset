@@ -3,7 +3,7 @@ name = "ska-sdp-wflow-pointing-offset"
 version = "0.0.0"
 description = "SKA SDP Pointing Offset Calibration Pipeline"
 authors = ["SKA SDP Developers"]
-license = "Apache 2.0"
+license = "BSD-3 Clause"
 repository = "https://gitlab.com/ska-telescope/sdp/ska-sdp-wflow-pointing-offset"
 #documentation = "https://developer.skao.int/projects/ska-sdp-wflow-pointing-offset/en/latest/"
 
@@ -18,10 +18,9 @@ astropy = "^5.1"
 numpy = "^1.23.4"
 
 # optional dependencies; used by "extras"
-python-casacore = "^3.5.1"
-
-[tool.poetry.extras]
-python-casacore = ["python-casacore"]
+#python-casacore = "^3.5.1"
+#[tool.poetry.extras]
+#python-casacore = ["python-casacore"]
 
 [tool.poetry.dev-dependencies]
 black = "^22.1.0"
