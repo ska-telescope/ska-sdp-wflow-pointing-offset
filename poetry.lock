@@ -401,18 +401,6 @@ pytest = ">=4.6"
 testing = ["fields", "hunter", "process-tests", "pytest-xdist", "six", "virtualenv"]
 
 [[package]]
-name = "python-casacore"
-version = "3.5.0"
-description = "A wrapper around CASACORE, the radio astronomy library"
-category = "main"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-numpy = "*"
-six = "*"
-
-[[package]]
 name = "pytz"
 version = "2022.7.1"
 description = "World timezone definitions, modern and historical"
@@ -468,13 +456,10 @@ category = "dev"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
 
-[extras]
-python-casacore = ["python-casacore"]
-
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "e344ab0b55d4ad7f60f1377884a5391d0a5b9f15988749b41bc5a065ff8f5344"
+content-hash = "cbbfb2dded779b6f87d0aeb3d082c8dcf03851f1d65bf1ba26d6f7a79196bf9a"
 
 [metadata.files]
 astroid = [
@@ -773,16 +758,6 @@ pytest = [
 pytest-cov = [
     {file = "pytest-cov-3.0.0.tar.gz", hash = "sha256:e7f0f5b1617d2210a2cabc266dfe2f4c75a8d32fb89eafb7ad9d06f6d076d470"},
     {file = "pytest_cov-3.0.0-py3-none-any.whl", hash = "sha256:578d5d15ac4a25e5f961c938b85a05b09fdaae9deef3bb6de9a6e766622ca7a6"},
-]
-python-casacore = [
-    {file = "python-casacore-3.5.0.tar.gz", hash = "sha256:47ac85d47051074d64415414212c8c2cfcb49a2037f5c3d78f71ab5b162d1e8b"},
-    {file = "python_casacore-3.5.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:970822ed991b75b60fe0156f9887bd53169dd018415252765fe848a7aa549a56"},
-    {file = "python_casacore-3.5.0-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:59cc2c84cd924dcb515011bd2cd43acad3349236d0a6808be025b950f6603834"},
-    {file = "python_casacore-3.5.0-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1b71d34268c646001ad28756b15cd04230d0c9908823ca9516e8985f52210200"},
-    {file = "python_casacore-3.5.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:183112c90f47ca9c6df7838406c2a6f3a69bf585e42a71a644e60b995ec79fef"},
-    {file = "python_casacore-3.5.0-cp39-cp39-macosx_10_15_x86_64.whl", hash = "sha256:4090ed4cec893a758495d0f309092369546c8fc803857ff0729e9422a3f330cc"},
-    {file = "python_casacore-3.5.0-cp39-cp39-macosx_12_0_arm64.whl", hash = "sha256:a3462ce6ab98695fbc3f84091da53e3ab69c6f1cd433cdc498dfd2fd77b21500"},
-    {file = "python_casacore-3.5.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f910dc46585d1772363c9c588a12e4271d76ef2ba936cb7ea1eca38ae5a8bd10"},
 ]
 pytz = [
     {file = "pytz-2022.7.1-py2.py3-none-any.whl", hash = "sha256:78f4f37d8198e0627c5f1143240bb0206b8691d8d7ac6d78fee88b78733f8c4a"},
