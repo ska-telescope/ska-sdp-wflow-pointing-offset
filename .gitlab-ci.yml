@@ -13,8 +13,8 @@ stages:
 
 include:
   # Run python jobs
-#  - project: 'ska-telescope/templates-repository'
-#    file: 'gitlab-ci/includes/python.gitlab-ci.yml'
+  - project: 'ska-telescope/templates-repository'
+    file: 'gitlab-ci/includes/python.gitlab-ci.yml'
 #  - project: 'ska-telescope/templates-repository'
 #    file: 'gitlab-ci/includes/oci-image.gitlab-ci.yml'
   # Include documentation
