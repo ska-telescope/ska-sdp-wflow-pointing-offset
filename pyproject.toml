@@ -1,0 +1,38 @@
+[tool.poetry]
+name = "ska-sdp-wflow-pointing-offset"
+version = "0.0.0"
+description = "SKA SDP Pointing Offset Calibration Pipeline"
+authors = ["SKA SDP Developers"]
+license = "Apache 2.0"
+repository = "https://gitlab.com/ska-telescope/sdp/ska-sdp-wflow-pointing-offset"
+#documentation = "https://developer.skao.int/projects/ska-sdp-wflow-pointing-offset/en/latest/"
+
+[[tool.poetry.source]]
+name = "ska"
+url = "https://artefact.skao.int/repository/pypi-internal/simple"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+astroplan = "^0.8"
+astropy = "^5.1"
+numpy = "^1.23.4"
+
+# optional dependencies; used by "extras"
+python-casacore = "^3.5.1"
+
+[tool.poetry.extras]
+python-casacore = ["python-casacore"]
+
+[tool.poetry.dev-dependencies]
+black = "^22.1.0"
+build = "^0.7.0"
+flake8 = "^4.0.1"
+isort = "^5.10.1"
+pylint = "^2.12.2"
+pylint-junit = "^0.3.2"
+pytest = "^7.1.1"
+pytest-cov = "^3.0.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
