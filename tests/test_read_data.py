@@ -44,6 +44,10 @@ class MockBaseTable:
         if columnname == "SPECTRAL_WINDOW_ID":
             return numpy.array([0, 1])
 
+        if columnname == "DATA":
+            return numpy.array([1, 2,3,4,5,6,7,8,9])
+
+
 
 class MockSpectralWindowTable:
     """
@@ -55,10 +59,10 @@ class MockSpectralWindowTable:
         Get column name
         """
         if columnname == "CHAN_FREQ":
-            return numpy.array([[8.0e9, 8.1e9, 8.2e9], [8.4e9, 8.5e9, 8.6e9]])
+            return numpy.array([8.0e9, 8.1e9, 8.2e9])
 
         if columnname == "NUM_CHAN":
-            return numpy.array([NFREQ, NFREQ])
+            return numpy.array([NFREQ])
 
 
 class MockAntennaTable:
@@ -127,20 +131,20 @@ class MockFieldTable:
             return numpy.array([[[0.0, 0.0]]])
 
 
-class MockObservationTable:
+class MockPolarisationTable:
     """
-    Mock Observation Table Class
+    Mock Polarisation Table Class
     """
 
     def getcol(self, columnname=None):
         """
         Get column name
         """
-        if columnname == "TELESCOPE_NAME":
-            return TEL_NAME
+        if columnname == "CORR_TYPE":
+            return numpy.array([9,12])
 
 
-casacore = pytest.importorskip("python-casacore")
+casacore = pytest.importorskip("casacore")
 
 
 @patch("ska_sdp_wflow_pointing_offset.read_data._load_ms_tables")
@@ -152,20 +156,14 @@ def test_read_cross_correlation_visibilities(mock_tables):
         MockAntennaTable(),
         MockBaseTable(),
         MockFieldTable(),
-        MockObservationTable(),
+        MockPolarisationTable(),
         MockSpectralWindowTable(),
     )
-    vis, freqs = read_cross_correlation_visibilities("test_table")
+    vis, freqs, corr_type = read_cross_correlation_visibilities("test_table")
     assert isinstance(vis, numpy.ndarray)
     assert isinstance(freqs, numpy.ndarray)
 
     # Specific attributes
-    expected_time = numpy.array(
-        [4.35089331e09, 4.35089332e09, 4.35089333e09, 4.35089334e09]
-    )
-    # assert (result.coords["time"] == expected_time).all()
-    # assert (result.interval.data[...] == 10.0).all()
-    # assert (result.gain.data[..., 0, 0] == complex(1.0, 0.0)).all()
-    # assert (result.gain.data[..., 0, 1] == complex(0.0, 0.0)).all()
-    # assert (result.weight.data[...] == 1.0).all()
-    # assert (result.residual.data[...] == 0.0).all()
+    assert (vis == numpy.array([1,2,3,4,5,6,7,8,9])).all()
+    assert (freqs == numpy.array([8000, 8100, 8200])).all()
+    assert (corr_type == numpy.array(['XX','YY'])).all()
