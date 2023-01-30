@@ -8,7 +8,9 @@ from unittest.mock import patch
 import numpy
 import pytest
 
-from ska_sdp_wflow_pointing_offset.read_data import read_cross_correlation_visibilities
+from ska_sdp_wflow_pointing_offset.read_data import (
+    read_cross_correlation_visibilities,
+)
 
 NTIMES = 4
 NANTS = 6

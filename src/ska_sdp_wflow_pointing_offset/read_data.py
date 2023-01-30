@@ -4,8 +4,10 @@
 Functions of reading data from MS and RDB file.
 """
 
-import numpy
 from pathlib import Path
+
+import numpy
+
 
 def _load_ms_tables(msname):
     # pylint: disable=import-error,import-outside-toplevel
