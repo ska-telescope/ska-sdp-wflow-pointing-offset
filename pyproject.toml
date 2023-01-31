@@ -16,6 +16,7 @@ python = "^3.9"
 astroplan = "^0.8"
 astropy = "^5.1"
 numpy = "^1.23.4"
+katdal = "^0.20.1"
 
 # optional dependencies; used by "extras"
 python-casacore = "^3.5.1"
