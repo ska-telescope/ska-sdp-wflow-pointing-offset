@@ -18,10 +18,9 @@ astropy = "^5.1"
 numpy = "^1.23.4"
 
 # optional dependencies; used by "extras"
-#python-casacore = "^3.5.0"
-#[tool.poetry.extras]
-#python-casacore = ["python-casacore"]
 python-casacore = "^3.5.1"
+[tool.poetry.extras]
+python-casacore = ["python-casacore"]
 
 [tool.poetry.dev-dependencies]
 black = "^22.1.0"
