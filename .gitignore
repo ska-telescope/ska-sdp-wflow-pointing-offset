@@ -1,7 +1,6 @@
 **/build/
 **/.bash_history
 **/.local
-.make
 **/__pycache__
 .coverage
 **/junit.xml
