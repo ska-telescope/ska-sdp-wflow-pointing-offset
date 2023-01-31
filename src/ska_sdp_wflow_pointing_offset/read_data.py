@@ -4,6 +4,7 @@
 Functions of reading data from MS and RDB file.
 """
 
+import re
 from pathlib import Path
 
 import numpy
@@ -47,9 +48,9 @@ def read_cross_correlation_visibilities(
     """
 
     # Check file exist?
-    ms_file = Path(msname)
-    if not ms_file.exists():
-        return None, None
+    # ms_file = Path(msname)
+    # if not ms_file.exists():
+    #     return None, None
 
     correlation_products = {
         5: "RR",
@@ -71,32 +72,39 @@ def read_cross_correlation_visibilities(
     ) = _load_ms_tables(msname)
 
     # Get parameters of interest from the tables
-    vis = _base_table.getcol("DATA")
-    diam = _ant_table.getcol("DISH_DIAMETER")
+    vis = _base_table.getcol(columnname="DATA")
+    diam = _ant_table.getcol(columnname="DISH_DIAMETER")
     if not all(diam):
         # Note that this must change for SKA as there would be dishes of different sizes
         raise ValueError("Dish diameters must be the same")
-    freqs = _spw_table.getcol("CHAN_FREQ") / 1e6  # in MHz
+    freqs = _spw_table.getcol(columnname="CHAN_FREQ") / 1e6  # in MHz
 
-    # source = _field_table.getcol("NAME")[0]
-    # nchan = int(_spw_table.getcol("NUM_CHAN"))
-    # timestamps = _base_table.getcol("TIME")
-    # ants = _ant_table.getcol("STATION")
+    # source = _field_table.getcol(columnname="NAME")[0]
+    # nchan = int(_spw_table.getcol(columnname="NUM_CHAN"))
+    # timestamps = _base_table.getcol(columnname="TIME")
+    # ants = _ant_table.getcol(columnname="STATION")
+    corr_type = numpy.array(
+        [
+            correlation_products[corr]
+            for corr in _pol_table.getcol(columnname="CORR_TYPE")
+        ]
+    )
 
-    # Average over cross-correlations
-    avg_vis = numpy.mean(numpy.abs(vis), axis=0)
+    return vis, freqs, corr_type
 
-    # Apply RFI mask
-    if rfifile is not None:
-        rfi_file_path = Path(rfifile)
-        if rfi_file_path.exists():
-            with open(rfifile, "rb") as rfi_file:
-                rfi_mask = pickle.load(rfi_file)
-                filtered_vis = avg_vis[rfi_mask == False, :]
-                filtered_freq = numpy.squeeze(freqs)[rfi_mask == False]
-                return filtered_vis, filtered_freq
 
-    return avg_vis, freqs
+def _open_rdb_file(rdbfile):
+    """
+    Open a rdb file
+
+    :param rdbfile: file name
+    :return: rdb object
+    """
+    import katdal  # pylint: disable=import-error
+
+    # Check file exist?
+    rdb = katdal.open(rdbfile, chunk_store=None)
+    return rdb
 
 
 def read_pointing_meta_data_file(rdbfile):
@@ -104,18 +112,23 @@ def read_pointing_meta_data_file(rdbfile):
     Read meta-data from RDB file.
 
     :param rdbname: Name of RDB file
-
     :return: numpy array
     """
-    try:
-        import katdal  # pylint: disable=import-error
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError("katdal is not installed")
-
-    # Check file exist?
-    rdb_file = Path(rdbfile)
-    if not rdb_file.exists():
-        return None
-
-    rdb = katdal.open(rdbfile, chunk_store=None)
-    return rdb
+    _rdb = _open_rdb_file(rdbfile)
+    logs = _rdb.obs_script_log
+    search_az_el = False
+    ant = []
+    azel = []
+    for line in logs:
+        result = re.findall(
+            r"(INFO|WARNING)\s+([a-z]+[0-9]+)\s+(\([\+|\-?][0-9]+\.[0-9]+, [0-9]+\.[0-9]+\)|)",
+            line,
+        )
+        if len(result) > 0:
+            ant.append(result[0][1])
+            if result[0][0] == "INFO":
+                azel_tmp = re.split(r"[(,\s)]\s*", result[0][2])
+                azel.append([eval(azel_tmp[1]), eval(azel_tmp[2])])
+            else:
+                azel.append([999.99, 99.99])
+    return numpy.array(azel)
