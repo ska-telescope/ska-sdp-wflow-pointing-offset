@@ -1,7 +1,5 @@
 # SKA SDP Pointing Offset Calibration Pipeline
 
-# SKA SDP Python-based Data Models
-
 This repository contains python routines for fitting primary beams 
 to cross-correlation visibilities for estimating pointing offsets.
 
