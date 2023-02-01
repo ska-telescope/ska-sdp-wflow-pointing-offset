@@ -54,7 +54,7 @@ def convert_coordinates(ants, beam_centre, target_coord, timestamps, target_proj
     """
     Calculate (az, el) given a set of information on beam and target.
 
-    :param ants: Katpoint antenna files [nants] (from metadata or config file)
+    :param ants: Katpoint antenna objects [nants] (from metadata or config file)
     :param beam_centre: Beam centre information (x, y)
     :param target_coord: astropy SkyCoord object that contains RA, Dec information
     :param timestamps: numpy array size [ndumps] (from MS)
