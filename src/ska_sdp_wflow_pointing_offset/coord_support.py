@@ -2,18 +2,20 @@
 Coordinates support functions
 """
 
-import numpy as np
 import katpoint
+import numpy as np
 
 
 def construct_antennas(xyz, diameter, station):
     """
-    Construct list of katpoint antenna objects based on telescope configuration information.
+    Construct list of katpoint antenna objects
+    based on telescope configuration information.
     For MeerKAT, this is not needed, it is only required for SKA-MID.
     The MID configuration file can be found at:
     https://gitlab.com/ska-telescope/sdp/ska-sdp-datamodels.git
     Use:
-    x, y, z, diameter, station = np.loadtxt('ska1mid.cfg', dtype=object, unpack=True)
+    x, y, z, diameter, station =
+    np.loadtxt('ska1mid.cfg', dtype=object, unpack=True)
     xyz = np.column_stack((x, y, z))
 
     :param xyz: xyz coordinates of antenna positions in [nants, 3]
@@ -50,29 +52,34 @@ def construct_antennas(xyz, diameter, station):
     return ants
 
 
-def convert_coordinates(ants, beam_centre, target_coord, timestamps, target_projection):
+def convert_coordinates(
+    ants, beam_centre, target_coord, timestamps, target_projection
+):
     """
     Calculate (az, el) given a set of information on beam and target.
 
-    :param ants: Katpoint antenna objects [nants] (from metadata or config file)
+    :param ants: Katpoint antenna objects [nants]
+                 Either from metadata file,
+                 Or from config file and created via
+                 constructed_antennas
     :param beam_centre: Beam centre information (x, y)
-    :param target_coord: astropy SkyCoord object that contains RA, Dec information
+    :param target_coord: SkyCoord object that contains RA, Dec information
     :param timestamps: numpy array size [ndumps] (from MS)
-    :param target_projection: What coordinate system are we using (str) (from metadata)
+    :param target_projection: Name of coordinate system  (from metadata)
     :return: (az, el) coordinates in [nants, 2], radians
     """
     # Target information
-    ra = target_coord.ra.rad
-    dec = target_coord.dec.rad
-    target = katpoint.construct_radec_target(ra, dec)
+    target_ra = target_coord.ra.rad
+    target_dec = target_coord.dec.rad
+    target = katpoint.construct_radec_target(target_ra, target_dec)
 
-    az = np.zeros(len(ants))
-    el = np.zeros(len(ants))
+    az_arr = np.zeros(len(ants))
+    el_arr = np.zeros(len(ants))
     for i, antenna in enumerate(ants):
 
         # Convert from (x,y) to (az, el), output in rad
         # Only doing it for a single timestamp at the moment
-        az, el = target.plane_to_sphere(
+        az_arr[i], el_arr[i] = target.plane_to_sphere(
             x=beam_centre[0],
             y=beam_centre[1],
             timestamp=np.median(timestamps),
@@ -81,4 +88,4 @@ def convert_coordinates(ants, beam_centre, target_coord, timestamps, target_proj
             coord_system="azel",
         )
 
-    return az, el
+    return az_arr, el_arr

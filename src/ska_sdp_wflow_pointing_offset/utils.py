@@ -1,3 +1,4 @@
+# pylint: disable=invalid-name
 """
 Util functions for plotting
 """

@@ -1,9 +1,11 @@
+# pylint: disable=too-many-arguments
 """
 Main workflow related functions
 """
 
-import numpy as np
 import pickle
+
+import numpy as np
 
 
 def apply_rfi_mask(data, freqs, rfi_name=None):
@@ -15,10 +17,10 @@ def apply_rfi_mask(data, freqs, rfi_name=None):
     :return: filtered data and freqs array
     """
 
-    rfi_file = open(rfi_name, "rb")
-    rfi_mask = pickle.load(rfi_file)
-    data = data[:, rfi_mask is False, :]
-    freqs = freqs[rfi_mask is False]
+    with open(rfi_name, "rb") as rfi_file:
+        rfi_mask = pickle.load(rfi_file)
+        data = data[:, rfi_mask == 0]
+        freqs = freqs[rfi_mask == 0]
 
     return data, freqs
 
@@ -74,14 +76,17 @@ def clean_vis_data(
 
     # Apply RFI
     if apply_rfi:
-        filtered_vis, filtered_freq = apply_rfi_mask(amp_vis, freqs, rfi_name=rfi_name)
+        filtered_vis, filtered_freq = apply_rfi_mask(
+            amp_vis, freqs, rfi_name=rfi_name
+        )
+    filtered_vis, filtered_freq = amp_vis, freqs
 
     # Select channels
-    if start_freq == None:
+    if start_freq is None:
         start_freq = freqs[0]
-    if end_freq == None:
+    if end_freq is None:
         end_freq = freqs[-1]
-    selected_vis, selected_freq = select_channels(
+    selected_vis, _ = select_channels(
         filtered_vis, filtered_freq, start_freq, end_freq
     )
 
@@ -92,13 +97,15 @@ def clean_vis_data(
     if split_pol:
         if len(corr_type) == 2:
             # (XX,YY) or (RR, LL)
-            HH = avg_vis[:, 0]
-            VV = avg_vis[:, 1]
+            hh_data = avg_vis[:, 0]
+            vv_data = avg_vis[:, 1]
         elif len(corr_type) == 4:
             # (XX,XY,YX,YY) or (RR,RL,LR,LL)
-            HH = avg_vis[:, 0]
-            VV = avg_vis[:, 3]
+            hh_data = avg_vis[:, 0]
+            vv_data = avg_vis[:, 3]
+        else:
+            raise ValueError("Polarisation type not supported")
 
-        return HH, VV
+        return hh_data, vv_data
 
     return avg_vis
