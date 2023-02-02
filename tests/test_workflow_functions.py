@@ -1,7 +1,6 @@
 """
 Unit tests for workflow functions
 """
-import logging
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -12,9 +11,6 @@ from ska_sdp_wflow_pointing_offset.workflow import (
     clean_vis_data,
     select_channels,
 )
-
-log = logging.getLogger("pointing-logger")
-log.setLevel(logging.INFO)
 
 
 @pytest.fixture(scope="module", name="input_params")
