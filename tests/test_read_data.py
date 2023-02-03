@@ -11,6 +11,7 @@ import pytest
 from ska_sdp_wflow_pointing_offset.read_data import (
     read_cross_correlation_visibilities,
     read_pointing_meta_data_file,
+    read_azel_from_rdb_log,
 )
 
 NTIMES = 4
@@ -181,7 +182,7 @@ def test_read_cross_correlation_visibilities(mock_tables):
     assert (corr_type == numpy.array(["XX", "YY"])).all()
 
 @patch("ska_sdp_wflow_pointing_offset.read_data._open_rdb_file")
-def test_read_pointing_meta_data_file(mock_file):
+def test_read_azel_from_rdb_log(mock_file):
     """
     Test importing gaintable from cal table
     """

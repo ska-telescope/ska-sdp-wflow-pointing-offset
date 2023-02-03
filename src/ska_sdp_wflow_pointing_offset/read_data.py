@@ -107,13 +107,40 @@ def _open_rdb_file(rdbfile):
     return rdb
 
 
-def read_pointing_meta_data_file(rdbfile):
+def read_azel_from_rdb_log(rdbfile):
     """
     Read meta-data from RDB file.
 
     :param rdbname: Name of RDB file
     :return: numpy array
     """
+    _rdb = _open_rdb_file(rdbfile)
+    logs = _rdb.obs_script_log
+    search_az_el = False
+    ant = []
+    azel = []
+    for line in logs:
+        result = re.findall(
+            r"(INFO|WARNING)\s+([a-z]+[0-9]+)\s+(\([\+|\-?][0-9]+\.[0-9]+, [0-9]+\.[0-9]+\)|)",
+            line,
+        )
+        if len(result) > 0:
+            ant.append(result[0][1])
+            if result[0][0] == "INFO":
+                azel_tmp = re.split(r"[(,\s)]\s*", result[0][2])
+                azel.append([eval(azel_tmp[1]), eval(azel_tmp[2])])
+            else:
+                azel.append([999.99, 99.99])
+    return numpy.array(azel)
+
+
+def read_pointing_meta_data_file(rdbfile):
+    """
+        Read meta-data from RDB file.
+
+        :param rdbname: Name of RDB file
+        :return: numpy array
+        """
     _rdb = _open_rdb_file(rdbfile)
     logs = _rdb.obs_script_log
     search_az_el = False
