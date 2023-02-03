@@ -2,6 +2,7 @@ from .export_data import export_pointing_offset_data
 from .read_data import (
     read_cross_correlation_visibilities,
     read_pointing_meta_data_file,
+    read_azel_from_rdb_log
 )
 
 __all__ = [

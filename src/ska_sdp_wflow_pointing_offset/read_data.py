@@ -5,8 +5,6 @@ Functions of reading data from MS and RDB file.
 """
 
 import re
-from pathlib import Path
-
 import numpy
 
 
@@ -75,7 +73,8 @@ def read_cross_correlation_visibilities(
     vis = _base_table.getcol(columnname="DATA")
     diam = _ant_table.getcol(columnname="DISH_DIAMETER")
     if not all(diam):
-        # Note that this must change for SKA as there would be dishes of different sizes
+        # Note that this must change for SKA as there would
+        # be dishes of different sizes
         raise ValueError("Dish diameters must be the same")
     freqs = _spw_table.getcol(columnname="CHAN_FREQ") / 1e6  # in MHz
 
@@ -117,7 +116,6 @@ def read_azel_from_rdb_log(rdbfile):
     _rdb = _open_rdb_file(rdbfile)
     logs = _rdb.obs_script_log
     search_az_el = False
-    ant = []
     azel = []
     for line in logs:
         result = re.findall(
