@@ -9,9 +9,9 @@ import numpy
 import pytest
 
 from ska_sdp_wflow_pointing_offset.read_data import (
+    read_azel_from_rdb_log,
     read_cross_correlation_visibilities,
     read_pointing_meta_data_file,
-    read_azel_from_rdb_log,
 )
 
 NTIMES = 4
@@ -149,6 +149,7 @@ class MockRDBFile:
     """
     Mock RDBFile Class
     """
+
     def __init__(self):
         self.obs_script_log = [
             "2023-01-03 06:43:24.678Z INFO     Waiting for gains to materialise in cal pipeline",
@@ -181,6 +182,7 @@ def test_read_cross_correlation_visibilities(mock_tables):
     assert (freqs == numpy.array([8000, 8100, 8200])).all()
     assert (corr_type == numpy.array(["XX", "YY"])).all()
 
+
 @patch("ska_sdp_wflow_pointing_offset.read_data._open_rdb_file")
 def test_read_azel_from_rdb_log(mock_file):
     """
@@ -190,4 +192,4 @@ def test_read_azel_from_rdb_log(mock_file):
     azel = read_pointing_meta_data_file("test_rdb")
     assert isinstance(azel, numpy.ndarray)
 
-    assert (azel == numpy.array([[148.95,35.62],[999.99,99.99]])).all()
+    assert (azel == numpy.array([[148.95, 35.62], [999.99, 99.99]])).all()

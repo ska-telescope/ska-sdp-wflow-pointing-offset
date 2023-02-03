@@ -136,11 +136,11 @@ def read_azel_from_rdb_log(rdbfile):
 
 def read_pointing_meta_data_file(rdbfile):
     """
-        Read meta-data from RDB file.
+    Read meta-data from RDB file.
 
-        :param rdbname: Name of RDB file
-        :return: numpy array
-        """
+    :param rdbname: Name of RDB file
+    :return: numpy array
+    """
     _rdb = _open_rdb_file(rdbfile)
     logs = _rdb.obs_script_log
     search_az_el = False
