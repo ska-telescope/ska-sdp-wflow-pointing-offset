@@ -1,11 +1,6 @@
-#sphinx related packages
-sphinx
-sphinx-argparse
+--extra-index-url https://artefact.skao.int/repository/pypi-all/simple
+docutils<0.18
+sphinx == 5.1.1
+sphinx-autodoc-typehints == 1.19.1
 sphinx-rtd-theme
-sphinx-automodapi
-
-# Additional packages needed to be installed
-# so that the docs can render the API correctly
-# without the need of mocking every single import
-numpy
-astropy
+typing_extensions
