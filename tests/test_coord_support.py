@@ -67,7 +67,11 @@ def test_convert_coordinates(input_params):
     target_projection = "ARC"
     ants = construct_antennas(xyz, diameter, station)
     result_az, result_el = convert_coordinates(
-        ants, beam_centre, target_coord, timestamps, target_projection
+        ants,
+        beam_centre,
+        timestamps,
+        target_projection,
+        target_coord=target_coord,
     )
 
     assert result_az.all() == np.array([2.32326059, 2.32326058]).all()

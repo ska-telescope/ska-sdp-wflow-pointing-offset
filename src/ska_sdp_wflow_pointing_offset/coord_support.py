@@ -1,3 +1,4 @@
+# pylint: disable=too-many-arguments
 """
 Coordinates support functions
 """
@@ -53,7 +54,12 @@ def construct_antennas(xyz, diameter, station):
 
 
 def convert_coordinates(
-    ants, beam_centre, target_coord, timestamps, target_projection
+    ants,
+    beam_centre,
+    timestamps,
+    target_projection,
+    target_object=None,
+    target_coord=None,
 ):
     """
     Calculate (az, el) given a set of information on beam and target.
@@ -63,15 +69,19 @@ def convert_coordinates(
                  Or from config file and created via
                  constructed_antennas
     :param beam_centre: Beam centre information (x, y)
-    :param target_coord: SkyCoord object that contains RA, Dec information
     :param timestamps: numpy array size [ndumps] (from metadata)
     :param target_projection: Name of coordinate system  (from metadata)
+    :param target_object: Katpoint target object (from metadata)
+    :param target_coord: SkyCoord object that contains RA, Dec information
+                         Only used when katpoint target is not provided
     :return: (az, el) coordinates in [nants, 2], radians
     """
-    # Target information
-    target_ra = target_coord.ra.rad
-    target_dec = target_coord.dec.rad
-    target = katpoint.construct_radec_target(target_ra, target_dec)
+
+    # Construct target if Katpoint target object is not provided
+    if target_object is None:
+        target_ra = target_coord.ra.rad
+        target_dec = target_coord.dec.rad
+        target_object = katpoint.construct_radec_target(target_ra, target_dec)
 
     az_arr = np.zeros(len(ants))
     el_arr = np.zeros(len(ants))
@@ -79,7 +89,7 @@ def convert_coordinates(
 
         # Convert from (x,y) to (az, el), output in rad
         # Only doing it for a single timestamp at the moment
-        az_arr[i], el_arr[i] = target.plane_to_sphere(
+        az_arr[i], el_arr[i] = target_object.plane_to_sphere(
             x=beam_centre[0],
             y=beam_centre[1],
             timestamp=np.median(timestamps),
