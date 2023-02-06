@@ -99,8 +99,8 @@ class BeamPatternFit(ScatterFit):
         y : array-like, shape (N,)
             Sequence of corresponding total power values to fit
         std_y : float or array-like, shape (N,), optional
-            Measurement error or uncertainty of `y` values, expressed as standard
-            deviation in units of `y`
+            Measurement error or uncertainty of `y` values, expressed as
+            standard deviation in units of `y`
         """
         self._interp.fit(x, y, std_y)
         self.center = self._interp.mean
