@@ -1,7 +1,8 @@
 """
-Fits primary beams to the cross-correlation visibility amplitudes and computes the true
-position of the calibrator for computing the azimuth and elevation offsets. This follows
-the routines used by the SARAO team for the MeerKAT array. 
+Fits primary beams to the cross-correlation visibility amplitudes
+and computes the true position of the calibrator for computing the
+azimuth and elevation offsets. This follows the routines used by
+the SARAO team for the MeerKAT array.
 """
 
 import numpy as np
@@ -9,10 +10,11 @@ from scikits.fitting import GaussianFit, ScatterFit
 
 
 def fwhm_to_sigma(fwhm):
-    """Standard deviation of Gaussian function with specified FWHM beamwidth.
-    This returns the standard deviation of a Gaussian beam pattern with a
-    specified full-width half-maximum (FWHM) beamwidth. This beamwidth is the
-    width between the two points left and right of the peak where the Gaussian
+    """Standard deviation of Gaussian function with specified
+    FWHM beamwidth. This returns the standard deviation of a
+    Gaussian beam pattern with a specified full-width half-maximum
+    (FWHM) beamwidth. This beamwidth is the width between the
+    two points left and right of the peak where the Gaussian
     function attains half its maximum value.
     """
     # Gaussian function reaches half its peak value at sqrt(2 log 2)*sigma
@@ -20,21 +22,24 @@ def fwhm_to_sigma(fwhm):
 
 
 def sigma_to_fwhm(sigma):
-    """FWHM beamwidth of Gaussian function with specified standard deviation.
-    This returns the full-width half-maximum (FWHM) beamwidth of a Gaussian beam
-    pattern with a specified standard deviation. This beamwidth is the width
-    between the two points left and right of the peak where the Gaussian
-    function attains half its maximum value.
+    """FWHM beamwidth of Gaussian function with specified standard
+    deviation. This returns the full-width half-maximum (FWHM)
+    beamwidth of a Gaussian beam pattern with a specified standard
+    deviation. This beamwidth is the width between the two points
+    left and right of the peak where the Gaussian function attains
+    half its maximum value.
     """
     # Gaussian function reaches half its peak value at sqrt(2 log 2)*sigma
     return 2.0 * np.sqrt(2.0 * np.log(2.0)) * sigma
 
 
 class BeamPatternFit(ScatterFit):
-    """Fit analytic beam pattern to total power data defined on 2-D plane.
-    This fits a two-dimensional Gaussian curve (with diagonal covariance matrix)
-    to total power data as a function of 2-D coordinates. The Gaussian bump
-    represents an antenna beam pattern convolved with a point source.
+    """Fit analytic beam pattern to total power data defined on
+    2-D plane. This fits a two-dimensional Gaussian curve (with
+    diagonal covariance matrix) to total power data as a function
+    of 2-D coordinates. The Gaussian bump represents an antenna
+    beam pattern convolved with a point source.
+
     Parameters
     ----------
     center : sequence of 2 floats
@@ -49,8 +54,8 @@ class BeamPatternFit(ScatterFit):
     expected_width : real array, shape (2,), or float
         Initial guess of beamwidth, saved as expected width for checks
     radius_first_null : float
-        Radius of first null in beam in target coordinate units (stored here for
-        convenience, but not calculated internally)
+        Radius of first null in beam in target coordinate units (stored here
+        for convenience, but not calculated internally)
     refined : int
         Number of scan-based baselines used to refine beam (0 means unrefined)
     is_valid : bool
@@ -83,9 +88,10 @@ class BeamPatternFit(ScatterFit):
 
     def fit(self, x, y, std_y=1.0):
         """Fit a beam pattern to data.
-        The center, width and height of the fitted beam pattern (and their
-        standard errors) can be obtained from the corresponding member variables
-        after this is run.
+        The center, width and height of the fitted beam pattern
+        (and their standard errors) can be obtained from the
+        corresponding member variables after this is run.
+
         Parameters
         ----------
         x : array-like, shape (2, N)
