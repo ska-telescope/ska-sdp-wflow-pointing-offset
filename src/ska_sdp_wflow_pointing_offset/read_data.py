@@ -105,7 +105,7 @@ def _open_rdb_file(rdbfile):
     return rdb
 
 
-def read_azel_from_rdb_log(rdbfile):
+def read_data_from_rdb_file(rdbfile):
     """
     Read meta-data from RDB file.
 
@@ -114,7 +114,16 @@ def read_azel_from_rdb_log(rdbfile):
     """
     _rdb = _open_rdb_file(rdbfile)
     _rdb.select(scans="track", corrprods="cross")
-    return _rdb.az, _rdb.el
+    ants = _rdb.ants
+    target = _rdb.catalogue.targets[_rdb.target_indices[0]]
+    return (
+        _rdb.az,
+        _rdb.el,
+        _rdb.timestamps,
+        _rdb.target_projection,
+        ants,
+        target,
+    )
 
 
 def read_pointing_meta_data_file(rdbfile):
