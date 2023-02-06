@@ -99,15 +99,16 @@ def clean_vis_data(
     if split_pol:
         if len(corr_type) == 2:
             # (XX,YY) or (RR, LL)
-            hh_data = avg_vis[:, 0]
-            vv_data = avg_vis[:, 1]
+            # Split into horizontal and vertical components
+            vis_h = avg_vis[:, 0]
+            vis_v = avg_vis[:, 1]
         elif len(corr_type) == 4:
             # (XX,XY,YX,YY) or (RR,RL,LR,LL)
-            hh_data = avg_vis[:, 0]
-            vv_data = avg_vis[:, 3]
+            vis_h = avg_vis[:, 0]
+            vis_v = avg_vis[:, 3]
         else:
             raise ValueError("Polarisation type not supported")
 
-        return hh_data, vv_data
+        return vis_h, vis_v
 
     return avg_vis

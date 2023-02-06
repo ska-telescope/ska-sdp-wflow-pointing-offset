@@ -38,6 +38,8 @@ def construct_antennas(xyz, diameter, station):
         np.squeeze(altitude),
     ):
         # Antenna information
+        # the beam width is HPBW of an antenna: k * lambda/D
+        # Curently we use an estimate of 1.22
         ant = katpoint.Antenna(
             name=ant_name,  # "SKA1-MID",
             latitude=lat,
@@ -68,7 +70,8 @@ def convert_coordinates(
                  Either from metadata file,
                  Or from config file and created via
                  constructed_antennas
-    :param beam_centre: Beam centre information (x, y)
+    :param beam_centre: Beam centre information (x, y) on the fitting plane
+                        x, y are dimensionless
     :param timestamps: numpy array size [ndumps] (from metadata)
     :param target_projection: Name of coordinate system  (from metadata)
     :param target_object: Katpoint target object (from metadata)
@@ -79,6 +82,11 @@ def convert_coordinates(
 
     # Construct target if Katpoint target object is not provided
     if target_object is None:
+        if target_coord is None:
+            raise ValueError(
+                "Please provide either katpoint target "
+                "or the target coordinates."
+            )
         target_ra = target_coord.ra.rad
         target_dec = target_coord.dec.rad
         target_object = katpoint.construct_radec_target(target_ra, target_dec)
