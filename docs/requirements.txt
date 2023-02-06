@@ -1,6 +1,6 @@
---extra-index-url https://artefact.skao.int/repository/pypi-all/simple
 docutils<0.18
 sphinx == 5.1.1
 sphinx-autodoc-typehints == 1.19.1
+sphinx-automodapi
 sphinx-rtd-theme
 typing_extensions
