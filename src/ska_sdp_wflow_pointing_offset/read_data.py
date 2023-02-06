@@ -13,7 +13,7 @@ import numpy
 def _load_ms_tables(msname):
     # pylint: disable=import-error,import-outside-toplevel
     """
-    Load casa MS file tables
+    Load CASA MS file tables
 
     :param msname:
     :return:
@@ -40,15 +40,8 @@ def read_cross_correlation_visibilities(
     This import gain table form calibration table of CASA.
 
     :param msname: Name of Measurement set file
-
-    :return: numpy array
-
+    :return: vis, freqs, corr_type
     """
-
-    # Check file exist?
-    # ms_file = Path(msname)
-    # if not ms_file.exists():
-    #     return None, None
 
     correlation_products = {
         5: "RR",
@@ -110,7 +103,7 @@ def read_data_from_rdb_file(rdbfile):
     Read meta-data from RDB file.
 
     :param rdbname: Name of RDB file
-    :return: numpy array
+    :return: az, el, timestamps, target projection, ants and target
     """
     _rdb = _open_rdb_file(rdbfile)
     _rdb.select(scans="track", corrprods="cross")
@@ -131,7 +124,7 @@ def read_pointing_meta_data_file(rdbfile):
     Read meta-data from RDB file.
 
     :param rdbname: Name of RDB file
-    :return: numpy array
+    :return: numpy array of azel
     """
     _rdb = _open_rdb_file(rdbfile)
     logs = _rdb.obs_script_log

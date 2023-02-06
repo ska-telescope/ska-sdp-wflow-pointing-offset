@@ -14,7 +14,7 @@ def export_pointing_offset_data(filename, offset):
 
     :param filename: file name
     :param offset: poiting offset
-    :return: Boolean True-Success, False-Failed
+    :return: True-Success, False-Failed
     """
 
     assert isinstance(offset, numpy.ndarray)
