@@ -22,7 +22,7 @@ def construct_antennas(xyz, diameter, station):
     :param xyz: xyz coordinates of antenna positions in [nants, 3]
     :param diameter: Diameter of dishes in [nants]
     :param station: List of the antenna names [nants]
-    :return: a set of Antenna objects
+    :return: a set of katpoint.Antenna objects
     """
     import pyuvdata  # pylint: disable=import-error,import-outside-toplevel
 

@@ -11,7 +11,7 @@ import numpy as np
 def apply_rfi_mask(data, freqs, rfi_name=None):
     """
     Apply RFI mask
-    :param data: 2D data in [nants, nchan, npol]
+    :param data: 3D data in [ncorr, nchan, npol]
     :param freqs: 1D array of frequency [nchan]
     :param rfi_name: Name of the rfi pickle file
     :return: filtered data and freqs array
@@ -28,9 +28,10 @@ def apply_rfi_mask(data, freqs, rfi_name=None):
 def select_channels(data, freqs, start_freq, end_freq):
     """
     Select from the visibility data the right channels to look at,
-    Inputting starting and end frequency
+    inputting starting and end frequency.
+    The function will select the channels between these two frequencies
 
-    :param data: 2D visibility data [nants, nchan, npol]
+    :param data: 3D visibility data [ncorr, nchan, npol]
     :param freqs: 1D frequency array [nchan]
     :param start_freq: Starting frequency (float)
     :param end_freq: Ending frequency (float)
@@ -56,9 +57,10 @@ def clean_vis_data(
     """
     Clean visibility data and split into polarisations.
 
-    :param vis_array: Numpy array of visibility data [nants, nchan, npol]
+    :param vis_array: Numpy array of visibility data [ncorr, nchan, npol]
     :param freqs: Numpy array of frequency [nchan]
-    :param corr_type: Correlation type
+    :param corr_type: Correlation type e.g. (XX,YY), (RR, LL),
+                        (XX,XY,YX,YY) or (RR,RL,LR,LL)
     :param start_freq: Starting frequency for selction
                        If no selection needed, use None
     :param end_freq: Ending frequency for selction
@@ -66,7 +68,7 @@ def clean_vis_data(
     :param apply_rfi: Apply RFI mask?
     :param rfi_name: Name of RFI mask file
     :param split_pol: Split polarisations?
-    :return: numpy array of visibility in [nants]
+    :return: numpy array of visibility with shape [ncorr,]
              If split_pol is True, return each polarisation
              Else return as one array
     """
