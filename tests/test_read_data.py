@@ -9,7 +9,6 @@ import numpy
 import pytest
 
 from ska_sdp_wflow_pointing_offset.read_data import (
-    read_azel_from_rdb_log,
     read_cross_correlation_visibilities,
     read_pointing_meta_data_file,
 )
@@ -152,9 +151,9 @@ class MockRDBFile:
 
     def __init__(self):
         self.obs_script_log = [
-            "2023-01-03 06:43:24.678Z INFO     Waiting for gains to materialise in cal pipeline",
-            "2023-01-03 06:45:30.646Z INFO     m000 (+148.95, 35.62) deg -> (  -0.18’,   -0.20')",
-            "2023-01-03 06:45:30.697Z WARNING  m049 had no valid primary beam fitted",
+            "678Z INFO     Waiting for gains to materialise in cal pipeline",
+            "646Z INFO     m000 (+148.95, 35.62) deg -> (  -0.18’,   -0.20')",
+            "697Z WARNING  m049 had no valid primary beam fitted",
         ]
 
 

@@ -5,6 +5,8 @@ Functions of reading data from MS and RDB file.
 """
 
 import re
+
+import katdal  # pylint: disable=import-error
 import numpy
 
 
@@ -18,8 +20,8 @@ def _load_ms_tables(msname):
     """
     try:
         from casacore.tables import table  # pylint: disable=import-error
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError("casacore is not installed")
+    except ModuleNotFoundError as exc:
+        raise ModuleNotFoundError("casacore is not installed") from exc
 
     base_table = table(tablename=msname)
     # spw --> spectral window, pol--> polarisation
@@ -32,14 +34,12 @@ def _load_ms_tables(msname):
 
 def read_cross_correlation_visibilities(
     msname,
-    rfifile=None,
 ):
     """
     Create a numpy array from a table of a specified MS file.
     This import gain table form calibration table of CASA.
 
     :param msname: Name of Measurement set file
-    :param msname: Name of Rfi mask file
 
     :return: numpy array
 
@@ -99,7 +99,6 @@ def _open_rdb_file(rdbfile):
     :param rdbfile: file name
     :return: rdb object
     """
-    import katdal  # pylint: disable=import-error
 
     # Check file exist?
     rdb = katdal.open(rdbfile, chunk_store=None)
@@ -114,22 +113,8 @@ def read_azel_from_rdb_log(rdbfile):
     :return: numpy array
     """
     _rdb = _open_rdb_file(rdbfile)
-    logs = _rdb.obs_script_log
-    search_az_el = False
-    azel = []
-    for line in logs:
-        result = re.findall(
-            r"(INFO|WARNING)\s+([a-z]+[0-9]+)\s+(\([\+|\-?][0-9]+\.[0-9]+, [0-9]+\.[0-9]+\)|)",
-            line,
-        )
-        if len(result) > 0:
-            ant.append(result[0][1])
-            if result[0][0] == "INFO":
-                azel_tmp = re.split(r"[(,\s)]\s*", result[0][2])
-                azel.append([eval(azel_tmp[1]), eval(azel_tmp[2])])
-            else:
-                azel.append([999.99, 99.99])
-    return numpy.array(azel)
+    _rdb.select(scans="track", corrprods="cross")
+    return _rdb.az, _rdb.el
 
 
 def read_pointing_meta_data_file(rdbfile):
@@ -141,19 +126,20 @@ def read_pointing_meta_data_file(rdbfile):
     """
     _rdb = _open_rdb_file(rdbfile)
     logs = _rdb.obs_script_log
-    search_az_el = False
     ant = []
     azel = []
     for line in logs:
         result = re.findall(
-            r"(INFO|WARNING)\s+([a-z]+[0-9]+)\s+(\([\+|\-?][0-9]+\.[0-9]+, [0-9]+\.[0-9]+\)|)",
+            r"""
+(INFO|WARNING)\s+([a-z]+[0-9]+)\s+(\([\+|\-?][0-9]+\.[0-9]+, [0-9]+\.[0-9]+\)|)
+""",
             line,
         )
         if len(result) > 0:
             ant.append(result[0][1])
             if result[0][0] == "INFO":
                 azel_tmp = re.split(r"[(,\s)]\s*", result[0][2])
-                azel.append([eval(azel_tmp[1]), eval(azel_tmp[2])])
+                azel.append([float(azel_tmp[1]), float(azel_tmp[2])])
             else:
                 azel.append([999.99, 99.99])
     return numpy.array(azel)

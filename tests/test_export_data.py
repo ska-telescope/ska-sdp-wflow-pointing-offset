@@ -4,10 +4,8 @@ Unit Tests to create GainTable
 from CASA Tables
 """
 import os
-from unittest.mock import patch
 
 import numpy
-import pytest
 
 from ska_sdp_wflow_pointing_offset.export_data import (
     export_pointing_offset_data,
@@ -21,5 +19,5 @@ def test_export_pointing_data_file():
     offset = numpy.array([[148.95, 35.62], [999.99, 99.99]])
     export_pointing_offset_data("test_offset.csv", offset)
 
-    assert os.path.exists("test_offset.csv") == True
+    assert os.path.exists("test_offset.csv")
     os.remove("test_offset.csv")
