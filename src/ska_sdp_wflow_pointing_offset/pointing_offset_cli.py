@@ -2,15 +2,17 @@
 Command line utility for Pointing Offset Calibration Pipeline.
 
 Usage:
-    pointing-offset COMMAND [<args>...]
+    pointing-offset COMMAND [OBJECTS] [<args>...]
     pointing-offset COMMAND (-h|--help)
     pointing-offset (-h|--help)
 
+Objects:
+    ms      Measurement set file
+    rdb     RDB file
 
 Commands:
-    ms-name          Read a measurement set file
-    rdb-file         Read a RDB file
-    clean-vis-data   Clean Visibility Data
+    read        Read file
+    clean       Clean Visibility Data
 
 """
 
@@ -39,13 +41,10 @@ def main(argv=None):
 
     args = docopt(__doc__, argv=argv, options_first=True)
 
-    if args[COMMAND] == "ms-name":
-        read_ms_clean_data(argv)
+    if args[COMMAND] == "read":
+        read_clean_data(argv)
 
-    if args[COMMAND] == "rdb-file":
-        read_rdb_clean_data(argv)
-
-    if args[COMMAND] == "clean-vis-data":
+    if args[COMMAND] == "clean":
         clean_vis_data(argv)
 
     else:
@@ -58,20 +57,21 @@ def main(argv=None):
 
 # Just the first iteration, will split into seperate once
 # we have a good idea about the cli
-def read_ms_clean_data(argv):
-    """."""
-    vis, freqs, corr_type = read_cross_correlation_visibilities(argv)
-    clean_vis_data(vis, freqs, corr_type)
+def read_clean_data(argv):
+    """Read MS file and run the clean visibilita data"""
 
+    args = docopt(__doc__, argv=argv)
+    if args['OBJECTS'] == 'ms':
+        print("Just for testing MS!")
+        vis, freqs, corr_type = read_cross_correlation_visibilities(args['<args>'][0])
+        clean_vis_data(vis, freqs, corr_type)
+    elif args['OBJECTS'] == 'rdb':
+        print("Just for testing RDB!")
+        vis, freqs, corr_type = read_data_from_rdb_file(args['<args>'][0])
 
-def read_rdb_clean_data(argv):
-    """."""
-    vis, freqs, corr_type = read_data_from_rdb_file(argv)
-
-    # What is the output coming from the rdb file that will
-    # be passed to the next function?
-    clean_vis_data(vis, freqs, corr_type)
-
+        # What is the output coming from the rdb file that will
+        # be passed to the next function?
+        clean_vis_data(vis, freqs, corr_type)
 
 if __name__ == "__main__":
     main()
