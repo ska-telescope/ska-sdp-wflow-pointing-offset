@@ -25,6 +25,8 @@ from .read_data import (
     read_cross_correlation_visibilities,
     read_data_from_rdb_file,
 )
+from .coord_support import convert_coordinates
+
 from .workflow import clean_vis_data
 
 LOG = logging.getLogger("ska-sdp-pointing-offset")
@@ -44,6 +46,8 @@ def main(argv=None):
     if args[COMMAND] == "read":
         read_clean_data(argv)
 
+    # This doesn't work properly now but need to decide
+    # what to do with it
     if args[COMMAND] == "clean":
         clean_vis_data(argv)
 
@@ -67,11 +71,10 @@ def read_clean_data(argv):
         clean_vis_data(vis, freqs, corr_type)
     elif args['OBJECTS'] == 'rdb':
         print("Just for testing RDB!")
-        vis, freqs, corr_type = read_data_from_rdb_file(args['<args>'][0])
+        az, el, timestamps, target_projection, ants, target = read_data_from_rdb_file(args['<args>'][0])
 
-        # What is the output coming from the rdb file that will
-        # be passed to the next function?
-        clean_vis_data(vis, freqs, corr_type)
+        # Need to add beam centre which will come from beam fitting script
+        convert_coordinates(ants, beam_centre, timestamps, target_projection)
 
 if __name__ == "__main__":
     main()
