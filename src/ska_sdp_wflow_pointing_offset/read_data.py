@@ -39,6 +39,8 @@ def read_cross_correlation_visibilities(
     :return: vis, freqs, corr_type
     """
 
+    # The following keys match the polarisation IDs
+    # from the casa MS file
     correlation_products = {
         5: "RR",
         6: "RL",
