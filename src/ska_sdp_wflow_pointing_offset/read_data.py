@@ -1,7 +1,6 @@
-# pylint: disable=invalid-name, duplicate-code， too-many-locals
-
 """
-Functions of reading data from MS and RDB file.
+Functions of reading data from Measurement Set
+and Relational Database file.
 """
 
 import re
@@ -13,7 +12,7 @@ import numpy
 def _load_ms_tables(msname):
     # pylint: disable=import-error,import-outside-toplevel
     """
-    Load CASA MS file tables
+    Load CASA Measurement Set file tables
 
     :param msname:
     :return:
@@ -55,30 +54,25 @@ def read_cross_correlation_visibilities(
     }
 
     (
-        _ant_table,
-        _base_table,
-        _fieldtab,
-        _pol_table,
-        _spw_table,
+        ant_table,
+        base_table,
+        fieldtab,
+        pol_table,
+        spw_table,
     ) = _load_ms_tables(msname)
 
     # Get parameters of interest from the tables
-    vis = _base_table.getcol(columnname="DATA")
-    diam = _ant_table.getcol(columnname="DISH_DIAMETER")
+    vis = base_table.getcol(columnname="DATA")
+    diam = ant_table.getcol(columnname="DISH_DIAMETER")
     if not all(diam):
         # Note that this must change for SKA as there would
         # be dishes of different sizes
         raise ValueError("Dish diameters must be the same")
-    freqs = _spw_table.getcol(columnname="CHAN_FREQ")
-
-    # source = _field_table.getcol(columnname="NAME")[0]
-    # nchan = int(_spw_table.getcol(columnname="NUM_CHAN"))
-    # timestamps = _base_table.getcol(columnname="TIME")
-    # ants = _ant_table.getcol(columnname="STATION")
+    freqs = spw_table.getcol(columnname="CHAN_FREQ")
     corr_type = numpy.array(
         [
             correlation_products[corr]
-            for corr in _pol_table.getcol(columnname="CORR_TYPE")
+            for corr in pol_table.getcol(columnname="CORR_TYPE")
         ]
     )
 
@@ -87,7 +81,7 @@ def read_cross_correlation_visibilities(
 
 def _open_rdb_file(rdbfile):
     """
-    Open a rdb file
+    Open a relational database file
 
     :param rdbfile: file name
     :return: rdb object
@@ -105,43 +99,16 @@ def read_data_from_rdb_file(rdbfile):
     :param rdbname: Name of RDB file
     :return: az, el, timestamps, target projection, ants and target
     """
-    _rdb = _open_rdb_file(rdbfile)
-    _rdb.select(scans="track", corrprods="cross")
-    ants = _rdb.ants
-    target = _rdb.catalogue.targets[_rdb.target_indices[0]]
+    rdb = _open_rdb_file(rdbfile)
+    rdb.select(scans="track", corrprods="cross")
+    ants = rdb.ants
+    target = rdb.catalogue.targets[rdb.target_indices[0]]
     return (
-        _rdb.az,
-        _rdb.el,
-        _rdb.timestamps,
-        _rdb.target_projection,
+        rdb.az,
+        rdb.el,
+        rdb.timestamps,
+        rdb.target_projection,
         ants,
         target,
     )
 
-
-def read_pointing_meta_data_file(rdbfile):
-    """
-    Read meta-data from RDB file.
-
-    :param rdbname: Name of RDB file
-    :return: numpy array of azel
-    """
-    _rdb = _open_rdb_file(rdbfile)
-    logs = _rdb.obs_script_log
-    ant = []
-    azel = []
-    for line in logs:
-        result = re.findall(
-            r"""
-(INFO|WARNING)\s+([a-z]+[0-9]+)\s+(\([\+|\-?][0-9]+\.[0-9]+, [0-9]+\.[0-9]+\)|)
-""",
-            line,
-        )
-        if len(result) > 0:
-            ant.append(result[0][1])
-            if result[0][0] == "INFO":
-                azel_tmp = re.split(r"[(,\s)]\s*", result[0][2])
-                azel.append([float(azel_tmp[1]), float(azel_tmp[2])])
-            else:
-                azel.append([999.99, 99.99])
-    return numpy.array(azel)

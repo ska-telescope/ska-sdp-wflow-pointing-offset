@@ -1,5 +1,3 @@
-# pylint: disable=invalid-name, duplicate-code， too-many-locals
-
 """
 Functions of exporting data to csv file
 """
@@ -16,8 +14,6 @@ def export_pointing_offset_data(filename, offset):
     :param offset: poiting offset
     :return: True-Success, False-Failed
     """
-
-    assert isinstance(offset, numpy.ndarray)
 
     # convert array into dataframe
     data_frame = pandas.DataFrame(offset)

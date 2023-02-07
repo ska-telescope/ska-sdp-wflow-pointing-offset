@@ -1,7 +1,6 @@
-# pylint: disable=inconsistent-return-statements, too-few-public-methods
 """
-Unit Tests to create GainTable
-from CASA Tables
+Unit Tests to read data
+from CASA Measurement Tables
 """
 from unittest.mock import patch
 
@@ -10,7 +9,6 @@ import pytest
 
 from ska_sdp_wflow_pointing_offset.read_data import (
     read_cross_correlation_visibilities,
-    read_pointing_meta_data_file,
 )
 
 NTIMES = 4
@@ -181,14 +179,3 @@ def test_read_cross_correlation_visibilities(mock_tables):
     assert (freqs == numpy.array([8000, 8100, 8200])).all()
     assert (corr_type == numpy.array(["XX", "YY"])).all()
 
-
-@patch("ska_sdp_wflow_pointing_offset.read_data._open_rdb_file")
-def test_read_azel_from_rdb_log(mock_file):
-    """
-    Test importing gaintable from cal table
-    """
-    mock_file.return_value = MockRDBFile()
-    azel = read_pointing_meta_data_file("test_rdb")
-    assert isinstance(azel, numpy.ndarray)
-
-    assert (azel == numpy.array([[148.95, 35.62], [999.99, 99.99]])).all()
