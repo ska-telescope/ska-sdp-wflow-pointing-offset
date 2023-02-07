@@ -2,7 +2,7 @@
 Functions of exporting data to csv file
 """
 
-import pandas
+import numpy
 
 
 def export_pointing_offset_data(filename, offset):
@@ -14,8 +14,4 @@ def export_pointing_offset_data(filename, offset):
     :return: True-Success, False-Failed
     """
 
-    # convert array into dataframe
-    data_frame = pandas.DataFrame(offset)
-
-    # save the dataframe as a csv file
-    data_frame.to_csv(filename)
+    numpy.savetxt(filename, offset, delimiter=",")
