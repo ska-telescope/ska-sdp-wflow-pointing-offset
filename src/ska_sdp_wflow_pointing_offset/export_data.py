@@ -2,7 +2,6 @@
 Functions of exporting data to csv file
 """
 
-import numpy
 import pandas
 
 

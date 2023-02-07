@@ -22,4 +22,3 @@ __all__ = [
     "convert_coordinates",
     "plot_azel",
 ]
-from .export_data import export_pointing_offset_data

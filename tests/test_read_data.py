@@ -1,3 +1,4 @@
+# pylint: disable=inconsistent-return-statements,too-few-public-methods
 """
 Unit Tests to read data
 from CASA Measurement Tables
@@ -178,4 +179,3 @@ def test_read_cross_correlation_visibilities(mock_tables):
     assert (vis == numpy.array([1, 2, 3, 4, 5, 6, 7, 8, 9])).all()
     assert (freqs == numpy.array([8000, 8100, 8200])).all()
     assert (corr_type == numpy.array(["XX", "YY"])).all()
-

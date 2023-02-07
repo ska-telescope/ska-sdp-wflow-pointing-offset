@@ -3,8 +3,6 @@ Functions of reading data from Measurement Set
 and Relational Database file.
 """
 
-import re
-
 import katdal  # pylint: disable=import-error
 import numpy
 
@@ -27,8 +25,7 @@ def _load_ms_tables(msname):
     spw = table(tablename=f"{msname}/SPECTRAL_WINDOW")
     pol = table(tablename=f"{msname}/POLARIZATION")
     anttab = table(f"{msname}/ANTENNA", ack=False)
-    fieldtab = table(f"{msname}/FIELD", ack=False)
-    return anttab, base_table, fieldtab, pol, spw
+    return anttab, base_table, pol, spw
 
 
 def read_cross_correlation_visibilities(
@@ -56,7 +53,6 @@ def read_cross_correlation_visibilities(
     (
         ant_table,
         base_table,
-        fieldtab,
         pol_table,
         spw_table,
     ) = _load_ms_tables(msname)
@@ -111,4 +107,3 @@ def read_data_from_rdb_file(rdbfile):
         ants,
         target,
     )
-
