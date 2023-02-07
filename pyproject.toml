@@ -5,7 +5,7 @@ description = "SKA SDP Pointing Offset Calibration Pipeline"
 authors = ["SKA SDP Developers"]
 license = "BSD-3 Clause"
 repository = "https://gitlab.com/ska-telescope/sdp/ska-sdp-wflow-pointing-offset"
-#documentation = "https://developer.skao.int/projects/ska-sdp-wflow-pointing-offset/en/latest/"
+documentation = "https://developer.skao.int/projects/ska-sdp-wflow-pointing-offset/en/latest/"
 
 [[tool.poetry.source]]
 name = "ska"
