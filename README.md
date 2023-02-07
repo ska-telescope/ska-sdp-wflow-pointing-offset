@@ -1,6 +1,6 @@
 # SKA SDP Pointing Offset Calibration Pipeline
 
-[![Documentation Status](https://readthedocs.org/projects/ska-telescope-sdp-pointing-offset-calibration-pipeline/badge/?version=latest)](https://ska-telescope-sdp-pointing-offset-calibration-pipeline.readthedocs.io/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/ska-telescope-sdp-pointing-offset-calibration-pipeline/badge/?version=latest)](https://developer.skao.int/projects/ska-sdp-wflow-pointing-offset/en/latest/)
 
 This repository contains python routines for fitting primary beams 
 to cross-correlation visibilities for estimating pointing offsets.
