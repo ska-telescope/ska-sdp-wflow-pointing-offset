@@ -24,9 +24,13 @@ pyuvdata = "^2.2"
 
 # optional dependencies; used by "extras"
 python-casacore = {version = "^3.5", optional = true}
+docopt = "^0.6.2"
 
 [tool.poetry.extras]
 python-casacore = ["python-casacore"]
+
+[tool.poetry.scripts]
+pointing-offset = "ska_sdp_wflow_pointing_offset.pointing_offset_cli:main"
 
 [tool.poetry.dev-dependencies]
 black = "^22.1.0"
