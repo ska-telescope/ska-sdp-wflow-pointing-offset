@@ -23,8 +23,7 @@ scikits-fitting = "^0.7"
 pyuvdata = "^2.2"
 
 # optional dependencies; used by "extras"
-python-casacore = {version = "^3.5", optional = true}
-
+python-casacore = "^3.5.1"
 [tool.poetry.extras]
 python-casacore = ["python-casacore"]
 
