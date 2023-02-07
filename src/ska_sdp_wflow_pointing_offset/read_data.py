@@ -69,7 +69,7 @@ def read_cross_correlation_visibilities(
         # Note that this must change for SKA as there would
         # be dishes of different sizes
         raise ValueError("Dish diameters must be the same")
-    freqs = _spw_table.getcol(columnname="CHAN_FREQ") / 1e6  # in MHz
+    freqs = _spw_table.getcol(columnname="CHAN_FREQ")
 
     # source = _field_table.getcol(columnname="NAME")[0]
     # nchan = int(_spw_table.getcol(columnname="NUM_CHAN"))
