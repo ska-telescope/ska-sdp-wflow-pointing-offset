@@ -66,11 +66,11 @@ def read_cross_correlation_visibilities(
         # Note that this must change for SKA as there would
         # be dishes of different sizes
         raise ValueError("Dish diameters must be the same")
-    freqs = spw_table.getcol(columnname="CHAN_FREQ")
+    freqs = numpy.squeeze(spw_table.getcol(columnname="CHAN_FREQ"))
     corr_type = numpy.array(
         [
             correlation_products[corr]
-            for corr in pol_table.getcol(columnname="CORR_TYPE")
+            for corr in numpy.squeeze(pol_table.getcol(columnname="CORR_TYPE"))
         ]
     )
 
