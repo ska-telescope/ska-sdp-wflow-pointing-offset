@@ -5,7 +5,7 @@ from CASA Measurement Tables
 """
 from unittest.mock import patch
 
-import numpy 
+import numpy
 import pytest
 
 from ska_sdp_wflow_pointing_offset.read_data import (

@@ -3,7 +3,7 @@ Unit tests for workflow functions
 """
 from unittest.mock import MagicMock, patch
 
-import numpy 
+import numpy
 
 from ska_sdp_wflow_pointing_offset.workflow import (
     apply_rfi_mask,
