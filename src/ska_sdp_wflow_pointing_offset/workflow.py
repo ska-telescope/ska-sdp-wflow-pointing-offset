@@ -5,13 +5,13 @@ Main workflow related functions
 
 import pickle
 
-import numpy as np
+import numpy
 
 
 def apply_rfi_mask(data, freqs, rfi_filename=None):
     """
     Apply RFI mask.
-    :param data: 3D data in [ncorr, nchan, npol]
+    :param data: 3D data in [ncorr, nchan, numpyol]
     :param freqs: 1D array of frequency in Hz [nchan]
     :param rfi_filename: Name of the rfi pickle file
     :return: filtered data and freqs array
@@ -31,7 +31,7 @@ def select_channels(data, freqs, start_freq, end_freq):
     inputting starting and end frequency.
     The function will select the channels between these two frequencies
 
-    :param data: 3D visibility data [ncorr, nchan, npol]
+    :param data: 3D visibility data [ncorr, nchan, numpyol]
     :param freqs: 1D frequency array in Hz [nchan]
     :param start_freq: Starting frequency in Hz (float)
     :param end_freq: Ending frequency in Hz (float)
@@ -57,7 +57,7 @@ def clean_vis_data(
     """
     Clean visibility data and split into polarisations.
 
-    :param vis_array: Numpy array of visibility data [ncorr, nchan, npol]
+    :param vis_array: Numpy array of visibility data [ncorr, nchan, numpyol]
     :param freqs: Numpy array of frequency [nchan]
     :param corr_type: Correlation type e.g. (XX,YY), (RR, LL),
                         (XX,XY,YX,YY) or (RR,RL,LR,LL)
@@ -74,7 +74,7 @@ def clean_vis_data(
     """
 
     # Use amplitude for visibility
-    amp_vis = np.abs(vis_array)
+    amp_vis = numpy.abs(vis_array)
 
     # Apply RFI
     if apply_mask:
@@ -94,7 +94,7 @@ def clean_vis_data(
     )
 
     # Average over frequency
-    avg_vis = np.mean(selected_vis, axis=1)
+    avg_vis = numpy.mean(selected_vis, axis=1)
 
     # Split polarisations
     if split_pol:
