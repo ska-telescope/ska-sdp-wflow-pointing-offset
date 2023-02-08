@@ -5,7 +5,7 @@ Coordinates support functions
 """
 
 import katpoint
-import numpy as np
+import numpy
 
 
 def construct_antennas(xyz, diameter, station):
@@ -17,8 +17,8 @@ def construct_antennas(xyz, diameter, station):
     https://gitlab.com/ska-telescope/sdp/ska-sdp-datamodels.git
     Use:
     x, y, z, diameter, station =
-    np.loadtxt('ska1mid.cfg', dtype=object, unpack=True)
-    xyz = np.column_stack((x, y, z))
+    numpy.loadtxt('ska1mid.cfg', dtype=object, unpack=True)
+    xyz = numpy.column_stack((x, y, z))
 
     :param xyz: xyz coordinates of antenna positions in [nants, 3]
     :param diameter: Diameter of dishes in [nants]
@@ -34,15 +34,15 @@ def construct_antennas(xyz, diameter, station):
     for ant_name, diam, lat, long, alt in zip(
         station,
         diameter,
-        np.squeeze(np.radians(latitude)),
-        np.squeeze(np.radians(longitude)),
-        np.squeeze(altitude),
+        numpy.squeeze(numpy.radians(latitude)),
+        numpy.squeeze(numpy.radians(longitude)),
+        numpy.squeeze(altitude),
     ):
         # Antenna information
         # the beam width is HPBW of an antenna: k * lambda/D
-        # Curently we use an estimate of 1.22
+        # Currently we use an estimate of 1.22
         ant = katpoint.Antenna(
-            name=ant_name,  # "SKA1-MID",
+            name=ant_name,
             latitude=lat,
             longitude=long,
             altitude=alt,
@@ -92,16 +92,15 @@ def convert_coordinates(
         target_dec = target_coord.dec.rad
         target_object = katpoint.construct_radec_target(target_ra, target_dec)
 
-    az_arr = np.zeros(len(ants))
-    el_arr = np.zeros(len(ants))
+    az_arr = numpy.zeros(len(ants))
+    el_arr = numpy.zeros(len(ants))
     for i, antenna in enumerate(ants):
-
         # Convert from (x,y) to (az, el), output in rad
         # Only doing it for a single timestamp at the moment
         az_arr[i], el_arr[i] = target_object.plane_to_sphere(
             x=beam_centre[0],
             y=beam_centre[1],
-            timestamp=np.median(timestamps),
+            timestamp=numpy.median(timestamps),
             antenna=antenna,
             projection_type=target_projection,
             coord_system="azel",
