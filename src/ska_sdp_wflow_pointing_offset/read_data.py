@@ -94,8 +94,14 @@ def read_data_from_rdb_file(rdbfile):
     """
     Read meta-data from RDB file.
 
+    The target coordinates are projections of the spherical coordinates of
+    the dish pointing direction to a plane with the target position at the
+    origin. The target *x* coordinates are returned as an array of
+    float, shape (*T*, *A*).
+
     :param rdbname: Name of RDB file
-    :return: az, el, timestamps, target projection, ants and target
+    :return: az, el, timestamps, target projection, ants, target, and
+    time-averaged target coordinates of the dish in degrees
     """
     rdb = _open_rdb_file(rdbfile)
     rdb.select(scans="track", corrprods="cross")
@@ -108,4 +114,5 @@ def read_data_from_rdb_file(rdbfile):
         rdb.target_projection,
         ants,
         target,
+        [numpy.mean(rdb.target_x, axis=0), numpy.mean(rdb.target_y, axis=0)],
     )
