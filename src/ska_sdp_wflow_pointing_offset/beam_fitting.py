@@ -5,39 +5,46 @@ computing the azimuth and elevation offsets. This follows the
 routines used by the SARAO team for the MeerKAT array.
 """
 
-import numpy as np
+import katpoint
+import numpy
 from scikits.fitting import GaussianFit, ScatterFit
-
-# To Do: Add functionality to ingest data from ORC-1566 and
-# compute the pointing offsets
 
 
 def fwhm_to_sigma(fwhm):
-    """Standard deviation of Gaussian function with specified
-    FWHM beamwidth. This returns the standard deviation of a
-    Gaussian beam pattern with a specified full-width half-maximum
-    (FWHM) beamwidth. This beamwidth is the width between the
-    two points left and right of the peak where the Gaussian
-    function attains half its maximum value.
+    """
+    Standard deviation of Gaussian function with specified
+    FWHM beamwidth.
+
+    :param fwhm: Full-width half-maximum (FWHM) beamwidth
+    :return: The standard deviation of a Gaussian beam pattern
+    with a specified full-width half-maximum (FWHM) beamwidth.
+    This beamwidth is the width between the two points left and
+    right of the peak where the Gaussian function attains half
+    its maximum value.
     """
     # Gaussian function reaches half its peak value at sqrt(2 log 2)*sigma
-    return fwhm / 2.0 / np.sqrt(2.0 * np.log(2.0))
+    return fwhm / 2.0 / numpy.sqrt(2.0 * numpy.log(2.0))
 
 
 def sigma_to_fwhm(sigma):
-    """FWHM beamwidth of Gaussian function with specified standard
-    deviation. This returns the full-width half-maximum (FWHM)
-    beamwidth of a Gaussian beam pattern with a specified standard
-    deviation. This beamwidth is the width between the two points
-    left and right of the peak where the Gaussian function attains
-    half its maximum value.
+    """
+    FWHM beamwidth of Gaussian function with specified standard
+    deviation.
+
+    :param sigma: The standard deviation of a Gaussian beam pattern
+    with a specified full-width half-maximum (FWHM) beamwidth.
+    :return: The full-width half-maximum (FWHM) beamwidth of a Gaussian
+    beam pattern with a specified standard deviation. This beamwidth
+    is the width between the two points left and right of the peak
+    where the Gaussian function attains half its maximum value.
     """
     # Gaussian function reaches half its peak value at sqrt(2 log 2)*sigma
-    return 2.0 * np.sqrt(2.0 * np.log(2.0)) * sigma
+    return 2.0 * numpy.sqrt(2.0 * numpy.log(2.0)) * sigma
 
 
 class BeamPatternFit(ScatterFit):
-    """Fit analytic beam pattern to total power data defined on
+    """
+    Fit analytic beam pattern to total power data defined on
     2-D plane. This fits a two-dimensional Gaussian curve (with
     diagonal covariance matrix) to total power data as a function
     of 2-D coordinates. The Gaussian bump represents an antenna
@@ -45,22 +52,17 @@ class BeamPatternFit(ScatterFit):
 
     Parameters
     ----------
-    center : sequence of 2 floats
-        Initial guess of 2-element beam center, in target coordinate units
-    width : sequence of 2 floats, or float
-        Initial guess of single beamwidth for both dimensions, or 2-element
-        beamwidth vector, expressed as FWHM in units of target coordinates
-    height : float
-        Initial guess of beam pattern amplitude or height
+    :param center: Initial guess of 2-element beam center, in target
+    coordinate units
+    :param width:Initial guess of single beamwidth for both dimensions,
+    or 2-element beamwidth vector, expressed as FWHM in units of target
+    coordinates
+    :param height: Initial guess of beam pattern amplitude or height
+
     Attributes
     ----------
     expected_width : real array, shape (2,), or float
         Initial guess of beamwidth, saved as expected width for checks
-    radius_first_null : float
-        Radius of first null in beam in target coordinate units (stored here
-        for convenience, but not calculated internally)
-    refined : int
-        Number of scan-based baselines used to refine beam (0 means unrefined)
     is_valid : bool
         True if beam parameters are within reasonable ranges after fit
     std_center : array of float, shape (2,)
@@ -73,37 +75,29 @@ class BeamPatternFit(ScatterFit):
 
     def __init__(self, center, width, height):
         ScatterFit.__init__(self)
-        if not np.isscalar(width):
-            width = np.atleast_1d(width)
+        if not numpy.isscalar(width):
+            width = numpy.atleast_1d(width)
         self._interp = GaussianFit(center, fwhm_to_sigma(width), height)
         self.center = self._interp.mean
         self.width = sigma_to_fwhm(self._interp.std)
         self.height = self._interp.height
-
         self.expected_width = width
-        # Initial guess for radius of first null
-        # XXX: POTENTIAL TWEAK
-        self.radius_first_null = 1.3 * np.mean(self.expected_width)
-        # Beam initially unrefined and invalid
-        self.refined = 0
         self.is_valid = False
         self.std_center = self.std_width = self.std_height = None
 
     def fit(self, x, y, std_y=1.0):
-        """Fit a beam pattern to data.
+        """
+        Fit a beam pattern to data.
         The center, width and height of the fitted beam pattern
         (and their standard errors) can be obtained from the
         corresponding member variables after this is run.
 
-        Parameters
-        ----------
-        x : array-like, shape (2, N)
-            Sequence of 2-dimensional target coordinates (as column vectors)
-        y : array-like, shape (N,)
-            Sequence of corresponding total power values to fit
-        std_y : float or array-like, shape (N,), optional
-            Measurement error or uncertainty of `y` values, expressed as
-            standard deviation in units of `y`
+        :param x : Sequence of (2, N) target coordinates (as column vectors)
+        :param y : Sequence of (N, ) corresponding total power values to fit
+        :param std_y : Optional measurement error or uncertainty of (N, ) `y`
+        values, expressed as standard deviation in units of `y`
+        :return: The fitted beam parameters (center, width, height and their
+        uncertainties)
         """
         self._interp.fit(x, y, std_y)
         self.center = self._interp.mean
@@ -112,20 +106,137 @@ class BeamPatternFit(ScatterFit):
         self.std_center = self._interp.std_mean
         self.std_width = sigma_to_fwhm(self._interp.std_std)
         self.std_height = self._interp.std_height
-        self.is_valid = not any(np.isnan(self.center)) and self.height > 0.0
+        self.is_valid = not any(numpy.isnan(self.center)) and self.height > 0.0
         # XXX: POTENTIAL TWEAK
         norm_width = self.width / self.expected_width
         self.is_valid &= all(norm_width > 0.9) and all(norm_width < 1.25)
 
     def __call__(self, x):
-        """Evaluate fitted beam pattern function on new target coordinates.
-        Parameters
-        ----------
-        x : array-like, shape (2, M)
-            Sequence of 2-dimensional target coordinates (as column vectors)
-        Returns
-        -------
-        y : array, shape (M,)
-            Sequence of total power values representing fitted beam
+        """
+        Evaluate fitted beam pattern function on new target coordinates.
+
+        :param x : Sequence of (2, M) target coordinates (as column vectors)
+        :return: Sequence of total power values (M, ) representing fitted beam
         """
         return self._interp(x)
+
+
+def fit_primary_beams(
+    avg_vis,
+    freqs,
+    timestamps,
+    corr_type,
+    vis_weight,
+    ants,
+    dish_diameter,
+    dish_coordinates,
+    target,
+    target_projection="ARC",
+    beamwidth_factor=1.22,
+    auto=False,
+    split_pol=False,
+):
+    """
+    Fit the beam pattern to the frequency-averaged and optionally polarisation-averaged
+    visibilities and outputs the fitted parameters and their uncertainties. These visibilities
+    could be for each antenna or baseline.
+
+    :param avg_vis: Frequency-averaged visibilities.
+    :param freqs: Array of frequencies.
+    :param timestamps: Array of observation timestamps.
+    :param corr_type: The correlation products type of interest.
+    :param vis_weight: The weights of the visibilities [ncorr, ] -> [timestamps, antennas or baselines]
+    :param ants: Lst of antenna information built in katpoint.
+    :param dish_diameter: Diameter of the dish in the array. Expected to be the same. Different
+    dish diameters is not currently supported.
+    :param dish_coordinates: Projections of the spherical coordinates of the dish pointing
+    direction to a plane with the target position at the origin. Shape is [2, number of timestamps,
+    number of antennas].
+    :param target: katpoint pointing calibrator information (optionally source name, RA, DEC)
+    :param target_projection: The projection used in the observation.
+    :param beamwidth_factor: Beamwidth factor (often between 1.03 and 1.22).
+    :param auto: Use auto-correlation visibilities?
+    :param split_pol: Fit primary beam to the visibilities of the parallel hand polarisations?
+    :return: Fitted beam parameters and their uncertainties.
+    """
+    # Compute the primary beam size for use as initial parameter of the Gaussian
+    # Use higher end of the frequency band with smallest beam for better pointing accuracy
+    # Convert power beamwidth to gain / voltage beamwidth
+    wavelength = numpy.degrees(katpoint.lightspeed / freqs[-1])
+    expected_width = numpy.sqrt(2.0) * (
+        beamwidth_factor * wavelength / dish_diameter
+    )
+
+    # XXX This assumes we are still using default beamwidth factor of 1.22
+    # and also handles larger effective dish diameter in H direction. Note that the comment
+    # applies to the MeerKAT
+    expected_width = (0.8 * expected_width, 0.9 * expected_width)
+    fitted_beam = BeamPatternFit(
+        center=(0.0, 0.0), width=expected_width, height=1.0
+    )
+
+    print(dish_coordinates.shape)
+
+    # TO Do: Test primary beam fitting to the cross-correlation visibilities
+    if auto:
+        # Split number of correlations -> (timestamps, antennas) for per antenna fitting
+        print("Fitting primary beams to auto-correlation visibilities")
+    else:
+        # Split number of correlations -> (timestamps, baseline) for per baseline fitting
+        raise NotImplementedError(
+            "Beam fitting to cross-correlation visibilities not implemented!"
+        )
+
+    # Begin fitting the primary beam to the visibilities
+    if split_pol:
+        # Fit to the visibilities of each polarisation
+        for vis, weight, corr in zip(avg_vis, vis_weight, corr_type):
+            print(f"\nFitting of primary beams to {corr}")
+            vis = vis.reshape(
+                len(timestamps), int(vis.shape[0] / len(timestamps))
+            )
+            weight = weight.reshape(
+                len(timestamps), int(weight.shape[0] / len(timestamps))
+            )
+            for i in range(vis.shape[1]):
+                print(
+                    f"Fitting primary beam to visibilities of Antenna {ants[i].name}"
+                )
+                fitted_beam.fit(
+                    x=dish_coordinates[:, :, i],
+                    y=vis[:, i],
+                    std_y=numpy.sqrt(1 / weight)[:, i],
+                )
+                center_norm = numpy.radians(
+                    fitted_beam.center / fitted_beam.std_center
+                )
+                width_norm = numpy.radians(fitted_beam.center / expected_width)
+                print(
+                    f"Centre=({center_norm[0]:.4f},{center_norm[1]:.4f}) +/- ({center_norm[0]}), "
+                    f"Width={width_norm[0]:.4f}+/-{width_norm[1]:.4f}"
+                )
+    else:
+        # Fit to the frequency-polarisation-averaged visibilities
+        avg_vis = avg_vis.reshape(
+            len(timestamps), int(avg_vis.shape[0] / len(timestamps))
+        )
+        vis_weight = vis_weight.reshape(
+            len(timestamps), int(vis_weight.shape[0] / len(timestamps))
+        )
+        for i in range(avg_vis.shape[1]):
+            print(
+                f"\nFitting primary beam to visibilities of Antenna {ants[i].name}"
+            )
+            fitted_beam.fit(
+                x=dish_coordinates[:, :, i],
+                y=avg_vis[:, i],
+                std_y=numpy.sqrt(1 / vis_weight)[:, i],
+            )
+            center_norm = numpy.radians(
+                fitted_beam.center / fitted_beam.std_center
+            )
+            width_norm = numpy.radians(fitted_beam.center / expected_width)
+            print(
+                f"Centre=({center_norm[0]:.4f},{center_norm[1]:.4f}) +/- ({center_norm[0]}), "
+                f"Width={width_norm[0]:.4f}+/-{width_norm[1]:.4f}"
+            )
