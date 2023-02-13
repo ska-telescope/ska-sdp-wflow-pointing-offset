@@ -7,20 +7,29 @@ import katdal  # pylint: disable=import-error
 import numpy
 
 
-def _load_ms_tables(msname):
+def _load_ms_tables(msname, auto=False):
     # pylint: disable=import-error,import-outside-toplevel
     """
     Load CASA Measurement Set file tables
 
-    :param msname:
-    :return:
+    :param msname: Measurement set containing visibilities
+    :param auto: Read auto-correlation visibilities?
+    :return: antenna sub-table, measurement set, polarisation sub-table, and
+    spectral window sub-table
     """
     try:
-        from casacore.tables import table  # pylint: disable=import-error
+        from casacore.tables import table, taql  # pylint: disable=import-error
     except ModuleNotFoundError as exc:
         raise ModuleNotFoundError("casacore is not installed") from exc
 
     base_table = table(tablename=msname)
+    if auto:
+        # Select auto-correlation only
+        base_table = taql("select from $base_table where ANTENNA1 == ANTENNA2")
+    else:
+        # Select cross-correlation only
+        base_table = taql("select from $base_table where ANTENNA1 != ANTENNA2")
+
     # spw --> spectral window, pol--> polarisation
     spw = table(tablename=f"{msname}/SPECTRAL_WINDOW")
     pol = table(tablename=f"{msname}/POLARIZATION")
@@ -28,15 +37,15 @@ def _load_ms_tables(msname):
     return anttab, base_table, pol, spw
 
 
-def read_cross_correlation_visibilities(
-    msname,
-):
+def read_visibilities(msname, auto=False):
     """
     Create a numpy array from a table of a specified MS file.
     This import gain table form calibration table of CASA.
 
     :param msname: Name of Measurement set file
-    :return: vis, freqs, corr_type
+    :param auto: Read auto-correlation visibilities?
+    :return: visibilities, frequencies, type of correlation products,
+    dish diameter, and visibility weights.
     """
 
     # The following keys match the polarisation IDs
@@ -57,12 +66,13 @@ def read_cross_correlation_visibilities(
         base_table,
         pol_table,
         spw_table,
-    ) = _load_ms_tables(msname)
+    ) = _load_ms_tables(msname, auto)
 
     # Get parameters of interest from the tables
     vis = base_table.getcol(columnname="DATA")
-    diam = ant_table.getcol(columnname="DISH_DIAMETER")
-    if not all(diam):
+    dish_diam = ant_table.getcol(columnname="DISH_DIAMETER")
+    vis_weight = base_table.getcol(columnname="WEIGHT")
+    if not all(dish_diam):
         # Note that this must change for SKA as there would
         # be dishes of different sizes
         raise ValueError("Dish diameters must be the same")
@@ -74,7 +84,7 @@ def read_cross_correlation_visibilities(
         ]
     )
 
-    return vis, freqs, corr_type
+    return vis, freqs, corr_type, dish_diam[0], vis_weight
 
 
 def _open_rdb_file(rdbfile):
@@ -90,23 +100,27 @@ def _open_rdb_file(rdbfile):
     return rdb
 
 
-def read_data_from_rdb_file(rdbfile):
+def read_data_from_rdb_file(rdbfile, auto=False):
     """
     Read meta-data from RDB file.
 
-    The target coordinates are projections of the spherical coordinates of
-    the dish pointing direction to a plane with the target position at the
-    origin. The target *x* coordinates are returned as an array of
-    float, shape (*T*, *A*).
-
     :param rdbname: Name of RDB file
     :return: az, el, timestamps, target projection, ants, target, and
-    time-averaged target coordinates of the dish in degrees
+    target coordinates of the dish in radians. The target coordinates
+    are projections of the spherical coordinates of the dish pointing
+    direction to a plane with the target position at the origin.
+    The target *x* coordinates are returned as an array of
+    float, shape (*T*, *A*).
     """
     rdb = _open_rdb_file(rdbfile)
-    rdb.select(scans="track", corrprods="cross")
+    if auto:
+        corrprods = "auto"
+    else:
+        corrprods = "cross"
+    rdb.select(scans="track", corrprods=corrprods)
     ants = rdb.ants
     target = rdb.catalogue.targets[rdb.target_indices[0]]
+
     return (
         rdb.az,
         rdb.el,
@@ -114,5 +128,5 @@ def read_data_from_rdb_file(rdbfile):
         rdb.target_projection,
         ants,
         target,
-        [numpy.mean(rdb.target_x, axis=0), numpy.mean(rdb.target_y, axis=0)],
+        numpy.array([rdb.target_x, rdb.target_y]),
     )
