@@ -56,22 +56,49 @@ def construct_antennas(xyz, diameter, station):
     return ants
 
 
+def construct_target(msname):
+    """
+    Build katpoint target using optionally source name and
+    position.
+
+    :param msname: Measurement set containing visibilities
+    :return: Source name and position
+    """
+    # pylint: disable=import-error,import-outside-toplevel
+    from casacore.tables import table
+
+    source_table = table(tablename=f"{msname}/SOURCE")
+    source_position = source_table.getcol(columnname="DIRECTION")[0]
+    try:
+        # Build target
+        source_name = source_table.getcol(columnname="NAME")[0]
+        cat = katpoint.Catalogue(
+            f"{source_name}, radec, {numpy.degrees(source_position[0])}, {numpy.degrees(source_position[1])}"
+        )
+        target = cat.targets[0]
+    except:
+        # Build the target with missing source namer
+        target = katpoint.construct_radec_target(
+            ra=numpy.degrees(source_position[0]),
+            dec=numpy.degrees(source_position)[1],
+        )
+
+    return target
+
+
 def convert_coordinates(
-    ants,
-    beam_centre,
+    ant,
+    beam_center,
     timestamps,
     target_projection,
-    target_object=None,
-    target_coord=None,
+    target_object,
 ):
     """
     Calculate (az, el) given a set of information on beam and target.
 
-    :param ants: List of katpoint antenna objects [nants]
-                 Either from metadata file,
-                 Or from config file and created via
-                 constructed_antennas
-    :param beam_centre: Beam centre information (x, y) on the fitting plane
+    :param ant: katpoint antenna object. Either from metadata file,
+                Or from config file and created via constructed_antennas
+    :param beam_center: Beam centre information (x, y) on the fitting plane
                         x, y are dimensionless
     :param timestamps: numpy array size [ndumps] (from metadata)
     :param target_projection: Name of coordinate system  (from metadata)
@@ -80,30 +107,18 @@ def convert_coordinates(
                          Only used when katpoint target is not provided
     :return: (az, el) coordinates in [nants, 2], radians
     """
+    # az_arr = numpy.zeros(len(ants))
+    # el_arr = numpy.zeros(len(ants))
+    # for i, antenna in enumerate(ants):
+    # Convert from (x,y) to (az, el), output in rad
+    # Only doing it for a single timestamp at the moment
+    az, el = target_object.plane_to_sphere(
+        x=beam_center[0],
+        y=beam_center[1],
+        timestamp=numpy.median(timestamps),
+        antenna=ant,
+        projection_type=target_projection,
+        coord_system="azel",
+    )
 
-    # Construct target if Katpoint target object is not provided
-    if target_object is None:
-        if target_coord is None:
-            raise ValueError(
-                "Please provide either katpoint target "
-                "or the target coordinates."
-            )
-        target_ra = target_coord.ra.rad
-        target_dec = target_coord.dec.rad
-        target_object = katpoint.construct_radec_target(target_ra, target_dec)
-
-    az_arr = numpy.zeros(len(ants))
-    el_arr = numpy.zeros(len(ants))
-    for i, antenna in enumerate(ants):
-        # Convert from (x,y) to (az, el), output in rad
-        # Only doing it for a single timestamp at the moment
-        az_arr[i], el_arr[i] = target_object.plane_to_sphere(
-            x=beam_centre[0],
-            y=beam_centre[1],
-            timestamp=numpy.median(timestamps),
-            antenna=antenna,
-            projection_type=target_projection,
-            coord_system="azel",
-        )
-
-    return az_arr, el_arr
+    return az, el
