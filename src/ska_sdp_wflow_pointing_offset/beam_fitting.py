@@ -139,30 +139,38 @@ def fit_primary_beams(
     split_pol=False,
 ):
     """
-    Fit the beam pattern to the frequency-averaged and optionally polarisation-averaged
-    visibilities and outputs the fitted parameters and their uncertainties. These visibilities
-    could be for each antenna or baseline.
+    Fit the beam pattern to the frequency-averaged and optionally
+    polarisation-averaged visibilities and outputs the fitted
+    parameters and their uncertainties. These visibilities could
+    be for each antenna or baseline.
 
     :param avg_vis: Frequency-averaged visibilities.
     :param freqs: Array of frequencies.
     :param timestamps: Array of observation timestamps.
     :param corr_type: The correlation products type of interest.
-    :param vis_weight: The weights of the visibilities [ncorr, ] -> [timestamps, antennas or baselines]
+    :param vis_weight: The weights of the visibilities [ncorr, ] ->
+    [timestamps, antennas or baselines]
     :param ants: Lst of antenna information built in katpoint.
-    :param dish_diameter: Diameter of the dish in the array. Expected to be the same. Different
+    :param dish_diameter: Diameter of the dish in the array. Expected
+    to be the same. Different
     dish diameters is not currently supported.
-    :param dish_coordinates: Projections of the spherical coordinates of the dish pointing
-    direction to a plane with the target position at the origin. Shape is [2, number of timestamps,
+    :param dish_coordinates: Projections of the spherical coordinates
+    of the dish pointing
+    direction to a plane with the target position at the origin. Shape is
+    [2, number of timestamps,
     number of antennas].
-    :param target: katpoint pointing calibrator information (optionally source name, RA, DEC)
+    :param target: katpoint pointing calibrator information (optionally
+    source name, RA, DEC)
     :param target_projection: The projection used in the observation.
     :param beamwidth_factor: Beamwidth factor (often between 1.03 and 1.22).
     :param auto: Use auto-correlation visibilities?
-    :param split_pol: Fit primary beam to the visibilities of the parallel hand polarisations?
+    :param split_pol: Fit primary beam to the visibilities of the parallel
+    hand polarisations?
     :return: Fitted beam parameters and their uncertainties.
     """
-    # Compute the primary beam size for use as initial parameter of the Gaussian
-    # Use higher end of the frequency band with smallest beam for better pointing accuracy
+    # Compute the primary beam size for use as initial parameter of the
+    # Gaussian. Use higher end of the frequency band with smallest beam
+    # for better pointing accuracy
     # Convert power beamwidth to gain / voltage beamwidth
     wavelength = numpy.degrees(lightspeed / freqs[-1])
     expected_width = numpy.sqrt(2.0) * (
@@ -170,19 +178,17 @@ def fit_primary_beams(
     )
 
     # XXX This assumes we are still using default beamwidth factor of 1.22
-    # and also handles larger effective dish diameter in H direction. Note that the comment
-    # applies to the MeerKAT but would that apply to the SKA ?
+    # and also handles larger effective dish diameter in H direction.
+    # Note that the comment applies to the MeerKAT but would that apply
+    # to the SKA ?
     expected_width = (0.8 * expected_width, 0.9 * expected_width)
     fitted_beam = BeamPatternFit(
         center=(0.0, 0.0), width=expected_width, height=1.0
     )
 
-    # TO Do: Test primary beam fitting to the cross-correlation visibilities
     if auto:
-        # Split number of correlations -> (timestamps, antennas) for per antenna fitting
         print("Fitting primary beams to auto-correlation visibilities")
     else:
-        # Split number of correlations -> (timestamps, baseline) for per baseline fitting
         print("Fitting primary beams to cross-correlation visibilities")
 
     # Begin fitting the primary beam to the visibilities
@@ -198,8 +204,10 @@ def fit_primary_beams(
                     len(timestamps), int(weight.shape[0] / len(timestamps))
                 )
             else:
-                # Since the x parameter required for the fitting has shape (2, number of timestamps, number of antennas),
-                # we need to find a way to reshape the cross-correlation visibilities to include number of antennas instead of baselines.
+                # Since the x parameter required for the fitting has shape
+                # (2, number of timestamps, number of antennas), we need to
+                # find a way to reshape the cross-correlation visibilities
+                # to include number of antennas instead of baselines.
                 # Is this the correct way to do it?
                 vis = vis.reshape(
                     len(timestamps),
@@ -248,8 +256,9 @@ def fit_primary_beams(
                     offset_az, offset_el = wrap_angle(
                         fitted_az - requested_az, 360.0
                     ), wrap_angle(fitted_el - requested_el, 360.0)
-                    # print(
-                    #    f"Centre=({center_norm[0]:.8f},{center_norm[1]:.8f}), Width=({width_norm[0]:.8f},{width_norm[1]:.8f})"
+                    #print(
+                    #    f"Centre=({center_norm[0]:.8f},{center_norm[1]:.8f}), "
+                    #    f"Width=({width_norm[0]:.8f},{width_norm[1]:.8f})"
                     # )
                     print(offset_az, offset_el)
                 except:
@@ -264,8 +273,10 @@ def fit_primary_beams(
                 len(timestamps), int(vis_weight.shape[0] / len(timestamps))
             )
         else:
-            # Since the x parameter required for the fitting has shape (2, number of timestamps, number of antennas),
-            # we need to find a way to reshape the cross-correlation visibilities to include number of antennas instead of baselines.
+            # Since the x parameter required for the fitting has shape
+            # (2, number of timestamps, number of antennas), we need to
+            # find a way to reshape the cross-correlation visibilities
+            # to include number of antennas instead of baselines.
             # Is this the correct way to do it?
             avg_vis = avg_vis.reshape(
                 len(timestamps),
@@ -281,9 +292,9 @@ def fit_primary_beams(
             vis_weight = numpy.mean(vis_weight, axis=1)
 
         for i in range(avg_vis.shape[1]):
-            # print(
-            #    f"\nFitting primary beam to visibilities of Antenna {ants[i].name}"
-            # )
+            print(
+                f"\nFitting primary beam to visibilities of Antenna {ants[i].name}"
+            )
             fitted_beam.fit(
                 x=dish_coordinates[:, :, i],
                 y=avg_vis[:, i],
@@ -316,9 +327,10 @@ def fit_primary_beams(
                 offset_az, offset_el = wrap_angle(
                     fitted_az - requested_az, 360.0
                 ), wrap_angle(fitted_el - requested_el, 360.0)
-                # print(
-                #    f"Centre=({center_norm[0]:.8f},{center_norm[1]:.8f}), Width=({width_norm[0]:.8f},{width_norm[1]:.8f})"
-                # )
+                print(
+                    f"Centre=({center_norm[0]:.8f},{center_norm[1]:.8f}), "
+                    f"Width=({width_norm[0]:.8f},{width_norm[1]:.8f})"
+                )
                 print(offset_az, offset_el)
             except:
                 print(f"\nNo valid primary beam fit for {ants[i].name}")
