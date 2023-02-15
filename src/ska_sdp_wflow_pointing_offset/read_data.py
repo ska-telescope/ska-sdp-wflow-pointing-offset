@@ -127,7 +127,7 @@ def read_data_from_rdb_file(rdbfile, auto=False):
     Read meta-data from RDB file.
 
     :param rdbname: Name of RDB file
-    :return: az, el, timestamps, target projection, ants, and
+    :return: timestamps, target projection, ants, and
     target coordinates of the dish in radians. The target
     coordinates with shape (2, number of timestamps, number of
     antennas) are projections of the spherical coordinates
