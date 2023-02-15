@@ -1,15 +1,27 @@
 """Example of program with many options using docopt.
 
 Usage:
-  pointing-offset COMMAND [--ms=FILE] [--rdb=FILE] [--save_offset=False] [--results_dir=None] [--start_freq=None] [--end_freq=None] [--auto=False]
+  pointing-offset COMMAND [--ms=FILE] [--rdb=FILE] [--save_offset=False]
+                          [--apply_mask=False] [--rfi_file=FILE]
+                          [--results_dir=None] [--start_freq=None]
+                          [--end_freq=None] [--auto=False]
   pointing-offset --version
 
 Commands:
   compute   Compute all calculations
 
 Options:
-  -h --help            show this help message and exit
-  -q --quiet           report only file names
+  -h --help               show this help message and exit
+  -q --quiet              report only file names
+
+  --rdb=FILE              RDB file
+  --ms=FILE               Measurement set file
+  --apply_mask=False      Apply Mask (Optional)
+  --rfi_file=FILE         RFI file (Optional)
+  --save_offset=False     Save the Offset Results (Optional)
+  --results_dir=None      Directory where the results needs to be saved (Optional)
+  --start_freq=None       Start Frequency (Optional)
+  --end_freq=None         End Frequency (Optional)
 
 """
 import logging
@@ -69,18 +81,20 @@ def compute_everything(args):
         ants,
         target,
         dish_coord,
-    ) = read_data_from_rdb_file(rdbfile=args["rdb"], auto=args["--auto"])
+    ) = read_data_from_rdb_file(rdbfile=args["--rdb"], auto=args["--auto"])
 
     # Get RFI-free visibilities
+    # TODO: Need to apply mask and check rfi_file
+
     avg_vis, selected_freqs, vis_weight, corr_type = clean_vis_data(
         vis,
         freqs,
         corr_type,
         vis_weight=vis_weight,
-        start_freq=args["start_freq"],
-        end_freq=args["end_freq"],
-        apply_mask=args["apply_mask"],
-        rfi_filename=args["rfi_file"],
+        start_freq=args["--start_freq"],
+        end_freq=args["--end_freq"],
+        apply_mask=args["--apply_mask"],
+        rfi_filename=args["--rfi_file"],
     )
 
     # Fit primary beams to visibilities
@@ -96,9 +110,9 @@ def compute_everything(args):
         target=target,
         target_projection=target_projection,
         beamwidth_factor=ants[0].beamwidth,
-        auto=args["auto"],
-        save_offset=args["save_offset"],
-        results_dir=args["results_dir"],
+        auto=args["--auto"],
+        save_offset=args["--save_offset"],
+        results_dir=args["--results_dir"],
     )
 
 
