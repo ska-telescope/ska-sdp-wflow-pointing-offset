@@ -84,14 +84,15 @@ def clean_vis_data(
     else:
         filtered_vis, filtered_freq = amp_vis, freqs
 
-    # Select channels
-    if start_freq is None:
-        start_freq = filtered_freq[0]
-    if end_freq is None:
-        end_freq = filtered_freq[-1]
-    selected_vis, selected_freq = select_channels(
-        filtered_vis, filtered_freq, start_freq, end_freq
-    )
+    # Optionally select a range of frequencies
+    if (start_freq and end_freq) is None:
+        # No frequency selection is needed
+        selected_vis, selected_freq = filtered_vis, filtered_freq
+    else:
+        # Frequency selection is needed
+        selected_vis, selected_freq = select_channels(
+            filtered_vis, filtered_freq, start_freq, end_freq
+        )
 
     # Average over frequency and split visibilities, weights,
     # and correlation type into the parallel hands
