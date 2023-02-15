@@ -1,11 +1,8 @@
-# pylint: disable=invalid-name, duplicate-code， too-many-locals
-
 """
 Functions of exporting data to csv file
 """
 
 import numpy
-import pandas
 
 
 def export_pointing_offset_data(filename, offset):
@@ -17,10 +14,4 @@ def export_pointing_offset_data(filename, offset):
     :return: True-Success, False-Failed
     """
 
-    assert isinstance(offset, numpy.ndarray)
-
-    # convert array into dataframe
-    data_frame = pandas.DataFrame(offset)
-
-    # save the dataframe as a csv file
-    data_frame.to_csv(filename)
+    numpy.savetxt(filename, offset, delimiter=",")

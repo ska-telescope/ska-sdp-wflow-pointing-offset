@@ -1,7 +1,7 @@
-# pylint: disable=inconsistent-return-statements, too-few-public-methods
+# pylint: disable=inconsistent-return-statements,too-few-public-methods
 """
-Unit Tests to create GainTable
-from CASA Tables
+Unit Tests to read data
+from CASA Measurement Tables
 """
 from unittest.mock import patch
 
@@ -10,7 +10,6 @@ import pytest
 
 from ska_sdp_wflow_pointing_offset.read_data import (
     read_cross_correlation_visibilities,
-    read_pointing_meta_data_file,
 )
 
 NTIMES = 4
@@ -118,19 +117,6 @@ class MockAntennaTable:
             ]
 
 
-class MockFieldTable:
-    """
-    Mock Field Table Class
-    """
-
-    def getcol(self, columnname=None):
-        """
-        Get column name from a table
-        """
-        if columnname == "PHASE_DIR":
-            return numpy.array([[[0.0, 0.0]]])
-
-
 class MockPolarisationTable:
     """
     Mock Polarisation Table Class
@@ -144,19 +130,6 @@ class MockPolarisationTable:
             return numpy.array([9, 12])
 
 
-class MockRDBFile:
-    """
-    Mock RDBFile Class
-    """
-
-    def __init__(self):
-        self.obs_script_log = [
-            "678Z INFO     Waiting for gains to materialise in cal pipeline",
-            "646Z INFO     m000 (+148.95, 35.62) deg -> (  -0.18’,   -0.20')",
-            "697Z WARNING  m049 had no valid primary beam fitted",
-        ]
-
-
 casacore = pytest.importorskip("casacore")
 
 
@@ -168,7 +141,6 @@ def test_read_cross_correlation_visibilities(mock_tables):
     mock_tables.return_value = (
         MockAntennaTable(),
         MockBaseTable(),
-        MockFieldTable(),
         MockPolarisationTable(),
         MockSpectralWindowTable(),
     )
@@ -180,15 +152,3 @@ def test_read_cross_correlation_visibilities(mock_tables):
     assert (vis == numpy.array([1, 2, 3, 4, 5, 6, 7, 8, 9])).all()
     assert (freqs == numpy.array([8000, 8100, 8200])).all()
     assert (corr_type == numpy.array(["XX", "YY"])).all()
-
-
-@patch("ska_sdp_wflow_pointing_offset.read_data._open_rdb_file")
-def test_read_azel_from_rdb_log(mock_file):
-    """
-    Test importing gaintable from cal table
-    """
-    mock_file.return_value = MockRDBFile()
-    azel = read_pointing_meta_data_file("test_rdb")
-    assert isinstance(azel, numpy.ndarray)
-
-    assert (azel == numpy.array([[148.95, 35.62], [999.99, 99.99]])).all()

@@ -1,7 +1,7 @@
 """Example of program with many options using docopt.
 
 Usage:
-  pointing-offset COMMAND [--ms=FILE] [--rdb=FILE] [--save_offset=False] [--results_dir=None] [--start_freq=None] [--end_freq=None]
+  pointing-offset COMMAND [--ms=FILE] [--rdb=FILE] [--save_offset=False] [--results_dir=None] [--start_freq=None] [--end_freq=None] [--auto=False]
   pointing-offset --version
 
 Commands:
@@ -23,7 +23,7 @@ from ska_sdp_wflow_pointing_offset.read_data import (
     read_data_from_rdb_file,
     read_visibilities,
 )
-from src.ska_sdp_wflow_pointing_offset.workflow import clean_vis_data
+from ska_sdp_wflow_pointing_offset.workflow import clean_vis_data
 
 LOG = logging.getLogger("ska-sdp-pointing-offset")
 LOG.setLevel(logging.INFO)
@@ -37,17 +37,12 @@ def main():
 
     args = docopt(__doc__)
 
-
-
-
-
     if args[COMMAND] == "compute":
         print("I am in here!!!")
-        if args['--ms'] and args['--rdb']:
+        if args["--ms"] and args["--rdb"]:
             compute_everything(args)
         else:
             raise ValueError("MS and RDB are required!!")
-
 
     else:
         LOG.error(
@@ -62,7 +57,7 @@ def compute_everything(args):
 
     # Get visibilities
     vis, freqs, corr_type, dish_diam, vis_weight = read_visibilities(
-        msname=args.msname, auto=args.auto
+        msname=args["--ms"], auto=args["--auto"]
     )
 
     # Get the metadata
@@ -74,7 +69,7 @@ def compute_everything(args):
         ants,
         target,
         dish_coord,
-    ) = read_data_from_rdb_file(rdbfile=args.metadata, auto=args.auto)
+    ) = read_data_from_rdb_file(rdbfile=args["rdb"], auto=args["--auto"])
 
     # Get RFI-free visibilities
     avg_vis, selected_freqs, vis_weight, corr_type = clean_vis_data(
@@ -82,11 +77,10 @@ def compute_everything(args):
         freqs,
         corr_type,
         vis_weight=vis_weight,
-        start_freq=args.start_freq,
-        end_freq=args.end_freq,
-        apply_mask=args.apply_mask,
-        rfi_filename=args.rfi_file,
-        split_pol=args.split_pol,
+        start_freq=args["start_freq"],
+        end_freq=args["end_freq"],
+        apply_mask=args["apply_mask"],
+        rfi_filename=args["rfi_file"],
     )
 
     # Fit primary beams to visibilities
@@ -102,11 +96,9 @@ def compute_everything(args):
         target=target,
         target_projection=target_projection,
         beamwidth_factor=ants[0].beamwidth,
-        auto=args.auto,
-        split_pol=args.split_pol,
-        save_offset=true,
-        # Optional - Don't need it when it is None
-        results_dir=None,
+        auto=args["auto"],
+        save_offset=args["save_offset"],
+        results_dir=args["results_dir"],
     )
 
 

@@ -1,48 +1,58 @@
-# pylint: disable=invalid-name, duplicate-code， too-many-locals
-
 """
-Functions of reading data from MS and RDB file.
+Functions of reading data from Measurement Set
+and Relational Database file.
 """
-
-import re
 
 import katdal  # pylint: disable=import-error
+import katpoint
 import numpy
 
 
-def _load_ms_tables(msname):
+def _load_ms_tables(msname, auto=False):
     # pylint: disable=import-error,import-outside-toplevel
     """
-    Load CASA MS file tables
+    Load CASA Measurement Set file tables
 
-    :param msname:
-    :return:
+    :param msname: Measurement set containing visibilities
+    :param auto: Read auto-correlation visibilities?
+    :return: antenna sub-table, measurement set, polarisation
+    sub-table, and spectral window sub-table, and source sub-table.
     """
     try:
-        from casacore.tables import table  # pylint: disable=import-error
+        from casacore.tables import table, taql  # pylint: disable=import-error
     except ModuleNotFoundError as exc:
         raise ModuleNotFoundError("casacore is not installed") from exc
 
     base_table = table(tablename=msname)
+    if auto:
+        # Select auto-correlation only
+        base_table = taql("select from $base_table where ANTENNA1 == ANTENNA2")
+    else:
+        # Select cross-correlation only
+        base_table = taql("select from $base_table where ANTENNA1 != ANTENNA2")
+
     # spw --> spectral window, pol--> polarisation
     spw = table(tablename=f"{msname}/SPECTRAL_WINDOW")
     pol = table(tablename=f"{msname}/POLARIZATION")
     anttab = table(f"{msname}/ANTENNA", ack=False)
-    fieldtab = table(f"{msname}/FIELD", ack=False)
-    return anttab, base_table, fieldtab, pol, spw
+    source_table = table(tablename=f"{msname}/SOURCE", ack=False)
+
+    return anttab, base_table, pol, spw, source_table
 
 
-def read_cross_correlation_visibilities(
-    msname,
-):
+def read_visibilities(msname, auto=False):
     """
     Create a numpy array from a table of a specified MS file.
     This import gain table form calibration table of CASA.
 
     :param msname: Name of Measurement set file
-    :return: vis, freqs, corr_type
+    :param auto: Read auto-correlation visibilities?
+    :return: visibilities, frequencies, type of correlation products,
+    dish diameter, visibility weights, and katpoint target.
     """
 
+    # The following keys match the polarisation IDs
+    # from the casa MS file
     correlation_products = {
         5: "RR",
         6: "RL",
@@ -55,39 +65,53 @@ def read_cross_correlation_visibilities(
     }
 
     (
-        _ant_table,
-        _base_table,
-        _fieldtab,
-        _pol_table,
-        _spw_table,
-    ) = _load_ms_tables(msname)
+        ant_table,
+        base_table,
+        pol_table,
+        spw_table,
+        source_table,
+    ) = _load_ms_tables(msname, auto)
 
     # Get parameters of interest from the tables
-    vis = _base_table.getcol(columnname="DATA")
-    diam = _ant_table.getcol(columnname="DISH_DIAMETER")
-    if not all(diam):
+    dish_diam = ant_table.getcol(columnname="DISH_DIAMETER")
+    if not all(dish_diam):
         # Note that this must change for SKA as there would
         # be dishes of different sizes
         raise ValueError("Dish diameters must be the same")
-    freqs = _spw_table.getcol(columnname="CHAN_FREQ")
-
-    # source = _field_table.getcol(columnname="NAME")[0]
-    # nchan = int(_spw_table.getcol(columnname="NUM_CHAN"))
-    # timestamps = _base_table.getcol(columnname="TIME")
-    # ants = _ant_table.getcol(columnname="STATION")
+    vis = base_table.getcol(columnname="DATA")
+    vis_weight = base_table.getcol(columnname="WEIGHT")
+    freqs = numpy.squeeze(spw_table.getcol(columnname="CHAN_FREQ"))
     corr_type = numpy.array(
         [
             correlation_products[corr]
-            for corr in _pol_table.getcol(columnname="CORR_TYPE")
+            for corr in numpy.squeeze(pol_table.getcol(columnname="CORR_TYPE"))
         ]
     )
 
-    return vis, freqs, corr_type
+    # Build katpoint target
+    source_position = source_table.getcol(columnname="DIRECTION")[0]
+    try:
+        # When target's name is known
+        source_name = source_table.getcol(columnname="NAME")[0]
+        cat = katpoint.Catalogue(
+            f"{source_name}, radec, "
+            f"{numpy.degrees(source_position[0])}, "
+            f"{numpy.degrees(source_position[1])}"
+        )
+        target = cat.targets[0]
+    except RuntimeError:
+        # When target's name is unknown
+        target = katpoint.construct_radec_target(
+            ra=numpy.degrees(source_position[0]),
+            dec=numpy.degrees(source_position)[1],
+        )
+
+    return vis, freqs, corr_type, dish_diam[0], vis_weight, target
 
 
 def _open_rdb_file(rdbfile):
     """
-    Open a rdb file
+    Open a relational database file
 
     :param rdbfile: file name
     :return: rdb object
@@ -98,50 +122,29 @@ def _open_rdb_file(rdbfile):
     return rdb
 
 
-def read_data_from_rdb_file(rdbfile):
+def read_data_from_rdb_file(rdbfile, auto=False):
     """
     Read meta-data from RDB file.
 
     :param rdbname: Name of RDB file
-    :return: az, el, timestamps, target projection, ants and target
+    :return: timestamps, target projection, ants, and
+    target coordinates of the dish in radians. The target
+    coordinates with shape (2, number of timestamps, number of
+    antennas) are projections of the spherical coordinates
+    of the dish pointing direction to a plane with the target
+    position at the origin.
     """
-    _rdb = _open_rdb_file(rdbfile)
-    _rdb.select(scans="track", corrprods="cross")
-    ants = _rdb.ants
-    target = _rdb.catalogue.targets[_rdb.target_indices[0]]
+    rdb = _open_rdb_file(rdbfile)
+    if auto:
+        corrprods = "auto"
+    else:
+        corrprods = "cross"
+    rdb.select(scans="track", corrprods=corrprods)
+    ants = rdb.ants
+
     return (
-        _rdb.az,
-        _rdb.el,
-        _rdb.timestamps,
-        _rdb.target_projection,
+        rdb.timestamps,
+        rdb.target_projection,
         ants,
-        target,
+        numpy.array([rdb.target_x, rdb.target_y]),
     )
-
-
-def read_pointing_meta_data_file(rdbfile):
-    """
-    Read meta-data from RDB file.
-
-    :param rdbname: Name of RDB file
-    :return: numpy array of azel
-    """
-    _rdb = _open_rdb_file(rdbfile)
-    logs = _rdb.obs_script_log
-    ant = []
-    azel = []
-    for line in logs:
-        result = re.findall(
-            r"""
-(INFO|WARNING)\s+([a-z]+[0-9]+)\s+(\([\+|\-?][0-9]+\.[0-9]+, [0-9]+\.[0-9]+\)|)
-""",
-            line,
-        )
-        if len(result) > 0:
-            ant.append(result[0][1])
-            if result[0][0] == "INFO":
-                azel_tmp = re.split(r"[(,\s)]\s*", result[0][2])
-                azel.append([float(azel_tmp[1]), float(azel_tmp[2])])
-            else:
-                azel.append([999.99, 99.99])
-    return numpy.array(azel)

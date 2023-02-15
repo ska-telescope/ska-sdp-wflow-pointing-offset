@@ -3,7 +3,7 @@ Unit test for coordinate support functions.
 """
 
 import astropy.units as u
-import numpy as np
+import numpy
 from astropy.coordinates import SkyCoord
 
 from ska_sdp_wflow_pointing_offset.coord_support import (
@@ -12,13 +12,13 @@ from ska_sdp_wflow_pointing_offset.coord_support import (
 )
 
 # Assume 2 antennas
-XYZ = np.array(
+XYZ = numpy.array(
     [
         [5109237.714735, 2006795.661955, -3239109.183708],
         [5109251.156928, 2006811.008353, -3239078.678007],
     ]
 )
-DIAMETER = np.array([13.5, 13.5])
+DIAMETER = numpy.array([13.5, 13.5])
 STATION = ["M000", "M001"]
 
 
@@ -45,7 +45,7 @@ def test_convert_coordinates():
         frame="icrs",
         equinox="J2000",
     )
-    timestamps = np.linspace(1, 10, 9)
+    timestamps = numpy.linspace(1, 10, 9)
     target_projection = "ARC"
     ants = construct_antennas(XYZ, DIAMETER, STATION)
     result_az, result_el = convert_coordinates(
@@ -56,5 +56,5 @@ def test_convert_coordinates():
         target_coord=target_coord,
     )
 
-    assert result_az.all() == np.array([2.32326059, 2.32326058]).all()
-    assert result_el.all() == np.array([0.6999862, 0.69998617]).all()
+    assert result_az.all() == numpy.array([2.32326059, 2.32326058]).all()
+    assert result_el.all() == numpy.array([0.6999862, 0.69998617]).all()

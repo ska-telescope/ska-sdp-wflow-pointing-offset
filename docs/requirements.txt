@@ -1,11 +1,7 @@
 #sphinx related packages
+docutils
 sphinx
-sphinx-argparse
-sphinx-rtd-theme
+sphinx-autodoc-typehints
 sphinx-automodapi
-
-# Additional packages needed to be installed
-# so that the docs can render the API correctly
-# without the need of mocking every single import
-numpy
-astropy
+sphinx-rtd-theme
+typing_extensions
