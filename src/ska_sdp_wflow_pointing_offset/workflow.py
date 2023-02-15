@@ -53,7 +53,6 @@ def clean_vis_data(
     end_freq=None,
     apply_mask=False,
     rfi_filename=None,
-    split_pol=False,
 ):
     """
     Clean visibility data and split into polarisations.
@@ -69,7 +68,6 @@ def clean_vis_data(
                        If no selection needed, use None
     :param apply_mask: Apply RFI mask?
     :param rfi_filename: Name of RFI mask file
-    :param split_pol: Split polarisations?
     :return: numpy array of visibility with shape [ncorr,]
              If split_pol is True, return each polarisation
              Else return the polarisation-averaged visibilities
@@ -95,36 +93,26 @@ def clean_vis_data(
         filtered_vis, filtered_freq, start_freq, end_freq
     )
 
-    # Average over frequency
+    # Average over frequency and split visibilities, weights,
+    # and correlation type into the parallel hands
     avg_vis = numpy.mean(selected_vis, axis=1)
-    if split_pol:
-        # Split into each parallel hand visibilities
-        if len(corr_type) == 2:
-            # (XX,YY) or (RR, LL)
-            corr_type = [corr_type[0], corr_type[1]]
-            vis_h = avg_vis[:, 0]
-            vis_v = avg_vis[:, 1]
-            weight_h = vis_weight[:, 0]
-            weight_v = vis_weight[:, 1]
-        elif len(corr_type) == 4:
-            # (XX,XY,YX,YY) or (RR,RL,LR,LL)
-            corr_type = [corr_type[0], corr_type[3]]
-            vis_h = avg_vis[:, 0]
-            vis_v = avg_vis[:, 3]
-            weight_h = vis_weight[:, 0]
-            weight_v = vis_weight[:, 3]
-        else:
-            raise ValueError("Polarisation type not supported")
-
-        return numpy.array(
-            [[vis_h, vis_v], selected_freq, [weight_h, weight_v], corr_type]
-        )
+    if len(corr_type) == 2:
+        # (XX,YY) or (RR, LL)
+        corr_type = [corr_type[0], corr_type[1]]
+        vis_h = avg_vis[:, 0]
+        vis_v = avg_vis[:, 1]
+        weight_h = vis_weight[:, 0]
+        weight_v = vis_weight[:, 1]
+    elif len(corr_type) == 4:
+        # (XX,XY,YX,YY) or (RR,RL,LR,LL)
+        corr_type = [corr_type[0], corr_type[3]]
+        vis_h = avg_vis[:, 0]
+        vis_v = avg_vis[:, 3]
+        weight_h = vis_weight[:, 0]
+        weight_v = vis_weight[:, 3]
+    else:
+        raise ValueError("Polarisation type not supported")
 
     return numpy.array(
-        [
-            numpy.mean(avg_vis, axis=1),
-            selected_freq,
-            numpy.mean(vis_weight, axis=1),
-            corr_type,
-        ]
-    )  # how do we deal with the beam squint?
+        [[vis_h, vis_v], selected_freq, [weight_h, weight_v], corr_type]
+    )
