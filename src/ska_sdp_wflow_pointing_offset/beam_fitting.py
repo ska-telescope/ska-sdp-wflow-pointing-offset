@@ -14,8 +14,8 @@ from katpoint import lightspeed, wrap_angle
 from katpoint.projection import OutOfRangeError
 from scikits.fitting import GaussianFit, ScatterFit
 
-from src.ska_sdp_wflow_pointing_offset.coord_support import convert_coordinates
-from src.ska_sdp_wflow_pointing_offset.export_data import (
+from ska_sdp_wflow_pointing_offset.coord_support import convert_coordinates
+from ska_sdp_wflow_pointing_offset.export_data import (
     export_pointing_offset_data,
 )
 
