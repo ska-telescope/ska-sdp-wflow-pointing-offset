@@ -1,27 +1,28 @@
 """Example of program with many options using docopt.
 
 Usage:
-  pointing-offset COMMAND [--ms=FILE] [--rdb=FILE] [--save_offset=False]
-                          [--apply_mask=False] [--rfi_file=FILE]
+  pointing-offset COMMAND [--ms=FILE] [--rdb=FILE] [--save_offset=<BOOL>]
+                          [--apply_mask=<BOOL>] [--rfi_file=FILE]
                           [--results_dir=None] [--start_freq=None]
-                          [--end_freq=None] [--auto=False]
-  pointing-offset --version
+                          [--end_freq=None] [--auto=<BOOL>]
 
 Commands:
-  compute   Compute all calculations
+  compute   Runs all required routines for computing the
+  pointing offsets.
 
 Options:
-  -h --help               show this help message and exit
-  -q --quiet              report only file names
+  -h --help            show this help message and exit
+  -q --quiet           report only file names
 
-  --rdb=FILE              RDB file
-  --ms=FILE               Measurement set file
-  --apply_mask=False      Apply Mask (Optional)
-  --rfi_file=FILE         RFI file (Optional)
-  --save_offset=False     Save the Offset Results (Optional)
-  --results_dir=None      Directory where the results needs to be saved (Optional)
-  --start_freq=None       Start Frequency (Optional)
-  --end_freq=None         End Frequency (Optional)
+  --rdb=FILE           RDB file
+  --ms=FILE            Measurement set file
+  --apply_mask=BOOL    Apply Mask (Optional) [default:False]
+  --rfi_file=FILE      RFI file (Optional)
+  --save_offset=BOOL   Save the Offset Results (Optional) [default:False]
+  --results_dir=None   Directory where the results needs to be saved (Optional)
+  --start_freq=None    Start Frequency (Optional)
+  --end_freq=None      End Frequency (Optional)
+  --auto=BOOL          Auto-correlation visibilities (Optional) [default:False]
 
 """
 import logging
@@ -30,7 +31,6 @@ import sys
 from docopt import docopt
 
 from ska_sdp_wflow_pointing_offset.beam_fitting import fit_primary_beams
-from ska_sdp_wflow_pointing_offset.coord_support import convert_coordinates
 from ska_sdp_wflow_pointing_offset.read_data import (
     read_data_from_rdb_file,
     read_visibilities,
@@ -45,13 +45,15 @@ COMMAND = "COMMAND"
 
 
 def main():
-    """Run ska-sdp."""
+    """
+    Run ska-sdp pointing offset calibration routines
+    """
 
     args = docopt(__doc__)
 
     if args[COMMAND] == "compute":
         if args["--ms"] and args["--rdb"]:
-            compute_everything(args)
+            compute_offset(args)
         else:
             raise ValueError("MS and RDB files are required!!")
 
@@ -63,8 +65,15 @@ def main():
         )
 
 
-def compute_everything(args):
-    """."""
+def compute_offset(args):
+    """
+    Reads visibilities from a measurement set, metadata from
+    RDB file, optionally applies RFI mask and selects some
+    frequency ranges, and fts primary beams to the "RFI-free"
+    visibilities to obtain the pointing offsets.
+
+    :param args: required and optional arguments
+    """
 
     # Get visibilities
     vis, freqs, corr_type, vis_weight, target = read_visibilities(
@@ -79,8 +88,11 @@ def compute_everything(args):
         dish_coord,
     ) = read_data_from_rdb_file(rdbfile=args["--rdb"], auto=args["--auto"])
 
+    # Optionally select frequency ranges and/or apply RFI mask
     # Get RFI-free visibilities
-    # TODO: Need to apply mask and check rfi_file
+    if args["--apply_mask"] == "True":
+        if not args["--rfi_file"]:
+            raise ValueError("RFI File is required!!")
 
     avg_vis, selected_freqs, vis_weight, corr_type = clean_vis_data(
         vis,
@@ -94,7 +106,7 @@ def compute_everything(args):
     )
 
     # Fit primary beams to visibilities
-    fit_primary_beams(
+    fitted_results = fit_primary_beams(
         avg_vis=avg_vis,
         freqs=freqs,
         timestamps=timestamps,
@@ -106,8 +118,6 @@ def compute_everything(args):
         target_projection=target_projection,
         beamwidth_factor=ants[0].beamwidth,
         auto=args["--auto"],
-        save_offset=args["--save_offset"],
-        results_dir=args["--results_dir"],
     )
 
 
