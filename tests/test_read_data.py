@@ -165,7 +165,6 @@ def test_read_visibilities(mock_tables):
         vis,
         freqs,
         corr_type,
-        dish_diameter,
         vis_weight,
         target,
     ) = read_visibilities("test_table")
@@ -176,9 +175,6 @@ def test_read_visibilities(mock_tables):
     assert (vis == numpy.array([1, 2, 3, 4, 5, 6, 7, 8, 9])).all()
     assert (freqs == numpy.array([8.0e9, 8.1e9, 8.2e9])).all()
     assert (corr_type == numpy.array(["XX", "YY"])).all()
-    assert (
-        dish_diameter == numpy.array([25.0, 25.0, 25.0, 25.0, 25.0, 25.0])
-    ).all()
     assert (
         vis_weight
         == numpy.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
