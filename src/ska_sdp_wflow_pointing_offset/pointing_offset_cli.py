@@ -50,11 +50,10 @@ def main():
     args = docopt(__doc__)
 
     if args[COMMAND] == "compute":
-        print("I am in here!!!")
         if args["--ms"] and args["--rdb"]:
             compute_everything(args)
         else:
-            raise ValueError("MS and RDB are required!!")
+            raise ValueError("MS and RDB files are required!!")
 
     else:
         LOG.error(
