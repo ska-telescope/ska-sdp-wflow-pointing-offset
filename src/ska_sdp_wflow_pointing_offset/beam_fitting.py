@@ -11,6 +11,7 @@ import pprint
 
 import numpy
 from katpoint import lightspeed, wrap_angle
+from katpoint.projection import OutOfRangeError
 from scikits.fitting import GaussianFit, ScatterFit
 
 from src.ska_sdp_wflow_pointing_offset.coord_support import convert_coordinates
@@ -200,7 +201,6 @@ def fit_primary_beams(
         log.info("Fitting primary beams to auto-correlation visibilities")
     else:
         log.info("Fitting primary beams to cross-correlation visibilities")
-    # antenna_names = [ ]
     fitted_centre = numpy.zeros((len(ants), 2))
     fitted_width = numpy.zeros((len(ants), 2))
     fitted_height = numpy.zeros((len(ants), 2))
@@ -239,17 +239,14 @@ def fit_primary_beams(
             weight = numpy.mean(weight, axis=1)
         for i, antenna in enumerate(ants):
             log.info(
-                f"Fitting primary beam to visibilities of Antenna {antenna.name}"
+                f"Fitting primary beam to visibilities of "
+                f"Antenna {antenna.name}"
             )
             fitted_beam.fit(
                 x=dish_coordinates[:, :, i],
                 y=vis[:, i],
                 std_y=numpy.sqrt(1 / weight)[:, i],
             )
-            center_norm = numpy.radians(
-                fitted_beam.center / fitted_beam.std_center
-            )
-            width_norm = numpy.radians(fitted_beam.center / expected_width)
 
             # Get the requested AzEl
             requested_az, requested_el = target.azel(
@@ -269,10 +266,12 @@ def fit_primary_beams(
             fitted_centre_std[i] = fitted_beam.std_center
             fitted_width_std[i] = fitted_beam.std_width
             fitted_height_std[i] = fitted_beam.std_height
+            fitted_beam.center = numpy.radians(fitted_beam.center)
+            fitted_beam.width = numpy.radians(fitted_beam.width)
             try:
                 fitted_az, fitted_el = convert_coordinates(
                     ant=antenna,
-                    beam_centre=center_norm,
+                    beam_centre=fitted_beam.center,
                     timestamps=timestamps,
                     target_projection=target_projection,
                     target_object=target,
@@ -286,12 +285,14 @@ def fit_primary_beams(
                 true_azel[i] = numpy.column_stack((fitted_az, fitted_el))
                 log.info(
                     pprint.pformat(
-                        f"Centre=({center_norm[0]:.8f},{center_norm[1]:.8f}), "
-                        f"Width=({width_norm[0]:.8f},{width_norm[1]:.8f})"
+                        f"Centre=({fitted_beam.center[0]:.8f},"
+                        f"{fitted_beam.center[1]:.8f}), "
+                        f"Width=({fitted_beam.width[0]:.8f},"
+                        f"{fitted_beam.width[1]:.8f})"
                     )
                 )
                 log.info(f"{offset_az, offset_el}")
-            except:
+            except OutOfRangeError:
                 # This is an out of range error as the fitted (x,y) < np.pi
                 true_azel[i] = numpy.column_stack((0.0, 0.0))
                 log.info(f"No valid primary beam fit for {antenna.name}")
