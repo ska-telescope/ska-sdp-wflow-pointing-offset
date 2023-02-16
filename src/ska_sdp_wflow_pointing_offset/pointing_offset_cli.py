@@ -67,18 +67,15 @@ def compute_everything(args):
     """."""
 
     # Get visibilities
-    vis, freqs, corr_type, dish_diam, vis_weight = read_visibilities(
+    vis, freqs, corr_type, vis_weight, target = read_visibilities(
         msname=args["--ms"], auto=args["--auto"]
     )
 
     # Get the metadata
     (
-        az,
-        el,
         timestamps,
         target_projection,
         ants,
-        target,
         dish_coord,
     ) = read_data_from_rdb_file(rdbfile=args["--rdb"], auto=args["--auto"])
 
@@ -104,7 +101,6 @@ def compute_everything(args):
         corr_type=corr_type,
         vis_weight=vis_weight,
         ants=ants,
-        dish_diameter=dish_diam,
         dish_coordinates=dish_coord,
         target=target,
         target_projection=target_projection,
