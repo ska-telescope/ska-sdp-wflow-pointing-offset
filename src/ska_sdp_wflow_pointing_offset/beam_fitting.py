@@ -140,7 +140,6 @@ def fit_primary_beams(
     corr_type,
     vis_weight,
     ants,
-    dish_diameter,
     dish_coordinates,
     target,
     target_projection="ARC",
@@ -162,13 +161,10 @@ def fit_primary_beams(
     :param vis_weight: The weights of the visibilities [ncorr, ] ->
     [timestamps, antennas or baselines]
     :param ants: List of antenna information built in katpoint.
-    :param dish_diameter: Diameter of the dish in the array. Expected
     to be the same. Different dish diameters is not currently supported.
     :param dish_coordinates: Projections of the spherical coordinates
-    of the dish pointing
-    direction to a plane with the target position at the origin. Shape is
-    [2, number of timestamps,
-    number of antennas].
+    of the dish pointing direction to a plane with the target position
+    at the origin. Shape is [2, number of timestamps, number of antennas].
     :param target: katpoint pointing calibrator information (optionally
     source name, RA, DEC)
     :param target_projection: The projection used in the observation.
@@ -182,9 +178,13 @@ def fit_primary_beams(
     # Gaussian. Use higher end of the frequency band with smallest beam
     # for better pointing accuracy
     # Convert power beamwidth to gain / voltage beamwidth
+    print("=" * 30)
+    print(numpy.array(vis_weight).shape)
+    print(numpy.array(vis_weight)[:, :3])
+    print("=" * 30)
     wavelength = numpy.degrees(lightspeed / freqs[-1])
     expected_width = numpy.sqrt(2.0) * (
-        beamwidth_factor * wavelength / dish_diameter
+        beamwidth_factor * wavelength / ants[0].diameter
     )
 
     # XXX This assumes we are still using default beamwidth factor

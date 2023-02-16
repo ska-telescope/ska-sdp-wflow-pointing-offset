@@ -106,7 +106,7 @@ def read_visibilities(msname, auto=False):
             dec=numpy.degrees(source_position)[1],
         )
 
-    return vis, freqs, corr_type, dish_diam[0], vis_weight, target
+    return vis, freqs, corr_type, vis_weight, target
 
 
 def _open_rdb_file(rdbfile):
