@@ -6,7 +6,6 @@ routines used by the SARAO team for the MeerKAT array.
 """
 
 import logging
-import os
 import pprint
 
 import numpy
@@ -15,14 +14,11 @@ from katpoint.projection import OutOfRangeError
 from scikits.fitting import GaussianFit, ScatterFit
 
 from ska_sdp_wflow_pointing_offset.coord_support import convert_coordinates
-from ska_sdp_wflow_pointing_offset.export_data import (
-    export_pointing_offset_data,
-)
 
 log = logging.getLogger("ska-sdp-pointing-offset")
 
 
-def fwhm_to_sigma(fwhm):
+def _fwhm_to_sigma(fwhm):
     """
     Standard deviation of Gaussian function with specified
     FWHM beamwidth.
@@ -38,7 +34,7 @@ def fwhm_to_sigma(fwhm):
     return fwhm / 2.0 / numpy.sqrt(2.0 * numpy.log(2.0))
 
 
-def sigma_to_fwhm(sigma):
+def _sigma_to_fwhm(sigma):
     """
     FWHM beamwidth of Gaussian function with specified standard
     deviation.
@@ -89,9 +85,9 @@ class BeamPatternFit(ScatterFit):
         ScatterFit.__init__(self)
         if not numpy.isscalar(width):
             width = numpy.atleast_1d(width)
-        self._interp = GaussianFit(center, fwhm_to_sigma(width), height)
+        self._interp = GaussianFit(center, _fwhm_to_sigma(width), height)
         self.center = self._interp.mean
-        self.width = sigma_to_fwhm(self._interp.std)
+        self.width = _sigma_to_fwhm(self._interp.std)
         self.height = self._interp.height
         self.expected_width = width
         self.is_valid = False
@@ -113,10 +109,10 @@ class BeamPatternFit(ScatterFit):
         """
         self._interp.fit(x, y, std_y)
         self.center = self._interp.mean
-        self.width = sigma_to_fwhm(self._interp.std)
+        self.width = _sigma_to_fwhm(self._interp.std)
         self.height = self._interp.height
         self.std_center = self._interp.std_mean
-        self.std_width = sigma_to_fwhm(self._interp.std_std)
+        self.std_width = _sigma_to_fwhm(self._interp.std_std)
         self.std_height = self._interp.std_height
         self.is_valid = not any(numpy.isnan(self.center)) and self.height > 0.0
         # XXX: POTENTIAL TWEAK
@@ -143,10 +139,8 @@ def fit_primary_beams(
     dish_coordinates,
     target,
     target_projection="ARC",
-    results_dir="./",
     beamwidth_factor=1.22,
     auto=False,
-    save_offset=False,
 ):
     """
     Fit the beam pattern to the frequency-averaged and optionally
@@ -170,18 +164,13 @@ def fit_primary_beams(
     :param target_projection: The projection used in the observation.
     :param beamwidth_factor: Beamwidth factor (often between 1.03 and 1.22).
     :param auto: Use auto-correlation visibilities?
-    :param save-offset: Save computed pointing offsets and fitting parameters
-    to file?
-    :return: Fitted beam parameters and their uncertainties.
+    :return: Fitted beam parameters with their uncertainties, and the
+    computed pointing offsets.
     """
     # Compute the primary beam size for use as initial parameter of the
     # Gaussian. Use higher end of the frequency band with smallest beam
     # for better pointing accuracy
     # Convert power beamwidth to gain / voltage beamwidth
-    print("=" * 30)
-    print(numpy.array(vis_weight).shape)
-    print(numpy.array(vis_weight)[:, :3])
-    print("=" * 30)
     wavelength = numpy.degrees(lightspeed / freqs[-1])
     expected_width = numpy.sqrt(2.0) * (
         beamwidth_factor * wavelength / ants[0].diameter
@@ -301,7 +290,7 @@ def fit_primary_beams(
     # and uncertainty, fitted beam with and uncertainty, fitted beam height and
     # uncertainty, fitted beam centre (in azel), commanded (azel), delta Az,
     # delta El
-    output_parameters = numpy.column_stack(
+    return numpy.column_stack(
         (
             fitted_centre,
             fitted_centre_std,
@@ -313,11 +302,3 @@ def fit_primary_beams(
             commanded_azel,
         )
     )
-    log.info(output_parameters)
-    if save_offset:
-        export_pointing_offset_data(
-            filename=os.path.join(results_dir, "pointing_offsets.txt"),
-            offset=output_parameters,
-        )
-    else:
-        print(output_parameters)
