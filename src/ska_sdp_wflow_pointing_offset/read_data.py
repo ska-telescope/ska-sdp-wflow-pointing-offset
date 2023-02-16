@@ -127,6 +127,8 @@ def read_data_from_rdb_file(rdbfile, auto=False):
     Read meta-data from RDB file.
 
     :param rdbname: Name of RDB file
+    :param auto: Read parameters related to auto-correlation
+    data from the metadata?
     :return: timestamps, target projection, ants, and
     target coordinates of the dish in radians. The target
     coordinates with shape (2, number of timestamps, number of
