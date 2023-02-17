@@ -1,3 +1,5 @@
+# pylint: disable=too-many-arguments,too-many-locals
+# pylint: disable=too-many-statements,too-many-instance-attributes
 """
 Fits primary beams modelled by a 2D Gaussian to the visibility
 amplitudes and computes the true position of the calibrator for
@@ -60,7 +62,7 @@ class BeamPatternFit(ScatterFit):
 
     Parameters
     ----------
-    :param center: Initial guess of 2-element beam center, in target
+    :param centre: Initial guess of 2-element beam centre, in target
     coordinate units
     :param width:Initial guess of single beamwidth for both dimensions,
     or 2-element beamwidth vector, expressed as FWHM in units of target
@@ -73,30 +75,30 @@ class BeamPatternFit(ScatterFit):
         Initial guess of beamwidth, saved as expected width for checks
     is_valid : bool
         True if beam parameters are within reasonable ranges after fit
-    std_center : array of float, shape (2,)
-        Standard error of beam center, only set after :func:`fit`
+    std_centre : array of float, shape (2,)
+        Standard error of beam centre, only set after :func:`fit`
     std_width : array of float, shape (2,), or float
         Standard error of beamwidth(s), only set after :func:`fit`
     std_height : float
         Standard error of beam height, only set after :func:`fit`
     """
 
-    def __init__(self, center, width, height):
-        ScatterFit.__init__(self)
+    def __init__(self, centre, width, height):
+        super().__init__()
         if not numpy.isscalar(width):
             width = numpy.atleast_1d(width)
-        self._interp = GaussianFit(center, _fwhm_to_sigma(width), height)
-        self.center = self._interp.mean
+        self._interp = GaussianFit(centre, _fwhm_to_sigma(width), height)
+        self.centre = self._interp.mean
         self.width = _sigma_to_fwhm(self._interp.std)
         self.height = self._interp.height
         self.expected_width = width
         self.is_valid = False
-        self.std_center = self.std_width = self.std_height = None
+        self.std_centre = self.std_width = self.std_height = None
 
     def fit(self, x, y, std_y=1.0):
         """
         Fit a beam pattern to data.
-        The center, width and height of the fitted beam pattern
+        The centre, width and height of the fitted beam pattern
         (and their standard errors) can be obtained from the
         corresponding member variables after this is run.
 
@@ -104,18 +106,21 @@ class BeamPatternFit(ScatterFit):
         :param y : Sequence of (N, ) corresponding total power values to fit
         :param std_y : Optional measurement error or uncertainty of (N, ) `y`
         values, expressed as standard deviation in units of `y`
-        :return: The fitted beam parameters (center, width, height and their
+        :return: The fitted beam parameters (centre, width, height and their
         uncertainties)
         """
         self._interp.fit(x, y, std_y)
-        self.center = self._interp.mean
+        self.centre = self._interp.mean
         self.width = _sigma_to_fwhm(self._interp.std)
         self.height = self._interp.height
-        self.std_center = self._interp.std_mean
+        self.std_centre = self._interp.std_mean
         self.std_width = _sigma_to_fwhm(self._interp.std_std)
         self.std_height = self._interp.std_height
-        self.is_valid = not any(numpy.isnan(self.center)) and self.height > 0.0
-        # XXX: POTENTIAL TWEAK
+        self.is_valid = not any(numpy.isnan(self.centre)) and self.height > 0.0
+        # We do not know why the fitted width is normalised by the
+        # expected width for the MeerKAT array. A request to understand
+        # its purpose has been sent to the SARAO team. Note that this may
+        # not necessarily apply to the SKA
         norm_width = self.width / self.expected_width
         self.is_valid &= all(norm_width > 0.9) and all(norm_width < 1.25)
 
@@ -176,13 +181,13 @@ def fit_primary_beams(
         beamwidth_factor * wavelength / ants[0].diameter
     )
 
-    # XXX This assumes we are still using default beamwidth factor
-    # of 1.22 and also handles larger effective dish diameter in H
-    # direction. Note that the comment applies to the MeerKAT but
-    # would that apply to the SKA ?
+    # Assume using the default beamwidth factor of 1.22
+    # for the MeerKAT array, which should handle the
+    # larger effective dish diameter in the H direction.
+    # Same may not apply for the SKA
     expected_width = (0.8 * expected_width, 0.9 * expected_width)
     fitted_beam = BeamPatternFit(
-        center=(0.0, 0.0), width=expected_width, height=1.0
+        centre=(0.0, 0.0), width=expected_width, height=1.0
     )
 
     # Fit to the visibilities of each polarisation
@@ -198,9 +203,10 @@ def fit_primary_beams(
     fitted_height_std = numpy.zeros((len(ants), 2))
     true_azel = numpy.zeros((len(ants), 2))
     commanded_azel = numpy.zeros((len(ants), 2))
+    offset_azel = numpy.zeros((len(ants), 2))
     for vis, weight, corr in zip(avg_vis, vis_weight, corr_type):
         log.info("\n")
-        log.info(f"Fitting of primary beams to {corr}")
+        log.info("Fitting of primary beams to %s", corr)
         if auto:
             vis = vis.reshape(
                 len(timestamps), int(vis.shape[0] / len(timestamps))
@@ -228,13 +234,12 @@ def fit_primary_beams(
             weight = numpy.mean(weight, axis=1)
         for i, antenna in enumerate(ants):
             log.info(
-                f"Fitting primary beam to visibilities of "
-                f"Antenna {antenna.name}"
+                "Fitting primary beam to visibilities of %s", antenna.name
             )
             fitted_beam.fit(
                 x=dish_coordinates[:, :, i],
                 y=vis[:, i],
-                std_y=numpy.sqrt(1 / weight)[:, i],
+                std_y=numpy.sqrt(1 / weight[:, i]),
             )
 
             # Get the requested AzEl
@@ -249,18 +254,18 @@ def fit_primary_beams(
             )
 
             # Convert the fitted beam centre from (x,y) to (az,el)
-            fitted_centre[i] = fitted_beam.center
+            fitted_centre[i] = fitted_beam.centre
             fitted_width[i] = fitted_beam.width
             fitted_height[i] = fitted_beam.height
-            fitted_centre_std[i] = fitted_beam.std_center
+            fitted_centre_std[i] = fitted_beam.std_centre
             fitted_width_std[i] = fitted_beam.std_width
             fitted_height_std[i] = fitted_beam.std_height
-            fitted_beam.center = numpy.radians(fitted_beam.center)
+            fitted_beam.centre = numpy.radians(fitted_beam.centre)
             fitted_beam.width = numpy.radians(fitted_beam.width)
             try:
                 fitted_az, fitted_el = convert_coordinates(
                     ant=antenna,
-                    beam_centre=fitted_beam.center,
+                    beam_centre=fitted_beam.centre,
                     timestamps=timestamps,
                     target_projection=target_projection,
                     target_object=target,
@@ -272,22 +277,23 @@ def fit_primary_beams(
                     fitted_az - requested_az, 360.0
                 ), wrap_angle(fitted_el - requested_el, 360.0)
                 true_azel[i] = numpy.column_stack((fitted_az, fitted_el))
+                offset_azel[i] = numpy.column_stack((offset_az, offset_el))
                 log.info(
                     pprint.pformat(
-                        f"Centre=({fitted_beam.center[0]:.8f},"
-                        f"{fitted_beam.center[1]:.8f}), "
+                        f"Centre=({fitted_beam.centre[0]:.8f},"
+                        f"{fitted_beam.centre[1]:.8f}), "
                         f"Width=({fitted_beam.width[0]:.8f},"
                         f"{fitted_beam.width[1]:.8f})"
                     )
                 )
-                log.info(f"{offset_az, offset_el}")
             except OutOfRangeError:
                 # This is an out of range error as the fitted (x,y) < np.pi
                 true_azel[i] = numpy.column_stack((0.0, 0.0))
-                log.info(f"No valid primary beam fit for {antenna.name}")
+                offset_azel[i] = numpy.column_stack((0.0, 0.0))
+                log.warning("No valid primary beam fit for %s", antenna.name)
 
     # Proposed format for now: Antenna Name, Fitting flag, fitted beam centre
-    # and uncertainty, fitted beam with and uncertainty, fitted beam height and
+    # and uncertainty, fitted beamwidth and uncertainty, fitted beam height and
     # uncertainty, fitted beam centre (in azel), commanded (azel), delta Az,
     # delta El
     return numpy.column_stack(
@@ -300,5 +306,6 @@ def fit_primary_beams(
             fitted_height_std,
             true_azel,
             commanded_azel,
+            offset_azel,
         )
     )

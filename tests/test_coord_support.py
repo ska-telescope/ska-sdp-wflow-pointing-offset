@@ -2,9 +2,8 @@
 Unit test for coordinate support functions.
 """
 
-import astropy.units as u
+import katpoint
 import numpy
-from astropy.coordinates import SkyCoord
 
 from ska_sdp_wflow_pointing_offset.coord_support import (
     construct_antennas,
@@ -39,22 +38,23 @@ def test_convert_coordinates():
     """
 
     beam_centre = (0.11, 0.54)
-    target_coord = SkyCoord(
-        ra=+180.0 * u.deg,
-        dec=-35.0 * u.deg,
-        frame="icrs",
-        equinox="J2000",
+    cat = katpoint.Catalogue(
+        "J1939-6342, radec, 19:39:25.02671, -63:42:45.6255"
     )
+    target = cat.targets[0]
     timestamps = numpy.linspace(1, 10, 9)
     target_projection = "ARC"
     ants = construct_antennas(XYZ, DIAMETER, STATION)
-    result_az, result_el = convert_coordinates(
-        ants,
-        beam_centre,
-        timestamps,
-        target_projection,
-        target_coord=target_coord,
-    )
+    fitted_az = numpy.zeros(len(ants))
+    fitted_el = numpy.zeros(len(ants))
+    for i, antenna in enumerate(ants):
+        fitted_az[i], fitted_el[i] = convert_coordinates(
+            antenna,
+            beam_centre,
+            timestamps,
+            target_projection,
+            target,
+        )
 
-    assert result_az.all() == numpy.array([2.32326059, 2.32326058]).all()
-    assert result_el.all() == numpy.array([0.6999862, 0.69998617]).all()
+    assert fitted_az.all() == numpy.array([2.32326059, 2.32326058]).all()
+    assert fitted_el.all() == numpy.array([0.6999862, 0.69998617]).all()

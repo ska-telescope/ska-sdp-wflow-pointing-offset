@@ -51,7 +51,7 @@ COMMAND = "COMMAND"
 
 def main():
     """
-    Run ska-sdp pointing offset calibration routines
+    Run pointing offset calibration routines
     """
 
     args = docopt(__doc__)
@@ -74,7 +74,7 @@ def compute_offset(args):
     """
     Reads visibilities from a measurement set, metadata from
     RDB file, optionally applies RFI mask and selects some
-    frequency ranges, and fts primary beams to the "RFI-free"
+    frequency ranges, and fits primary beams to the "RFI-free"
     visibilities to obtain the pointing offsets.
 
     :param args: required and optional arguments
@@ -112,7 +112,7 @@ def compute_offset(args):
     # Fit primary beams to visibilities
     fitted_results = fit_primary_beams(
         avg_vis=avg_vis,
-        freqs=freqs,
+        freqs=selected_freqs,
         timestamps=timestamps,
         corr_type=corr_type,
         vis_weight=vis_weight,
@@ -129,19 +129,27 @@ def compute_offset(args):
         LOG.info("Writing fitted parameters and computed offsets to file...")
         if args["--results_dir"] is None:
             # Save to the location of the measurement set
-            ms_dir = PurePosixPath(args["--ms"]).parent.as_posix()
+            results_file = os.path.join(
+                PurePosixPath(args["--ms"]).parent.as_posix(),
+                "pointing_offsets.txt",
+            )
             export_pointing_offset_data(
-                filename=os.path.join(ms_dir, "pointing_offsets.txt"),
+                results_file,
                 offset=fitted_results,
             )
         else:
             # Save to the user-set directory
+            results_file = os.path.join(
+                args["--results_dir"], "pointing_offsets.txt"
+            )
             export_pointing_offset_data(
-                filename=os.path.join(
-                    args["--results_dir"], "pointing_offsets.txt"
-                ),
+                results_file,
                 offset=fitted_results,
             )
+        LOG.info(
+            "Fitted parameters and computed offsets written to %s",
+            results_file,
+        )
 
 
 if __name__ == "__main__":

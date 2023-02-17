@@ -1,3 +1,4 @@
+# pylint: disable-msg=too-many-locals
 """
 Functions of reading data from Measurement Set
 and Relational Database file.

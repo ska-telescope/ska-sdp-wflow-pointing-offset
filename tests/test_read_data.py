@@ -1,4 +1,5 @@
-# pylint: disable=inconsistent-return-statements,too-few-public-methods
+# pylint: disable=inconsistent-return-statements,too-many-return-statements
+# pylint: disable=too-few-public-methods
 """
 Unit Tests to read data
 from CASA Measurement Tables

@@ -72,15 +72,13 @@ def convert_coordinates(
                         x, y are dimensionless
     :param timestamps: numpy array size [ndumps] (from metadata)
     :param target_projection: Name of coordinate system  (from metadata)
-    :param target_object: Katpoint target object (from metadata)
-    :param target_coord: SkyCoord object that contains RA, Dec information
-                         Only used when katpoint target is not provided
+    :param target_object: Katpoint target object.
     :return: (az, el) coordinates in [nants, 2], radians
     """
     # Convert from (x,y) to (az, el), output in rad
     # Only doing it for a single timestamp. The same timestamp should be
     # used when computing the target position before computing the offset.
-    az, el = target_object.plane_to_sphere(
+    fitted_az, fitted_el = target_object.plane_to_sphere(
         x=beam_centre[0],
         y=beam_centre[1],
         timestamp=numpy.median(timestamps),
@@ -89,4 +87,4 @@ def convert_coordinates(
         coord_system="azel",
     )
 
-    return az, el
+    return fitted_az, fitted_el
