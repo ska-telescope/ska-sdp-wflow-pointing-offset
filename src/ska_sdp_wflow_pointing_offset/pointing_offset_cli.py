@@ -1,4 +1,4 @@
-"""Example of program with many options using docopt.
+"""Program with many options using docopt for computing pointing offsets.
 
 Usage:
   pointing-offset COMMAND [--ms=FILE] [--rdb=FILE] [--save_offset=<BOOL>]
@@ -26,11 +26,16 @@ Options:
 
 """
 import logging
+import os
 import sys
+from pathlib import PurePosixPath
 
 from docopt import docopt
 
 from ska_sdp_wflow_pointing_offset.beam_fitting import fit_primary_beams
+from ska_sdp_wflow_pointing_offset.export_data import (
+    export_pointing_offset_data,
+)
 from ska_sdp_wflow_pointing_offset.read_data import (
     read_data_from_rdb_file,
     read_visibilities,
@@ -89,7 +94,6 @@ def compute_offset(args):
     ) = read_data_from_rdb_file(rdbfile=args["--rdb"], auto=args["--auto"])
 
     # Optionally select frequency ranges and/or apply RFI mask
-    # Get RFI-free visibilities
     if args["--apply_mask"] == "True":
         if not args["--rfi_file"]:
             raise ValueError("RFI File is required!!")
@@ -119,6 +123,25 @@ def compute_offset(args):
         beamwidth_factor=ants[0].beamwidth,
         auto=args["--auto"],
     )
+
+    # Save the fitted parameters and computed offsets
+    if args["--save_offset"] == "True":
+        LOG.info("Writing fitted parameters and computed offsets to file...")
+        if args["--results_dir"] is None:
+            # Save to the location of the measurement set
+            ms_dir = PurePosixPath(args["--ms"]).parent.as_posix()
+            export_pointing_offset_data(
+                filename=os.path.join(ms_dir, "pointing_offsets.txt"),
+                offset=fitted_results,
+            )
+        else:
+            # Save to the user-set directory
+            export_pointing_offset_data(
+                filename=os.path.join(
+                    args["--results_dir"], "pointing_offsets.txt"
+                ),
+                offset=fitted_results,
+            )
 
 
 if __name__ == "__main__":
