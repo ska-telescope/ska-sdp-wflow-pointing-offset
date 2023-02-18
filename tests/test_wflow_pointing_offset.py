@@ -4,18 +4,26 @@
 import logging
 import os
 import tempfile
+from unittest.mock import MagicMock, patch
 
+import numpy
 import pytest
 
-from ska_sdp_wflow_pointing_offset import cli_parser
+from ska_sdp_wflow_pointing_offset import cli_parser, compute_offset
 
 log = logging.getLogger("pointing-offset-logger")
 log.setLevel(logging.WARNING)
 
 default_run = True
 persist = False
+NTIMES = 4
+NANTS = 6
+NCHAN = 5
 
 
+@patch("builtins.open", MagicMock())
+@patch("pickle.load")
+@patch("ska_sdp_wflow_pointing_offset.read_data._load_ms_tables")
 @pytest.mark.parametrize(
     "enabled, start_freq, end_freq, apply_mask, split_pol, auto",
     [
@@ -31,7 +39,15 @@ persist = False
     ],
 )
 def test_wflow_pointing_offset(
-    enabled, start_freq, end_freq, apply_mask, split_pol, auto
+    enabled,
+    start_freq,
+    end_freq,
+    apply_mask,
+    split_pol,
+    auto,
+    mock_ms,
+    mock_rdb,
+    mock_rfi,
 ):
     """
     Main test routine.
@@ -57,19 +73,26 @@ def test_wflow_pointing_offset(
 
     log.info(f"Putting output data into temporary {tempdir}.")
 
-    msname = test_dir + "/test_meerkat.ms"
-    metadata_name = test_dir + "/test_meerkat.rdb"
-    rfi_filename = test_dir + "/rfi.pickle"
+    # MS Tables to read
+    mock_ms.return_value = (
+        MockAntennaTable(),
+        MockBaseTable(),
+        MockPolarisationTable(),
+        MockSpectralWindowTable(),
+    )
+
+    mock_rdb.return_value = 0
+    mock_rfi.return_value = numpy.array([1, 1, 0, 1, 1])
 
     parser = cli_parser()
     args = parser.parse_args(
         [
             "--msname",
-            msname,
+            "fake_ms",
             "--metadata",
-            metadata_name,
+            "fake_rdb",
             "--rfi_file",
-            rfi_filename,
+            "fake_rfi",
             "--start_freq",
             f"{start_freq}",
             "--end_freq",
@@ -80,16 +103,20 @@ def test_wflow_pointing_offset(
             f"{split_pol}",
             "--auto",
             f"{auto}",
+            "--save-offset",
+            "True",
         ]
     )
 
-    # output = main_workflow(args)
+    (_,) = compute_offset(args)
 
-    # asserts
+    read_out = np.loadtxt("pointing_offsets.txt")
+    assert len(read_out) == NANTS
+    # other assertions
 
     # clean up directory
     if persist is False:
         try:
-            os.remove(tempdir + "/output_file*")
+            os.remove(tempdir + "/pointing_offsets.txt")
         except OSError:
             pass

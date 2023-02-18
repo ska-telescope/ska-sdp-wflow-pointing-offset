@@ -14,8 +14,7 @@ from ska_sdp_wflow_pointing_offset.read_data import (
 
 NTIMES = 4
 NANTS = 6
-NFREQ = 3
-TEL_NAME = "MY-SKA"
+NCHAN = 5
 
 
 class MockBaseTable:
@@ -36,7 +35,7 @@ class MockBaseTable:
             return numpy.array([10.0])
 
         if columnname == "CPARAM":
-            return numpy.ones((NTIMES, NANTS, NFREQ, 1))
+            return numpy.ones((NTIMES, NANTS, NCHAN, 1))
 
         if columnname == "ANTENNA1":
             return numpy.array([0, 1, 2, 3, 4, 5])
@@ -58,10 +57,10 @@ class MockSpectralWindowTable:
         Get column name
         """
         if columnname == "CHAN_FREQ":
-            return numpy.array([8.0e9, 8.1e9, 8.2e9])
+            return numpy.array([1.0e9, 1.1e9, 1.2e9, 1.3e9, 1.4e9])
 
         if columnname == "NUM_CHAN":
-            return numpy.array([NFREQ])
+            return numpy.array([NCHAN])
 
 
 class MockAntennaTable:
@@ -150,5 +149,5 @@ def test_read_cross_correlation_visibilities(mock_tables):
 
     # Specific attributes
     assert (vis == numpy.array([1, 2, 3, 4, 5, 6, 7, 8, 9])).all()
-    assert (freqs == numpy.array([8000, 8100, 8200])).all()
+    assert (freqs == numpy.array([1.0e9, 1.1e9, 1.2e9, 1.3e9, 1.4e9])).all()
     assert (corr_type == numpy.array(["XX", "YY"])).all()

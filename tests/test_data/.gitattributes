@@ -1,2 +1,0 @@
-*.ms filter=lfs diff=lfs merge=lfs -text
-*.rdb filter=lfs diff=lfs merge=lfs -text
