@@ -9,3 +9,4 @@ ska\_sdp\_wflow\_pointing\_offset package
    Utility<utils>
    Workflow<workflow>
    Primary Beam Fitting<beam_fitting>
+   Pointing Offset CLI<pointing_offset_cli>
