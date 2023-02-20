@@ -9,11 +9,7 @@ from unittest.mock import MagicMock, patch
 import numpy
 import pytest
 
-from ska_sdp_wflow_pointing_offset import (
-    compute_offset,
-    construct_antennas,
-    main,
-)
+from ska_sdp_wflow_pointing_offset import compute_offset, construct_antennas
 
 log = logging.getLogger("pointing-offset-logger")
 log.setLevel(logging.WARNING)
