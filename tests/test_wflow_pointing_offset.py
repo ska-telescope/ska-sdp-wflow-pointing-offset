@@ -10,9 +10,9 @@ import numpy
 import pytest
 
 from ska_sdp_wflow_pointing_offset import (
-    cli_parser,
     compute_offset,
     construct_antennas,
+    main,
 )
 
 log = logging.getLogger("pointing-offset-logger")
@@ -75,17 +75,43 @@ class MockRDBInput:
 @patch("ska_sdp_wflow_pointing_offset.read_data._load_ms_tables")
 @patch("ska_sdp_wflow_pointing_offset.read_data._open_rdb_file")
 @pytest.mark.parametrize(
-    "enabled, start_freq, end_freq, apply_mask, split_pol, auto",
+    "enabled, start_freq, end_freq, apply_mask, auto",
     [
+        (
+            default_run,
+            None,
+            None,
+            False,
+            False,
+        ),
+        (
+            default_run,
+            0.8e9,
+            1.5e9,
+            False,
+            False,
+        ),
+        (
+            default_run,
+            0.8e9,
+            1.5e9,
+            True,
+            False,
+        ),
+        (
+            default_run,
+            0.8e9,
+            1.5e9,
+            False,
+            True,
+        ),
         (
             default_run,
             0.8e9,
             1.5e9,
             True,
             True,
-            True,
         ),
-        # add more test configurations here
     ],
 )
 def test_wflow_pointing_offset(
@@ -93,7 +119,6 @@ def test_wflow_pointing_offset(
     start_freq,
     end_freq,
     apply_mask,
-    split_pol,
     auto,
     mock_ms,
     mock_rdb,
@@ -102,18 +127,16 @@ def test_wflow_pointing_offset(
     """
     Main test routine.
 
-    :param enabled: Is test enabled?
-    :param start_freq:
-    :param end_freq:
-    :param apply_mask:
-    :param split_pol:
-    :param auto:
-    :return:
+    :param enabled: Is this test enabled?
+    :param start_freq: Start frequency (Hz)
+    :param end_freq: End frequency (Hz)
+    :param apply_mask: Apply RFI mask?
+    :param auto: Use auto-correlations?
     """
 
     if not enabled:
         log.warning(
-            f"test_mid_simulation: test of {mode} mode is disabled, use enabled argument to change"
+            f"test_pointing_offset: test of {mode} mode is disabled, use enabled argument to change"
         )
         return True
 
@@ -134,29 +157,16 @@ def test_wflow_pointing_offset(
     mock_rdb.return_value = MockRDBInput()
     mock_rfi.return_value = numpy.array([1, 1, 0, 1, 1])
 
-    parser = cli_parser()
-    args = parser.parse_args(
-        [
-            "--msname",
-            "fake_ms",
-            "--metadata",
-            "fake_rdb",
-            "--rfi_file",
-            "fake_rfi",
-            "--start_freq",
-            f"{start_freq}",
-            "--end_freq",
-            f"{end_freq}",
-            "--apply_mask",
-            f"{apply_mask}",
-            "--split_pol",
-            f"{split_pol}",
-            "--auto",
-            f"{auto}",
-            "--save-offset",
-            "True",
-        ]
-    )
+    args = {
+        "--ms": "fake_ms",
+        "--rdb": "fake_rdb",
+        "--rfi_file": "fake_rfi",
+        "--start_freq": f"{start_freq}",
+        "--end_freq": f"{end_freq}",
+        "--apply_mask": f"{apply_mask}",
+        "--auto": f"{auto}",
+        "--save-offset": "True",
+    }
 
     (_,) = compute_offset(args)
 
