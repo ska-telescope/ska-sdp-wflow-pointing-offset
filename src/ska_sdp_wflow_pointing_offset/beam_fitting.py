@@ -8,7 +8,6 @@ routines used by the SARAO team for the MeerKAT array.
 """
 
 import logging
-import pprint
 
 import numpy
 from katpoint import lightspeed, wrap_angle
@@ -205,7 +204,6 @@ def fit_primary_beams(
     commanded_azel = numpy.zeros((len(ants), 2))
     offset_azel = numpy.zeros((len(ants), 2))
     for vis, weight, corr in zip(avg_vis, vis_weight, corr_type):
-        log.info("\n")
         log.info("Fitting of primary beams to %s", corr)
         if auto:
             vis = vis.reshape(
@@ -278,14 +276,6 @@ def fit_primary_beams(
                 ), wrap_angle(fitted_el - requested_el, 360.0)
                 true_azel[i] = numpy.column_stack((fitted_az, fitted_el))
                 offset_azel[i] = numpy.column_stack((offset_az, offset_el))
-                log.info(
-                    pprint.pformat(
-                        f"Centre=({fitted_beam.centre[0]:.8f},"
-                        f"{fitted_beam.centre[1]:.8f}), "
-                        f"Width=({fitted_beam.width[0]:.8f},"
-                        f"{fitted_beam.width[1]:.8f})"
-                    )
-                )
             except OutOfRangeError:
                 # This is an out of range error as the fitted (x,y) < np.pi
                 true_azel[i] = numpy.column_stack((0.0, 0.0))

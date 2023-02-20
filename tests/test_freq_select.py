@@ -1,11 +1,11 @@
 """
-Unit tests for workflow functions
+Unit tests for frequency selection functions
 """
 from unittest.mock import MagicMock, patch
 
 import numpy
 
-from ska_sdp_wflow_pointing_offset.workflow import (
+from ska_sdp_wflow_pointing_offset.freq_select import (
     apply_rfi_mask,
     clean_vis_data,
     select_channels,

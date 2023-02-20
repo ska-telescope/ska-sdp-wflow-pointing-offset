@@ -36,11 +36,11 @@ from ska_sdp_wflow_pointing_offset.beam_fitting import fit_primary_beams
 from ska_sdp_wflow_pointing_offset.export_data import (
     export_pointing_offset_data,
 )
+from ska_sdp_wflow_pointing_offset.freq_select import clean_vis_data
 from ska_sdp_wflow_pointing_offset.read_data import (
     read_data_from_rdb_file,
     read_visibilities,
 )
-from ska_sdp_wflow_pointing_offset.workflow import clean_vis_data
 
 LOG = logging.getLogger("ska-sdp-pointing-offset")
 LOG.setLevel(logging.INFO)
@@ -51,7 +51,7 @@ COMMAND = "COMMAND"
 
 def main():
     """
-    Run pointing offset calibration routines
+    Run ska-sdp pointing offset calibration routines
     """
 
     args = docopt(__doc__)
@@ -94,7 +94,7 @@ def compute_offset(args):
     ) = read_data_from_rdb_file(rdbfile=args["--rdb"], auto=args["--auto"])
 
     # Optionally select frequency ranges and/or apply RFI mask
-    if args["--apply_mask"] == "True":
+    if args["--apply_mask"]:
         if not args["--rfi_file"]:
             raise ValueError("RFI File is required!!")
 

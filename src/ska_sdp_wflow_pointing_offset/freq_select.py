@@ -1,6 +1,6 @@
 # pylint: disable=too-many-arguments, too-many-locals
 """
-Main workflow related functions
+Optionally applies RFI mask and select frequency ranges
 """
 
 import pickle
