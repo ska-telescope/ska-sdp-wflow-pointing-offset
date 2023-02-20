@@ -7,7 +7,7 @@ the auto-correlation or cross-correlation visibility amplitudes of each antenna.
 gains of each antenna (derived possibly from the gain solver in `RASCIL`_). These set of functions used in this pipeline are based on
 those used by the `SARAO`_ team for computing pointing offsets for the MeerKAT array.
 
-.. image:: images/functionality_diagram.pdf
+.. image:: images/functionality_diagram.png
   :width: 100%
   :alt: Pointing Offset Functionality Diagram
 
