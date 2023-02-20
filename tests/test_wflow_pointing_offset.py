@@ -9,7 +9,11 @@ from unittest.mock import MagicMock, patch
 import numpy
 import pytest
 
-from ska_sdp_wflow_pointing_offset import cli_parser, compute_offset
+from ska_sdp_wflow_pointing_offset import (
+    cli_parser,
+    compute_offset,
+    construct_antennas,
+)
 
 log = logging.getLogger("pointing-offset-logger")
 log.setLevel(logging.WARNING)
@@ -19,11 +23,57 @@ persist = False
 NTIMES = 4
 NANTS = 6
 NCHAN = 5
+XYZ = numpy.array(
+    [
+        [5109237.714735, 2006795.661955, -3239109.183708],
+        [5109251.156928, 2006811.008353, -3239078.678007],
+    ]
+)
+DIAMETER = numpy.array([13.5, 13.5])
+STATION = ["M000", "M001"]
+
+
+class MockRDBInput:
+    """
+    Mock RDB Input Class
+    """
+
+    def timestamps(self):
+        return numpy.linspace(1, 10, 9)
+
+    def target_projection(self):
+        return "ARC"
+
+    def ants(self):
+        return construct_antennas(XYZ, DIAMETER, STATION)
+
+    def target_x(self):
+        return numpy.array(
+            [
+                [-1.67656219e-05, -3.86416795e-05, 2.54736615e-05],
+                [1.07554380e-04, 1.27813267e-04, -2.93635031e-05],
+                [-4.95111837e-04, 1.35920940e-04, -3.10228964e-04],
+                [4.41771802e-04, -2.76304939e-04, 7.46971279e-05],
+                [1.19623691e-04, -2.71621773e-05, -3.05732096e-04],
+            ]
+        )
+
+    def target_y(self):
+        return numpy.array(
+            [
+                [-1.00010232e00, -1.00007682e00, -9.99948506e-01],
+                [-1.00002945e00, -1.00019367e00, -1.00028369e00],
+                [-3.33403243e-01, -3.33692559e-01, -3.33309663e-01],
+                [-3.33445411e-01, -3.33362257e-01, -3.33419971e-01],
+                [3.33257413e-01, 3.33446516e-01, 3.32922029e-01],
+            ]
+        )
 
 
 @patch("builtins.open", MagicMock())
 @patch("pickle.load")
 @patch("ska_sdp_wflow_pointing_offset.read_data._load_ms_tables")
+@patch("ska_sdp_wflow_pointing_offset.read_data._open_rdb_file")
 @pytest.mark.parametrize(
     "enabled, start_freq, end_freq, apply_mask, split_pol, auto",
     [
@@ -52,7 +102,7 @@ def test_wflow_pointing_offset(
     """
     Main test routine.
 
-    :param enabled:
+    :param enabled: Is test enabled?
     :param start_freq:
     :param end_freq:
     :param apply_mask:
@@ -73,7 +123,7 @@ def test_wflow_pointing_offset(
 
     log.info(f"Putting output data into temporary {tempdir}.")
 
-    # MS Tables to read
+    # MS Tables to read -- this need to be moved to some config first
     mock_ms.return_value = (
         MockAntennaTable(),
         MockBaseTable(),
@@ -81,7 +131,7 @@ def test_wflow_pointing_offset(
         MockSpectralWindowTable(),
     )
 
-    mock_rdb.return_value = 0
+    mock_rdb.return_value = MockRDBInput()
     mock_rfi.return_value = numpy.array([1, 1, 0, 1, 1])
 
     parser = cli_parser()
@@ -110,7 +160,7 @@ def test_wflow_pointing_offset(
 
     (_,) = compute_offset(args)
 
-    read_out = np.loadtxt("pointing_offsets.txt")
+    read_out = numpy.loadtxt("pointing_offsets.txt")
     assert len(read_out) == NANTS
     # other assertions
 
