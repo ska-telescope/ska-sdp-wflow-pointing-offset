@@ -51,7 +51,7 @@ COMMAND = "COMMAND"
 
 def main():
     """
-    Run ska-sdp pointing offset calibration routines
+    Run pointing offset calibration routines
     """
 
     args = docopt(__doc__)
@@ -94,7 +94,7 @@ def compute_offset(args):
     ) = read_data_from_rdb_file(rdbfile=args["--rdb"], auto=args["--auto"])
 
     # Optionally select frequency ranges and/or apply RFI mask
-    if args["--apply_mask"]:
+    if args["--apply_mask"] == "True":
         if not args["--rfi_file"]:
             raise ValueError("RFI File is required!!")
 
