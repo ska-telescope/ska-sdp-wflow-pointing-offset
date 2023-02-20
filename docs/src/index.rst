@@ -18,6 +18,11 @@ If you would like to view the source code or install from git, use::
 Please ensure you have all the dependency packages installed. The installation is managed through `poetry`_. Refer to their page for
 instructions.
 
+.. toctree::
+   :maxdepth: 1
+   :caption: API
+
+   api/index
 
 
 .. toctree::

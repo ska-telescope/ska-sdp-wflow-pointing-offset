@@ -43,13 +43,11 @@ extensions = [
 autodoc_mock_imports = [
     "astropy",
     "numpy",
-    "pandas",
     "katpoint", 
     "katdal",
     "scikits-fitting",
     "python-casacore", 
     "pyuvdata",
-
 ]
 
 templates_path = ['_templates']
