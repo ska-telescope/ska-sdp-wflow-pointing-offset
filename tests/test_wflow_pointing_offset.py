@@ -4,6 +4,7 @@
 """
 import logging
 import os
+import shutil
 import tempfile
 from unittest.mock import MagicMock, patch
 
@@ -108,7 +109,7 @@ def test_wflow_pointing_offset(
         )
         return True
 
-    test_dir = os.getcwd() + "/test_data/"
+    test_dir = os.getcwd()
     with tempfile.TemporaryDirectory(dir=test_dir) as tempdir:
 
         log.info("Putting output data into temporary %s.", tempdir)
@@ -148,9 +149,8 @@ def test_wflow_pointing_offset(
         else:
             assert read_out.shape(3, 18)
 
-    # clean up directory
-    if PERSIST is False:
-        try:
-            os.remove(outfile)
-        except OSError:
-            pass
+        # clean up directory
+        if PERSIST:
+            new_name = test_dir + "pointing_offsets" + f"{mode}" + ".txt"
+            outfile.replace(outfile, new_name)
+            shutil.move(outfile, test_dir)
