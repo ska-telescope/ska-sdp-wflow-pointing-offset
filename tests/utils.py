@@ -3,6 +3,7 @@
 """
 Common Variables and Mock Class Objects used for testing
 """
+import katpoint
 import numpy
 
 from ska_sdp_wflow_pointing_offset import construct_antennas
@@ -10,6 +11,8 @@ from ska_sdp_wflow_pointing_offset import construct_antennas
 NTIMES = 5
 NANTS = 6
 NCHAN = 5
+NCORR = 15
+NPOL = 2
 XYZ = numpy.array(
     [
         [5109237.714735, 2006795.661955, -3239109.183708],
@@ -51,7 +54,7 @@ FREQS = numpy.array(
     ]
 )
 
-# Visibility - the y parameter to be used in the fitting
+# Visibility for beam_fitting- the y parameter to be used in the fitting
 VIS = numpy.array(
     [
         [
@@ -157,10 +160,11 @@ class MockBaseTable:
             return numpy.array([0, 1])
 
         if columnname == "DATA":
-            return VIS
+            vis_3d = VIS[:, numpy.newaxis, :].repeat(NCHAN, axis=1)
+            return vis_3d.reshape((NCORR, NCHAN, NPOL))
 
         if columnname == "WEIGHT":
-            return VIS_WEIGHT
+            return VIS_WEIGHT.reshape((NCORR, NPOL))
 
 
 class MockSpectralWindowTable:
@@ -259,19 +263,19 @@ class MockRDBInput:
     """
 
     def timestamps(self):
-        "Timestamps"
+        """Timestamps"""
         return TIMESTAMPS
 
     def target_projection(self):
-        "Target projection"
+        """Target projection"""
         return "ARC"
 
     def ants(self):
-        "Katpoint antennas"
+        """Katpoint antennas"""
         return construct_antennas(XYZ, DIAMETER, STATION)
 
     def target_x(self):
-        "Target x coordinates"
+        """Target x coordinates"""
         return numpy.array(
             [
                 [-1.67656219e-05, -3.86416795e-05, 2.54736615e-05],
@@ -283,7 +287,7 @@ class MockRDBInput:
         )
 
     def target_y(self):
-        "Target y coordinates"
+        """Target y coordinates"""
         return numpy.array(
             [
                 [-1.00010232e00, -1.00007682e00, -9.99948506e-01],

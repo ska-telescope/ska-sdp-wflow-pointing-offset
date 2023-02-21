@@ -1,3 +1,4 @@
+# pylint: disable=too-many-arguments
 """ Regression test for the pointing offset pipeline
 
 """
@@ -8,7 +9,9 @@ from unittest.mock import MagicMock, patch
 
 import numpy
 import pytest
-from conftest import (
+
+from ska_sdp_wflow_pointing_offset.pointing_offset_cli import compute_offset
+from tests.utils import (
     MockAntennaTable,
     MockBaseTable,
     MockPolarisationTable,
@@ -17,13 +20,11 @@ from conftest import (
     MockSpectralWindowTable,
 )
 
-from ska_sdp_wflow_pointing_offset import compute_offset, construct_antennas
-
 log = logging.getLogger("pointing-offset-logger")
 log.setLevel(logging.WARNING)
 
-default_run = True
-persist = False
+DEFAULT_RUN = True
+PERSIST = False
 
 
 @patch("builtins.open", MagicMock())
@@ -31,59 +32,68 @@ persist = False
 @patch("ska_sdp_wflow_pointing_offset.read_data._load_ms_tables")
 @patch("ska_sdp_wflow_pointing_offset.read_data._open_rdb_file")
 @pytest.mark.parametrize(
-    "enabled, start_freq, end_freq, apply_mask, auto",
+    "enabled, mode, start_freq, end_freq, apply_mask, auto",
     [
         (
-            default_run,
+            DEFAULT_RUN,
+            "no_frequency_selction",
             None,
             None,
             False,
             False,
         ),
         (
-            default_run,
-            0.8e9,
-            1.5e9,
+            DEFAULT_RUN,
+            "frequency_selection",
+            8.562e8,
+            8.567e8,
             False,
             False,
         ),
         (
-            default_run,
-            0.8e9,
-            1.5e9,
+            DEFAULT_RUN,
+            "apply_rfi_mask_only",
+            8.562e8,
+            8.567e8,
             True,
             False,
         ),
         (
-            default_run,
-            0.8e9,
-            1.5e9,
+            DEFAULT_RUN,
+            "use_auto_correlation_only",
+            8.562e8,
+            8.567e8,
             False,
             True,
         ),
         (
-            default_run,
-            0.8e9,
-            1.5e9,
+            DEFAULT_RUN,
+            "rfi_and_auto",
+            8.562e8,
+            8.567e8,
             True,
             True,
         ),
     ],
 )
 def test_wflow_pointing_offset(
+    mock_rdb,
+    mock_ms,
+    mock_rfi_file,
     enabled,
+    mode,
     start_freq,
     end_freq,
     apply_mask,
     auto,
-    mock_ms,
-    mock_rdb,
-    mock_rfi,
 ):
     """
     Main test routine.
+    Note: Mock rdb, ms and rfi_file needs to be kept in the order of
+          (rdb, ms, rfi_file) for pytest to pick up correctly.
 
     :param enabled: Is this test enabled?
+    :param mode: Which mode it is testing
     :param start_freq: Start frequency (Hz)
     :param end_freq: End frequency (Hz)
     :param apply_mask: Apply RFI mask?
@@ -92,7 +102,8 @@ def test_wflow_pointing_offset(
 
     if not enabled:
         log.warning(
-            f"test_pointing_offset: test of {mode} mode is disabled, use enabled argument to change"
+            f"test_pointing_offset: test of {mode} mode is disabled, "
+            f"use enabled argument to change."
         )
         return True
 
@@ -102,7 +113,6 @@ def test_wflow_pointing_offset(
 
     log.info(f"Putting output data into temporary {tempdir}.")
 
-    # MS Tables to read -- this need to be moved to some config first
     mock_ms.return_value = (
         MockAntennaTable(),
         MockBaseTable(),
@@ -112,16 +122,16 @@ def test_wflow_pointing_offset(
     )
 
     mock_rdb.return_value = MockRDBInput()
-    mock_rfi.return_value = numpy.array([1, 1, 0, 1, 1])
+    mock_rfi_file.return_value = numpy.array([1, 1, 0, 1, 1])
 
     args = {
         "--ms": "fake_ms",
         "--rdb": "fake_rdb",
-        "--rfi_file": "fake_rfi",
-        "--start_freq": f"{start_freq}",
-        "--end_freq": f"{end_freq}",
-        "--apply_mask": f"{apply_mask}",
-        "--auto": f"{auto}",
+        "--rfi_file": "fake_rfi_file",
+        "--start_freq": start_freq,
+        "--end_freq": end_freq,
+        "--apply_mask": apply_mask,
+        "--auto": auto,
         "--save-offset": "True",
     }
 
@@ -132,8 +142,10 @@ def test_wflow_pointing_offset(
     # other assertions
 
     # clean up directory
-    if persist is False:
+    if PERSIST is False:
         try:
             os.remove(tempdir + "/pointing_offsets.txt")
         except OSError:
             pass
+
+    return

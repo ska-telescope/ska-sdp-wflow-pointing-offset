@@ -11,7 +11,7 @@ from ska_sdp_wflow_pointing_offset.freq_select import (
     select_channels,
 )
 
-NCORR = 6
+NCORR = 15
 NCHAN = 5
 NPOL = 2
 FREQS = numpy.linspace(1.0e8, 3.0e8, NCHAN)
@@ -31,7 +31,7 @@ def test_apply_rfi_mask(mock_load):
         VIS, FREQS, rfi_filename="fake_file"
     )
 
-    assert result_vis.shape == (6, 1, 2)
+    assert result_vis.shape == (15, 1, 2)
     assert result_freqs == numpy.array([2.0e8])
 
 
@@ -41,7 +41,7 @@ def test_select_channels():
     """
 
     result_vis, result_freq = select_channels(VIS, FREQS, 1.8e8, 2.8e8)
-    assert result_vis.shape == (6, 2, 2)
+    assert result_vis.shape == (15, 2, 2)
     assert result_freq.all() == numpy.array([2.0e8, 2.5e8]).all()
 
 
@@ -55,10 +55,10 @@ def test_clean_vis_data():
     )
 
     # The outputs have different sizes
-    assert numpy.array(vis_pols).shape == (2, 6)
-    assert numpy.sum(numpy.array(vis_pols)) == 12
+    assert numpy.array(vis_pols).shape == (2, 15)
+    assert numpy.sum(numpy.array(vis_pols)) == 30
     assert (
         selected_freq == numpy.array([1.0e08, 1.5e08, 2.0e08, 2.5e08, 3.0e08])
     ).all()
-    assert numpy.array(weight).shape == (2, 6)
+    assert numpy.array(weight).shape == (2, 15)
     assert (corr_type == numpy.array(["XX", "YY"])).all()
