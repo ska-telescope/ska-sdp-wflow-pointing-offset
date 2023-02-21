@@ -1,10 +1,10 @@
 """Program with many options using docopt for computing pointing offsets.
 
 Usage:
-  pointing-offset COMMAND [--ms=FILE] [--rdb=FILE] [--save_offset=<BOOL>]
-                          [--apply_mask=<BOOL>] [--rfi_file=FILE]
+  pointing-offset COMMAND [--ms=FILE] [--rdb=FILE] [--save_offset]
+                          [--apply_mask] [--rfi_file=FILE]
                           [--results_dir=None] [--start_freq=None]
-                          [--end_freq=None] [--auto=<BOOL>]
+                          [--end_freq=None] [--auto]
 
 Commands:
   compute   Runs all required routines for computing the
@@ -16,13 +16,13 @@ Options:
 
   --rdb=FILE           RDB file
   --ms=FILE            Measurement set file
-  --apply_mask=BOOL    Apply Mask (Optional) [default:False]
+  --apply_mask         Apply Mask (Optional) [default:False]
   --rfi_file=FILE      RFI file (Optional)
-  --save_offset=BOOL   Save the Offset Results (Optional) [default:False]
+  --save_offset        Save the Offset Results (Optional) [default:False]
   --results_dir=None   Directory where the results needs to be saved (Optional)
   --start_freq=None    Start Frequency (Optional)
   --end_freq=None      End Frequency (Optional)
-  --auto=BOOL          Auto-correlation visibilities (Optional) [default:False]
+  --auto               Auto-correlation visibilities (Optional) [default:False]
 
 """
 import logging
@@ -94,7 +94,7 @@ def compute_offset(args):
     ) = read_data_from_rdb_file(rdbfile=args["--rdb"], auto=args["--auto"])
 
     # Optionally select frequency ranges and/or apply RFI mask
-    if args["--apply_mask"] == "True":
+    if args["--apply_mask"]:
         if not args["--rfi_file"]:
             raise ValueError("RFI File is required!!")
 
@@ -121,11 +121,11 @@ def compute_offset(args):
         target=target,
         target_projection=target_projection,
         beamwidth_factor=ants[0].beamwidth,
-        auto=args["--auto"],
+        auto=str(args["--auto"]),
     )
 
     # Save the fitted parameters and computed offsets
-    if args["--save_offset"] == "True":
+    if args["--save_offset"]:
         LOG.info("Writing fitted parameters and computed offsets to file...")
         if args["--results_dir"] is None:
             # Save to the location of the measurement set
