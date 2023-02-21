@@ -9,7 +9,7 @@ from ska_sdp_wflow_pointing_offset.coord_support import (
     construct_antennas,
     convert_coordinates,
 )
-from tests.utils import DIAMETER, STATION, XYZ
+from tests.utils import ANTS, DIAMETER, STATION, XYZ
 
 
 def test_construct_antennas():
@@ -18,7 +18,7 @@ def test_construct_antennas():
     """
 
     ants = construct_antennas(XYZ, DIAMETER, STATION)
-    assert len(ants) == 6
+    assert len(ants) == 3
     assert ants[0].name == "SKAMID-CORE"
     assert ants[0].diameter == 25.0
 
@@ -35,10 +35,9 @@ def test_convert_coordinates():
     target = cat.targets[0]
     timestamps = numpy.linspace(1, 10, 9)
     target_projection = "ARC"
-    ants = construct_antennas(XYZ, DIAMETER, STATION)
-    fitted_az = numpy.zeros(len(ants))
-    fitted_el = numpy.zeros(len(ants))
-    for i, antenna in enumerate(ants):
+    fitted_az = numpy.zeros(len(ANTS))
+    fitted_el = numpy.zeros(len(ANTS))
+    for i, antenna in enumerate(ANTS):
         fitted_az[i], fitted_el[i] = convert_coordinates(
             antenna,
             beam_centre,

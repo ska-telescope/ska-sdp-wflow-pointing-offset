@@ -1,4 +1,4 @@
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, inconsistent-return-statements
 """ Regression test for the pointing offset pipeline
 
 """
@@ -102,50 +102,57 @@ def test_wflow_pointing_offset(
 
     if not enabled:
         log.warning(
-            f"test_pointing_offset: test of {mode} mode is disabled, "
-            f"use enabled argument to change."
+            "test_pointing_offset: test of %s mode is disabled, "
+            "use enabled argument to change.",
+            mode,
         )
         return True
 
     test_dir = os.getcwd() + "/test_data/"
-    tempdir_root = tempfile.TemporaryDirectory(dir=test_dir)
-    tempdir = tempdir_root.name
+    with tempfile.TemporaryDirectory(dir=test_dir) as tempdir_root:
+        tempdir = tempdir_root.name
 
-    log.info(f"Putting output data into temporary {tempdir}.")
+        log.info("Putting output data into temporary %s.", tempdir)
+        os.makedirs(tempdir, exist_ok=True)
 
-    mock_ms.return_value = (
-        MockAntennaTable(),
-        MockBaseTable(),
-        MockPolarisationTable(),
-        MockSpectralWindowTable(),
-        MockSourceTable(),
-    )
+        mock_rdb.return_value = MockRDBInput()
+        mock_ms.return_value = (
+            MockAntennaTable(),
+            MockBaseTable(),
+            MockPolarisationTable(),
+            MockSpectralWindowTable(),
+            MockSourceTable(),
+        )
+        mock_rfi_file.return_value = numpy.array([1, 1, 0, 1, 1])
 
-    mock_rdb.return_value = MockRDBInput()
-    mock_rfi_file.return_value = numpy.array([1, 1, 0, 1, 1])
+        args = {
+            "--start_freq": start_freq,
+            "--end_freq": end_freq,
+            "--apply_mask": apply_mask,
+            "--auto": auto,
+            "--save_offset": True,
+            "--results_dir": tempdir,
+            "--rdb": "fake_rdb",
+            "--ms": "fake_ms",
+            "--rfi_file": "fake_rfi_file",
+        }
 
-    args = {
-        "--ms": "fake_ms",
-        "--rdb": "fake_rdb",
-        "--rfi_file": "fake_rfi_file",
-        "--start_freq": start_freq,
-        "--end_freq": end_freq,
-        "--apply_mask": apply_mask,
-        "--auto": auto,
-        "--save-offset": "True",
-    }
+        compute_offset(args)
 
-    (_,) = compute_offset(args)
+        outfile = tempdir + "pointing_offsets.txt"
+        assert os.path.exists(outfile)
 
-    read_out = numpy.loadtxt("pointing_offsets.txt")
-    assert len(read_out) == 5
-    # other assertions
+        read_out = numpy.loadtxt(outfile)
+        # Output data shape [nants, 18]
+        # Axis 1 is (az, el) * 9 variables
+        if apply_mask:
+            assert read_out.shape(1, 18)
+        else:
+            assert read_out.shape(3, 18)
 
     # clean up directory
     if PERSIST is False:
         try:
-            os.remove(tempdir + "/pointing_offsets.txt")
+            os.remove(outfile)
         except OSError:
             pass
-
-    return

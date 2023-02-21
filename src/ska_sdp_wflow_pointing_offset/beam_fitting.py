@@ -162,7 +162,7 @@ def fit_primary_beams(
     to be the same. Different dish diameters is not currently supported.
     :param dish_coordinates: Projections of the spherical coordinates
     of the dish pointing direction to a plane with the target position
-    at the origin. Shape is [2, number of timestamps, number of antennas].
+    at the origin. Shape is [2, ntime, nants].
     :param target: katpoint pointing calibrator information (optionally
     source name, RA, DEC)
     :param target_projection: The projection used in the observation.

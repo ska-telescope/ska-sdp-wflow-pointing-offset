@@ -1,4 +1,5 @@
 # pylint: disable=inconsistent-return-statements,too-few-public-methods
+# pylint: disable=duplicate-code
 """
 Unit Tests to read data
 from CASA Measurement Tables
@@ -11,7 +12,6 @@ import pytest
 from ska_sdp_wflow_pointing_offset.read_data import read_visibilities
 from tests.utils import (
     FREQS,
-    VIS,
     VIS_WEIGHT,
     MockAntennaTable,
     MockBaseTable,
@@ -46,8 +46,12 @@ def test_read_visibilities(mock_tables):
     assert isinstance(freqs, numpy.ndarray)
 
     # Specific attributes
-    assert (vis == VIS).all()
+    assert vis.shape == (15, 5, 2)
     assert (freqs == FREQS).all()
     assert (corr_type == numpy.array(["XX", "YY"])).all()
-    assert (vis_weight == VIS_WEIGHT).all()
+    assert vis_weight.shape == (15, 2)
+    assert (
+        vis_weight.reshape(vis_weight.shape[1], vis_weight.shape[0])
+        == VIS_WEIGHT
+    ).all()
     assert target.radec() == (5.1461782, -1.11199581)

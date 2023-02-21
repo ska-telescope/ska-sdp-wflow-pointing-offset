@@ -1,15 +1,14 @@
 # pylint: disable=too-many-return-statements, inconsistent-return-statements
-# disable=too-few-public-methods, duplicate-code
+# pylint: disable=too-few-public-methods, duplicate-code
 """
 Common Variables and Mock Class Objects used for testing
 """
-import katpoint
 import numpy
 
 from ska_sdp_wflow_pointing_offset import construct_antennas
 
 NTIMES = 5
-NANTS = 6
+NANTS = 3
 NCHAN = 5
 NCORR = 15
 NPOL = 2
@@ -18,21 +17,15 @@ XYZ = numpy.array(
         [5109237.714735, 2006795.661955, -3239109.183708],
         [5109251.156928, 2006811.008353, -3239078.678007],
         [5109238.357021, 2006770.325838, -3239123.769211],
-        [5109261.392307, 2006742.349548, -3239104.893850],
-        [5109258.215601, 2006679.797170, -3239148.364322],
-        [5109236.004433, 2006694.211995, -3239174.293980],
     ]
 )
-DIAMETER = numpy.array([25.0, 25.0, 25.0, 25.0, 25.0, 25.0])
+DIAMETER = numpy.array([25.0, 25.0, 25.0])
 STATION = [
     "SKAMID-CORE",
     "SKAMID-CORE",
     "SKAMID-CORE",
-    "SKAMID-ARM1",
-    "SKAMID-ARM2",
-    "SKAMID-ARM3",
 ]
-
+ANTS = construct_antennas(XYZ, DIAMETER, STATION)
 # Define the parameters for fit primary beam function
 CORR_TYPE = ["XX", "YY"]
 TIMESTAMPS = numpy.array(
@@ -133,6 +126,61 @@ VIS_WEIGHT = numpy.array(
         ],
     ]
 )
+DISH_COORD_X = numpy.array(
+    [
+        [
+            -1.67656219e-05,
+            -3.86416795e-05,
+            2.54736615e-05,
+        ],
+        [
+            1.07554380e-04,
+            1.27813267e-04,
+            -2.93635031e-05,
+        ],
+        [
+            -4.95111837e-04,
+            1.35920940e-04,
+            -3.10228964e-04,
+        ],
+        [
+            4.41771802e-04,
+            -2.76304939e-04,
+            -7.46971279e-05,
+        ],
+        [
+            1.19623691e-04,
+            -2.71621773e-05,
+            -3.05732096e-04,
+        ],
+    ]
+)
+
+DISH_COORD_Y = numpy.array(
+    [
+        [
+            -1.00010232,
+            -1.00007682,
+            -0.99994851,
+        ],
+        [
+            -1.00002945,
+            -1.00019367,
+            -1.00028369,
+        ],
+        [
+            -0.33340324,
+            -0.33369256,
+            -0.33330966,
+        ],
+        [
+            -0.33344541,
+            -0.33336226,
+            -0.33341997,
+        ],
+        [0.33325741, 0.33344652, 0.33292203],
+    ]
+)
 
 
 class MockBaseTable:
@@ -154,17 +202,17 @@ class MockBaseTable:
             return numpy.ones((NTIMES, NANTS, NCHAN, 1))
 
         if columnname == "ANTENNA1":
-            return numpy.array([0, 1, 2, 3, 4, 5])
+            return numpy.array([0, 1, 2])
 
         if columnname == "SPECTRAL_WINDOW_ID":
             return numpy.array([0, 1])
 
         if columnname == "DATA":
             vis_3d = VIS[:, numpy.newaxis, :].repeat(NCHAN, axis=1)
-            return vis_3d.reshape((NCORR, NCHAN, NPOL))
+            return numpy.array(vis_3d.reshape((NCORR, NCHAN, NPOL)))
 
         if columnname == "WEIGHT":
-            return VIS_WEIGHT.reshape((NCORR, NPOL))
+            return numpy.array(VIS_WEIGHT.reshape((NCORR, NPOL)))
 
 
 class MockSpectralWindowTable:
@@ -193,10 +241,10 @@ class MockAntennaTable:
         Get column name from MS File
         """
         if columnname == "NAME":
-            return ["ANT1", "ANT2", "ANT3", "ANT4", "ANT5", "ANT6"]
+            return ["ANT1", "ANT2", "ANT3"]
 
         if columnname == "MOUNT":
-            return ["ALT-AZ", "ALT-AZ", "ALT-AZ", "ALT-AZ", "ALT-AZ", "ALT-AZ"]
+            return ["ALT-AZ", "ALT-AZ", "ALT-AZ"]
 
         if columnname == "DISH_DIAMETER":
             return DIAMETER
@@ -207,9 +255,6 @@ class MockAntennaTable:
                     [-1601162.0, -5042003.0, 3554915.0],
                     [-1601192.0190292, -5042007.78341262, 3554960.73493029],
                     [-1601147.19047704, -5042040.12425644, 3554894.80919799],
-                    [-1601110.11175873, -5041807.16312437, 3554839.91628013],
-                    [-1601405.58491341, -5042041.04214758, 3555275.06577525],
-                    [-1601093.35329757, -5042182.23690452, 3554815.49897078],
                 ]
             )
 
@@ -219,9 +264,6 @@ class MockAntennaTable:
                     [0.00000000e00, 0.00000000e00, 0.00000000e00],
                     [2.18848512e-03, 0.00000000e00, 0.00000000e00],
                     [-3.02790361e-03, 0.00000000e00, 0.00000000e00],
-                    [-9.89315100e-04, 0.00000000e00, 0.00000000e00],
-                    [5.09647129e-04, 0.00000000e00, 0.00000000e00],
-                    [-2.87800725e-03, 0.00000000e00, 0.00000000e00],
                 ]
             )
 
@@ -262,38 +304,27 @@ class MockRDBInput:
     Mock RDB Input Class
     """
 
+    @property
     def timestamps(self):
         """Timestamps"""
         return TIMESTAMPS
 
+    @property
     def target_projection(self):
         """Target projection"""
         return "ARC"
 
+    @property
     def ants(self):
         """Katpoint antennas"""
-        return construct_antennas(XYZ, DIAMETER, STATION)
+        return ANTS
 
+    @property
     def target_x(self):
         """Target x coordinates"""
-        return numpy.array(
-            [
-                [-1.67656219e-05, -3.86416795e-05, 2.54736615e-05],
-                [1.07554380e-04, 1.27813267e-04, -2.93635031e-05],
-                [-4.95111837e-04, 1.35920940e-04, -3.10228964e-04],
-                [4.41771802e-04, -2.76304939e-04, 7.46971279e-05],
-                [1.19623691e-04, -2.71621773e-05, -3.05732096e-04],
-            ]
-        )
+        return DISH_COORD_X
 
+    @property
     def target_y(self):
         """Target y coordinates"""
-        return numpy.array(
-            [
-                [-1.00010232e00, -1.00007682e00, -9.99948506e-01],
-                [-1.00002945e00, -1.00019367e00, -1.00028369e00],
-                [-3.33403243e-01, -3.33692559e-01, -3.33309663e-01],
-                [-3.33445411e-01, -3.33362257e-01, -3.33419971e-01],
-                [3.33257413e-01, 3.33446516e-01, 3.32922029e-01],
-            ]
-        )
+        return DISH_COORD_Y

@@ -2,6 +2,8 @@
 Functions of exporting data to csv file
 """
 
+import os
+
 import numpy
 
 
@@ -18,5 +20,9 @@ def export_pointing_offset_data(filename, offset):
     delta El
     :return: True-Success, False-Failed
     """
+
+    # Make the directory if it doesn't exist
+    path, _ = os.path.split(filename)
+    os.makedirs(path, exist_ok=True)
 
     numpy.savetxt(filename, offset, delimiter=",")
