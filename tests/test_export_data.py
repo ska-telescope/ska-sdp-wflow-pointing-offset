@@ -4,6 +4,7 @@ Unit Tests to create GainTable
 from CASA Tables
 """
 import os
+import tempfile
 
 import numpy
 
@@ -17,7 +18,8 @@ def test_export_pointing_data_file():
     Test importing gaintable from cal table
     """
     offset = numpy.array([[148.95, 35.62], [999.99, 99.99]])
-    export_pointing_offset_data("test_offset.csv", offset)
+    with tempfile.TemporaryDirectory() as temp_dir:
 
-    assert os.path.exists("test_offset.csv")
-    os.remove("test_offset.csv")
+        filename = f"{temp_dir}/test_offset.csv"
+        export_pointing_offset_data(filename, offset)
+        assert os.path.exists(filename)

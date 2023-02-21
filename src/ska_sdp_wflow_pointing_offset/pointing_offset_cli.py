@@ -135,7 +135,7 @@ def compute_offset(args):
             )
             export_pointing_offset_data(
                 results_file,
-                offset=fitted_results,
+                fitted_results,
             )
         else:
             # Save to the user-set directory
@@ -144,7 +144,7 @@ def compute_offset(args):
             )
             export_pointing_offset_data(
                 results_file,
-                offset=fitted_results,
+                fitted_results,
             )
         LOG.info(
             "Fitted parameters and computed offsets written to %s",

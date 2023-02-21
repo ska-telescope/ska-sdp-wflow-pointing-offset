@@ -21,9 +21,15 @@ def export_pointing_offset_data(filename, offset):
     :return: True-Success, False-Failed
     """
 
-    # Make the directory if it doesn't exist
+    # Make the directory if it doesn't exist yet
     path, _ = os.path.split(filename)
     if path != "":
         os.makedirs(path, exist_ok=True)
+
+    # Create the file for testing
+    # pylint: disable=unspecified-encoding
+    with open(filename, "w"):
+        pass
+    print("File created", filename)
 
     numpy.savetxt(filename, offset, delimiter=",")

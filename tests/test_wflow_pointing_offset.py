@@ -112,7 +112,6 @@ def test_wflow_pointing_offset(
     with tempfile.TemporaryDirectory(dir=test_dir) as tempdir:
 
         log.info("Putting output data into temporary %s.", tempdir)
-        os.makedirs(tempdir, exist_ok=True)
 
         mock_rdb.return_value = MockRDBInput()
         mock_ms.return_value = (
@@ -123,6 +122,7 @@ def test_wflow_pointing_offset(
             MockSourceTable(),
         )
         mock_rfi_file.return_value = numpy.array([1, 1, 0, 1, 1])
+        outfile = f"{tempdir}/pointing_offsets.txt"
 
         args = {
             "--start_freq": start_freq,
@@ -138,7 +138,6 @@ def test_wflow_pointing_offset(
 
         compute_offset(args)
 
-        outfile = f"{tempdir}/pointing_offsets.txt"
         assert os.path.exists(outfile)
 
         read_out = numpy.loadtxt(outfile)
