@@ -8,7 +8,7 @@ gains of each antenna (derived possibly from the gain solver in `RASCIL`_). Thes
 those used by the `SARAO`_ team for computing pointing offsets for the MeerKAT array.
 
 .. image:: images/functionality_diagram.png
-  :width: 100%
+  :width: 500%
   :alt: Pointing Offset Functionality Diagram
 
 Installation Instructions
@@ -24,7 +24,6 @@ instructions.
 
 .. toctree::
    :maxdepth: 1
-   :caption: API
 
    api/index
 

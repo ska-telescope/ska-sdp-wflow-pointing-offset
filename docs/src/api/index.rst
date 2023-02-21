@@ -2,7 +2,7 @@
 API
 ===
 
-API of the SDP Pointing Offset Calibration Pipeline
+API of the SDP Pointing Offset Calibration Pipeline.
 
 .. toctree::
   :caption: Subpackages Interface

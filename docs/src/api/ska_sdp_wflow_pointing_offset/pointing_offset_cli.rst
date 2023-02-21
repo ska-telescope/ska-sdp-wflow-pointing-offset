@@ -1,6 +1,13 @@
 ska\_sdp\_wflow\_pointing\_offset.pointing\_offset\_cli module
 =====================================================
-Command Line Interface: ``pointing_offset``
+
+.. automodule:: ska_sdp_wflow_pointing_offset.pointing_offset_cli
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+The command line interface to the pipeline for estimating the azimuth and elevation offsets from a
+measurement set and metadata.
 
 Usage
 -----
@@ -36,7 +43,33 @@ Usage
         --auto               Auto-correlation visibilities (Optional) [default:False]
 
 
-.. automodule:: ska_sdp_wflow_pointing_offset.pointing_offset_cli
-   :members:
-   :undoc-members:
-   :show-inheritance:
+Commands
+---------------------------
+List of commands for accessing the functionalities of the pipeline.
+
+.. list-table::
+   :widths: 25 25
+   :header-rows: 1
+
+   * -
+     - Action
+   * - **compute**
+     - Implements the list of actions below
+   * - **rdb**
+     - Metadata name. Only rdb format is accepted
+   * - **ms**
+     - Measurement set name
+   * - **apply_mask**
+     - Boolean to apply the RFI mask provided by the **rfi_file** command
+   * - **rfi_file**
+     - Filename containing RFI mask to be applied with the **apply_mask** command. Only pickle format are read
+   * - **save_offset**
+     - Boolean to save the fitted parameters and calculated offsets
+   * - **results_dir**
+     - Directory to save the fitted parameters and calculated offsets from the **save_offset** command
+   * - **start_freq**
+     - Start frequency in Hz to use
+   * - **end_freq**
+     - End frequency in Hz to use
+   * - **auto**
+     - Boolean to read auto-correlation data or cross-correlation data

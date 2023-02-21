@@ -48,6 +48,7 @@ autodoc_mock_imports = [
     "scikits-fitting",
     "python-casacore", 
     "pyuvdata",
+    "matplotlib",
 ]
 
 templates_path = ['_templates']
