@@ -23,6 +23,7 @@ def export_pointing_offset_data(filename, offset):
 
     # Make the directory if it doesn't exist
     path, _ = os.path.split(filename)
-    os.makedirs(path, exist_ok=True)
+    if path is not "":
+        os.makedirs(path, exist_ok=True)
 
     numpy.savetxt(filename, offset, delimiter=",")

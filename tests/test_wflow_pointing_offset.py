@@ -109,8 +109,7 @@ def test_wflow_pointing_offset(
         return True
 
     test_dir = os.getcwd() + "/test_data/"
-    with tempfile.TemporaryDirectory(dir=test_dir) as tempdir_root:
-        tempdir = tempdir_root.name
+    with tempfile.TemporaryDirectory(dir=test_dir) as tempdir:
 
         log.info("Putting output data into temporary %s.", tempdir)
         os.makedirs(tempdir, exist_ok=True)
@@ -139,7 +138,7 @@ def test_wflow_pointing_offset(
 
         compute_offset(args)
 
-        outfile = tempdir + "pointing_offsets.txt"
+        outfile = f"{tempdir}/pointing_offsets.txt"
         assert os.path.exists(outfile)
 
         read_out = numpy.loadtxt(outfile)
