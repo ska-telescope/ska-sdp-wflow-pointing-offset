@@ -15,7 +15,6 @@ url = "https://artefact.skao.int/repository/pypi-internal/simple"
 python = "^3.9"
 astropy = "^5.1"
 numpy = "^1.23, <1.24"
-pandas = "^1.5"
 matplotlib="^3.6"
 katpoint = "^0.10"
 katdal = "^0.20"
@@ -24,9 +23,13 @@ pyuvdata = "^2.2"
 
 # optional dependencies; used by "extras"
 python-casacore = {version = "^3.5", optional = true}
+docopt = "^0.6"
 
 [tool.poetry.extras]
 python-casacore = ["python-casacore"]
+
+[tool.poetry.scripts]
+pointing-offset = "ska_sdp_wflow_pointing_offset.pointing_offset_cli:main"
 
 [tool.poetry.dev-dependencies]
 black = "^22.1.0"
