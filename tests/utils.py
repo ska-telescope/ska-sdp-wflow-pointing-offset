@@ -1,9 +1,13 @@
+# pylint: disable=too-many-return-statements, inconsistent-return-statements
+# disable=too-few-public-methods, duplicate-code
 """
-Test fixtures
+Common Variables and Mock Class Objects used for testing
 """
 import numpy
 
-NTIMES = 4
+from ska_sdp_wflow_pointing_offset import construct_antennas
+
+NTIMES = 5
 NANTS = 6
 NCHAN = 5
 XYZ = numpy.array(
@@ -26,6 +30,107 @@ STATION = [
     "SKAMID-ARM3",
 ]
 
+# Define the parameters for fit primary beam function
+CORR_TYPE = ["XX", "YY"]
+TIMESTAMPS = numpy.array(
+    [
+        1.67272797e09,
+        1.67272798e09,
+        1.67272800e09,
+        1.67272801e09,
+        1.67272803e09,
+    ]
+)
+FREQS = numpy.array(
+    [
+        8.56000000e08,
+        8.56208984e08,
+        8.56417969e08,
+        8.56626953e08,
+        8.56835938e08,
+    ]
+)
+
+# Visibility - the y parameter to be used in the fitting
+VIS = numpy.array(
+    [
+        [
+            10431.873,
+            9127.823,
+            10141.914,
+            59011.547,
+            10860.39,
+            9806.72,
+            9204.591,
+            17989.33,
+            30690.541,
+            14414.348,
+            15283.417,
+            14005.097,
+            9860.686,
+            26317.227,
+            9236.236,
+        ],
+        [
+            10431.873,
+            9127.823,
+            10141.914,
+            59011.547,
+            10860.39,
+            9806.72,
+            9204.591,
+            17989.33,
+            30690.541,
+            14414.348,
+            15283.417,
+            14005.097,
+            9860.686,
+            26317.227,
+            9236.236,
+        ],
+    ]
+)
+
+# Weights - used as standard deviation on the y-parameter
+VIS_WEIGHT = numpy.array(
+    [
+        [
+            0.16797385,
+            0.17385559,
+            0.16107331,
+            0.19380789,
+            0.11699289,
+            0.1938036,
+            0.17419179,
+            0.18623605,
+            0.16278373,
+            0.15633371,
+            0.17856638,
+            0.18040745,
+            0.15366295,
+            0.15283653,
+            0.16469233,
+        ],
+        [
+            0.15729496,
+            0.16163893,
+            0.16258055,
+            0.1790921,
+            0.11462438,
+            0.19291812,
+            0.1803138,
+            0.17485328,
+            0.17238507,
+            0.1655575,
+            0.17291346,
+            0.18430558,
+            0.17445499,
+            0.10147141,
+            0.13969643,
+        ],
+    ]
+)
+
 
 class MockBaseTable:
     """
@@ -37,9 +142,7 @@ class MockBaseTable:
         Get column name
         """
         if columnname == "TIME":
-            return numpy.array(
-                [4.35089331e09, 4.35089332e09, 4.35089333e09, 4.35089334e09]
-            )
+            return TIMESTAMPS
 
         if columnname == "INTERVAL":
             return numpy.array([10.0])
@@ -54,10 +157,10 @@ class MockBaseTable:
             return numpy.array([0, 1])
 
         if columnname == "DATA":
-            return numpy.array([1, 2, 3, 4, 5, 6, 7, 8, 9])
+            return VIS
 
         if columnname == "WEIGHT":
-            return numpy.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
+            return VIS_WEIGHT
 
 
 class MockSpectralWindowTable:
@@ -70,7 +173,7 @@ class MockSpectralWindowTable:
         Get column name
         """
         if columnname == "CHAN_FREQ":
-            return numpy.array([1.0e9, 1.1e9, 1.2e9, 1.3e9, 1.4e9])
+            return FREQS
 
         if columnname == "NUM_CHAN":
             return numpy.array([NCHAN])
@@ -156,15 +259,19 @@ class MockRDBInput:
     """
 
     def timestamps(self):
-        return numpy.linspace(1, 10, 9)
+        "Timestamps"
+        return TIMESTAMPS
 
     def target_projection(self):
+        "Target projection"
         return "ARC"
 
     def ants(self):
+        "Katpoint antennas"
         return construct_antennas(XYZ, DIAMETER, STATION)
 
     def target_x(self):
+        "Target x coordinates"
         return numpy.array(
             [
                 [-1.67656219e-05, -3.86416795e-05, 2.54736615e-05],
@@ -176,6 +283,7 @@ class MockRDBInput:
         )
 
     def target_y(self):
+        "Target y coordinates"
         return numpy.array(
             [
                 [-1.00010232e00, -1.00007682e00, -9.99948506e-01],

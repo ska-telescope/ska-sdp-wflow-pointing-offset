@@ -9,16 +9,7 @@ from ska_sdp_wflow_pointing_offset.coord_support import (
     construct_antennas,
     convert_coordinates,
 )
-
-# Assume 2 antennas
-XYZ = numpy.array(
-    [
-        [5109237.714735, 2006795.661955, -3239109.183708],
-        [5109251.156928, 2006811.008353, -3239078.678007],
-    ]
-)
-DIAMETER = numpy.array([13.5, 13.5])
-STATION = ["M000", "M001"]
+from tests.utils import DIAMETER, STATION, XYZ
 
 
 def test_construct_antennas():
@@ -27,9 +18,9 @@ def test_construct_antennas():
     """
 
     ants = construct_antennas(XYZ, DIAMETER, STATION)
-    assert len(ants) == 2
-    assert ants[0].name == "M000"
-    assert ants[0].diameter == 13.5
+    assert len(ants) == 6
+    assert ants[0].name == "SKAMID-CORE"
+    assert ants[0].diameter == 25.0
 
 
 def test_convert_coordinates():

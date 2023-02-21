@@ -7,15 +7,18 @@ from unittest.mock import patch
 
 import numpy
 import pytest
-from conftest import (
+
+from ska_sdp_wflow_pointing_offset.read_data import read_visibilities
+from tests.utils import (
+    FREQS,
+    VIS,
+    VIS_WEIGHT,
     MockAntennaTable,
     MockBaseTable,
     MockPolarisationTable,
     MockSourceTable,
     MockSpectralWindowTable,
 )
-
-from ska_sdp_wflow_pointing_offset.read_data import read_visibilities
 
 casacore = pytest.importorskip("casacore")
 
@@ -43,11 +46,8 @@ def test_read_visibilities(mock_tables):
     assert isinstance(freqs, numpy.ndarray)
 
     # Specific attributes
-    assert (vis == numpy.array([1, 2, 3, 4, 5, 6, 7, 8, 9])).all()
-    assert (freqs == numpy.array([1.0e9, 1.1e9, 1.2e9, 1.3e9, 1.4e9])).all()
+    assert (vis == VIS).all()
+    assert (freqs == FREQS).all()
     assert (corr_type == numpy.array(["XX", "YY"])).all()
-    assert (
-        vis_weight
-        == numpy.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
-    ).all()
+    assert (vis_weight == VIS_WEIGHT).all()
     assert target.radec() == (5.1461782, -1.11199581)

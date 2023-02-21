@@ -19,7 +19,7 @@ Options:
   --apply_mask         Apply Mask (Optional) [default:False]
   --rfi_file=FILE      RFI file (Optional)
   --save_offset        Save the Offset Results (Optional) [default:False]
-  --results_dir=None   Directory where the results needs to be saved (Optional)
+  --results_dir=None   Directory where the results need to be saved (Optional)
   --start_freq=None    Start Frequency (Optional)
   --end_freq=None      End Frequency (Optional)
   --auto               Auto-correlation visibilities (Optional) [default:False]
