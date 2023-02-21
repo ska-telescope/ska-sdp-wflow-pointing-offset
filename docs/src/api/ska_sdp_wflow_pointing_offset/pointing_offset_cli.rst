@@ -1,10 +1,5 @@
 ska\_sdp\_wflow\_pointing\_offset.pointing\_offset\_cli module
-=====================================================
-
-.. automodule:: ska_sdp_wflow_pointing_offset.pointing_offset_cli
-   :members:
-   :undoc-members:
-   :show-inheritance:
+===============================================================
 
 The command line interface to the pipeline for estimating the azimuth and elevation offsets from a
 measurement set and metadata.
@@ -43,7 +38,7 @@ Usage
         --auto               Auto-correlation visibilities (Optional) [default:False]
 
 
-Commands
+Commands \& Options
 ---------------------------
 List of commands for accessing the functionalities of the pipeline.
 
@@ -73,3 +68,4 @@ List of commands for accessing the functionalities of the pipeline.
      - End frequency in Hz to use
    * - **auto**
      - Boolean to read auto-correlation data or cross-correlation data
+

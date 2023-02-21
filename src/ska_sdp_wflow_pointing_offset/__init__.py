@@ -17,5 +17,7 @@ __all__ = [
     "clean_vis_data",
     "construct_antennas",
     "convert_coordinates",
+    "fit_primary_beams",
+    "compute_offset"
     "plot_azel",
 ]

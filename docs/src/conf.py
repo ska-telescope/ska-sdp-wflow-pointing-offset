@@ -45,6 +45,7 @@ autodoc_mock_imports = [
     "numpy",
     "katpoint", 
     "katdal",
+    "scipy",
     "scikits-fitting",
     "python-casacore", 
     "pyuvdata",
@@ -65,6 +66,19 @@ master_doc = "index"
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
+html_context = {
+    "favicon": "img/favicon.ico",
+    "logo": "img/logo.jpg",
+    "theme_logo_only": True,
+    "display_github": False,  # Integrate GitHub
+    "github_user": "",  # Username
+    "github_repo": "ska-sdp-wflow-pointing-offset",  # Repo name
+    "github_version": "master",  # Version
+    "conf_py_path": "/src/",  # Path in the checkout to the docs root
+}
 
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
+
+
+
