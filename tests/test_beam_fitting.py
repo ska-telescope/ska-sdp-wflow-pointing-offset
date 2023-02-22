@@ -73,7 +73,9 @@ def test_fit_primary_beams(target):
     )
 
     # Calculated fitted results are different from each machine.
-    # Therefore, cannot really test it as part of unittest.
+    # Therefore, cannot really test exact output values
+    # with beam information.
+    # Here just test the AzEl offset instead.
     assert (
         azel_offset == numpy.array([[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]])
     ).all()
