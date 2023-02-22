@@ -26,6 +26,7 @@ log.setLevel(logging.WARNING)
 DEFAULT_RUN = True
 PERSIST = False
 
+
 @patch("ska_sdp_wflow_pointing_offset.read_data._load_ms_tables")
 @patch("ska_sdp_wflow_pointing_offset.read_data._open_rdb_file")
 @pytest.mark.parametrize(
