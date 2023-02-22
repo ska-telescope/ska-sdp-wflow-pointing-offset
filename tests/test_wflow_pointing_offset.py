@@ -37,7 +37,7 @@ PERSIST = False
     [
         (
             DEFAULT_RUN,
-            "no_frequency_selction",
+            "no_frequency_selection",
             None,
             None,
             False,
@@ -110,7 +110,7 @@ def test_wflow_pointing_offset(
         return True
 
     test_dir = os.getcwd()
-    with tempfile.TemporaryDirectory(dir=test_dir) as tempdir:
+    with tempfile.TemporaryDirectory() as tempdir:
 
         log.info("Putting output data into temporary %s.", tempdir)
 
@@ -144,13 +144,10 @@ def test_wflow_pointing_offset(
         read_out = numpy.loadtxt(outfile)
         # Output data shape [nants, 18]
         # Axis 1 is (az, el) * 9 variables
-        if apply_mask:
-            assert read_out.shape(1, 18)
-        else:
-            assert read_out.shape(3, 18)
+        assert read_out.shape(3, 18)
 
         # clean up directory
         if PERSIST:
-            new_name = test_dir + "pointing_offsets" + f"{mode}" + ".txt"
-            outfile.replace(outfile, new_name)
-            shutil.move(outfile, test_dir)
+            new_name = test_dir + "/pointing_offsets" + f"{mode}" + ".txt"
+            os.replace(outfile, new_name)
+            shutil.move(new_name, test_dir)

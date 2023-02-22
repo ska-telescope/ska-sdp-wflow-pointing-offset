@@ -1,3 +1,4 @@
+# pylint: disable=too-many-locals
 """Program with many options using docopt for computing pointing offsets.
 
 Usage:
@@ -150,6 +151,20 @@ def compute_offset(args):
             "Fitted parameters and computed offsets written to %s",
             results_file,
         )
+    else:
+        if fitted_results.shape[0] < 10:
+            LOG.info(
+                "The fitted parameters and "
+                "computed offsets are printed on screen."
+            )
+            for i, line in enumerate(fitted_results):
+                LOG.info("Offset array for antenna %i is: %s", i, line)
+        else:
+            LOG.info(
+                "There are too many antennas. "
+                "Please set --save_offsets as True "
+                "to save the offsets to a file. "
+            )
 
 
 if __name__ == "__main__":
