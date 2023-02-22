@@ -49,7 +49,7 @@ def read_visibilities(msname, auto=False):
     :param msname: Name of Measurement set file
     :param auto: Read auto-correlation visibilities?
     :return: visibilities, frequencies, type of correlation products,
-    dish diameter, visibility weights, and katpoint target.
+        dish diameter, visibility weights, and katpoint target.
     """
 
     # The following keys match the polarisation IDs
@@ -136,13 +136,13 @@ def read_data_from_rdb_file(rdbfile, auto=False):
 
     :param rdbname: Name of RDB file
     :param auto: Read parameters related to auto-correlation
-    data from the metadata?
+        data from the metadata?
     :return: timestamps, target projection, ants, and
-    target coordinates of the dish in radians. The target
-    coordinates with shape (2, number of timestamps, number of
-    antennas) are projections of the spherical coordinates
-    of the dish pointing direction to a plane with the target
-    position at the origin.
+        target coordinates of the dish in radians. The target
+        coordinates with shape (2, number of timestamps, number of
+        antennas) are projections of the spherical coordinates
+        of the dish pointing direction to a plane with the target
+        position at the origin.
     """
     rdb = _open_rdb_file(rdbfile, auto)
 

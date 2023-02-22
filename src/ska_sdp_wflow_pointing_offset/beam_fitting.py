@@ -59,26 +59,25 @@ class BeamPatternFit(ScatterFit):
     of 2-D coordinates. The Gaussian bump represents an antenna
     beam pattern convolved with a point source.
 
-    Parameters
-    ----------
     :param centre: Initial guess of 2-element beam centre, in target
-    coordinate units
-    :param width:Initial guess of single beamwidth for both dimensions,
-    or 2-element beamwidth vector, expressed as FWHM in units of target
-    coordinates
+        coordinate units
+    :param width: Initial guess of single beamwidth for both dimensions,
+        or 2-element beamwidth vector, expressed as FWHM in units of
+        target coordinates
     :param height: Initial guess of beam pattern amplitude or height
+
 
     Attributes
     ----------
-    expected_width : real array, shape (2,), or float
+    expected_width: real array, shape (2,), or float
         Initial guess of beamwidth, saved as expected width for checks
     is_valid : bool
         True if beam parameters are within reasonable ranges after fit
-    std_centre : array of float, shape (2,)
+    std_centre: array of float, shape (2,)
         Standard error of beam centre, only set after :func:`fit`
-    std_width : array of float, shape (2,), or float
+    std_width: array of float, shape (2,), or float
         Standard error of beamwidth(s), only set after :func:`fit`
-    std_height : float
+    std_height: float
         Standard error of beam height, only set after :func:`fit`
     """
 
@@ -101,12 +100,12 @@ class BeamPatternFit(ScatterFit):
         (and their standard errors) can be obtained from the
         corresponding member variables after this is run.
 
-        :param x : Sequence of (2, N) target coordinates (as column vectors)
-        :param y : Sequence of (N, ) corresponding total power values to fit
-        :param std_y : Optional measurement error or uncertainty of (N, ) `y`
-        values, expressed as standard deviation in units of `y`
+        :param x: Sequence of (2, N) target coordinates (as column vectors)
+        :param y: Sequence of (N, ) corresponding total power values to fit
+        :param std_y: Optional measurement error or uncertainty of (N, ) `y`
+            values, expressed as standard deviation in units of `y`.
         :return: The fitted beam parameters (centre, width, height and their
-        uncertainties)
+            uncertainties)
         """
         self._interp.fit(x, y, std_y)
         self.centre = self._interp.mean
@@ -127,7 +126,7 @@ class BeamPatternFit(ScatterFit):
         """
         Evaluate fitted beam pattern function on new target coordinates.
 
-        :param x : Sequence of (2, M) target coordinates (as column vectors)
+        :param x: Sequence of (2, M) target coordinates (as column vectors)
         :return: Sequence of total power values (M, ) representing fitted beam
         """
         return self._interp(x)
@@ -152,24 +151,24 @@ def fit_primary_beams(
     parameters and their uncertainties. These visibilities could
     be for each antenna or baseline.
 
-    :param avg_vis: Frequency-averaged visibilities in (Ncorr, npol).
+    :param avg_vis: Frequency-averaged visibilities in [Ncorr, npol].
     :param freqs: Array of frequencies.
     :param timestamps: Array of observation timestamps.
     :param corr_type: The correlation products type of interest.
     :param vis_weight: The weights of the visibilities [ncorr, ] ->
-    [timestamps, antennas or baselines]
-    :param ants: List of antenna information built in katpoint.
-    to be the same. Different dish diameters is not currently supported.
+        [timestamps, antennas or baselines]
+    :param ants: List of antenna information built in katpoint. Different
+        dish diameters is not currently supported.
     :param dish_coordinates: Projections of the spherical coordinates
-    of the dish pointing direction to a plane with the target position
-    at the origin. Shape is [2, ntime, nants].
+        of the dish pointing direction to a plane with the target position
+        at the origin. Shape is [2, number of timestamps, number of antennas].
     :param target: katpoint pointing calibrator information (optionally
-    source name, RA, DEC)
+        source name, RA, DEC)
     :param target_projection: The projection used in the observation.
     :param beamwidth_factor: Beamwidth factor (often between 1.03 and 1.22).
     :param auto: Use auto-correlation visibilities?
     :return: Fitted beam parameters with their uncertainties, and the
-    computed pointing offsets.
+        computed pointing offsets.
     """
     # Compute the primary beam size for use as initial parameter of the
     # Gaussian. Use higher end of the frequency band with smallest beam
