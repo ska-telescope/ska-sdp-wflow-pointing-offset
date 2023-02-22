@@ -1,3 +1,4 @@
+# pylint: disable=too-many-locals
 """Program with many options using docopt for computing pointing offsets.
 
 Usage:
@@ -19,7 +20,7 @@ Options:
   --apply_mask         Apply Mask (Optional) [default:False]
   --rfi_file=FILE      RFI file (Optional)
   --save_offset        Save the Offset Results (Optional) [default:False]
-  --results_dir=None   Directory where the results needs to be saved (Optional)
+  --results_dir=None   Directory where the results need to be saved (Optional)
   --start_freq=None    Start Frequency (Optional)
   --end_freq=None      End Frequency (Optional)
   --auto               Auto-correlation visibilities (Optional) [default:False]
@@ -135,7 +136,7 @@ def compute_offset(args):
             )
             export_pointing_offset_data(
                 results_file,
-                offset=fitted_results,
+                fitted_results,
             )
         else:
             # Save to the user-set directory
@@ -144,12 +145,26 @@ def compute_offset(args):
             )
             export_pointing_offset_data(
                 results_file,
-                offset=fitted_results,
+                fitted_results,
             )
         LOG.info(
             "Fitted parameters and computed offsets written to %s",
             results_file,
         )
+    else:
+        if fitted_results.shape[0] < 10:
+            LOG.info(
+                "The fitted parameters and "
+                "computed offsets are printed on screen."
+            )
+            for i, line in enumerate(fitted_results):
+                LOG.info("Offset array for antenna %i is: %s", i, line)
+        else:
+            LOG.info(
+                "There are too many antennas. "
+                "Please set --save_offsets as True "
+                "to save the offsets to a file. "
+            )
 
 
 if __name__ == "__main__":

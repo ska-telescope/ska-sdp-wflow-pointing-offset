@@ -151,7 +151,7 @@ def fit_primary_beams(
     parameters and their uncertainties. These visibilities could
     be for each antenna or baseline.
 
-    :param avg_vis: Frequency-averaged visibilities.
+    :param avg_vis: Frequency-averaged visibilities in [Ncorr, npol].
     :param freqs: Array of frequencies.
     :param timestamps: Array of observation timestamps.
     :param corr_type: The correlation products type of interest.

@@ -110,16 +110,23 @@ def read_visibilities(msname, auto=False):
     return vis, freqs, corr_type, vis_weight, target
 
 
-def _open_rdb_file(rdbfile):
+def _open_rdb_file(rdbfile, auto=False):
     """
     Open a relational database file
 
     :param rdbfile: file name
+    :param auto: Read parameters related to auto-correlation
+    data from the metadata?
     :return: rdb object
     """
 
     # Check file exist?
     rdb = katdal.open(rdbfile, chunk_store=None)
+    if auto:
+        corrprods = "auto"
+    else:
+        corrprods = "cross"
+    rdb.select(scans="track", corrprods=corrprods)
     return rdb
 
 
@@ -137,17 +144,11 @@ def read_data_from_rdb_file(rdbfile, auto=False):
         of the dish pointing direction to a plane with the target
         position at the origin.
     """
-    rdb = _open_rdb_file(rdbfile)
-    if auto:
-        corrprods = "auto"
-    else:
-        corrprods = "cross"
-    rdb.select(scans="track", corrprods=corrprods)
-    ants = rdb.ants
+    rdb = _open_rdb_file(rdbfile, auto)
 
     return (
         rdb.timestamps,
         rdb.target_projection,
-        ants,
+        rdb.ants,
         numpy.array([rdb.target_x, rdb.target_y]),
     )
