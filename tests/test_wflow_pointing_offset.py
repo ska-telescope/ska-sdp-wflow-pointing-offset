@@ -4,9 +4,8 @@
 """
 import logging
 import os
-import shutil
 import tempfile
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import numpy
 import pytest
@@ -27,20 +26,16 @@ log.setLevel(logging.WARNING)
 DEFAULT_RUN = True
 PERSIST = False
 
-
-@patch("builtins.open", MagicMock())
-@patch("pickle.load")
 @patch("ska_sdp_wflow_pointing_offset.read_data._load_ms_tables")
 @patch("ska_sdp_wflow_pointing_offset.read_data._open_rdb_file")
 @pytest.mark.parametrize(
-    "enabled, mode, start_freq, end_freq, apply_mask, auto",
+    "enabled, mode, start_freq, end_freq, auto",
     [
         (
             DEFAULT_RUN,
             "no_frequency_selection",
             None,
             None,
-            False,
             False,
         ),
         (
@@ -49,30 +44,12 @@ PERSIST = False
             8.562e8,
             8.567e8,
             False,
-            False,
         ),
         (
             DEFAULT_RUN,
-            "apply_rfi_mask_only",
+            "use_auto_correlation",
             8.562e8,
             8.567e8,
-            True,
-            False,
-        ),
-        (
-            DEFAULT_RUN,
-            "use_auto_correlation_only",
-            8.562e8,
-            8.567e8,
-            False,
-            True,
-        ),
-        (
-            DEFAULT_RUN,
-            "rfi_and_auto",
-            8.562e8,
-            8.567e8,
-            True,
             True,
         ),
     ],
@@ -80,24 +57,23 @@ PERSIST = False
 def test_wflow_pointing_offset(
     mock_rdb,
     mock_ms,
-    mock_rfi_file,
     enabled,
     mode,
     start_freq,
     end_freq,
-    apply_mask,
     auto,
 ):
     """
     Main test routine.
-    Note: Mock rdb, ms and rfi_file needs to be kept in the order of
-          (rdb, ms, rfi_file) for pytest to pick up correctly.
+    Note: Mock rdb and mock ms need to be kept in the order of
+          (rdb, ms) for pytest to pick up correctly.
+          Currently, we don't test cases with RFI mask applied,
+          Please refer to the unit tests for apply_rfi_mask.
 
     :param enabled: Is this test enabled?
     :param mode: Which mode it is testing
     :param start_freq: Start frequency (Hz)
     :param end_freq: End frequency (Hz)
-    :param apply_mask: Apply RFI mask?
     :param auto: Use auto-correlations?
     """
 
@@ -109,7 +85,6 @@ def test_wflow_pointing_offset(
         )
         return True
 
-    test_dir = os.getcwd()
     with tempfile.TemporaryDirectory() as tempdir:
 
         log.info("Putting output data into temporary %s.", tempdir)
@@ -122,32 +97,33 @@ def test_wflow_pointing_offset(
             MockSpectralWindowTable(),
             MockSourceTable(),
         )
-        mock_rfi_file.return_value = numpy.array([1, 1, 0, 1, 1])
         outfile = f"{tempdir}/pointing_offsets.txt"
 
         args = {
             "--start_freq": start_freq,
             "--end_freq": end_freq,
-            "--apply_mask": apply_mask,
+            "--apply_mask": False,
+            "--rfi_file": None,
             "--auto": auto,
             "--save_offset": True,
             "--results_dir": tempdir,
             "--rdb": "fake_rdb",
             "--ms": "fake_ms",
-            "--rfi_file": "fake_rfi_file",
         }
 
         compute_offset(args)
 
         assert os.path.exists(outfile)
 
-        read_out = numpy.loadtxt(outfile)
+        read_out = numpy.loadtxt(outfile, delimiter=",")
         # Output data shape [nants, 18]
         # Axis 1 is (az, el) * 9 variables
-        assert read_out.shape(3, 18)
+        assert read_out.shape == (3, 18)
 
-        # clean up directory
+        # If we need to save file to tests directory
         if PERSIST:
-            new_name = test_dir + "/pointing_offsets" + f"{mode}" + ".txt"
+            log.info("Putting data into test_results directory.")
+            test_dir = os.getcwd() + "/test_results"
+            os.makedirs(test_dir, exist_ok=True)
+            new_name = test_dir + "/pointing_offsets_" + f"{mode}" + ".txt"
             os.replace(outfile, new_name)
-            shutil.move(new_name, test_dir)
