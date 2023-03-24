@@ -19,7 +19,6 @@ def test_export_pointing_data_file():
     """
     offset = numpy.array([[148.95, 35.62], [999.99, 99.99]])
     with tempfile.TemporaryDirectory() as temp_dir:
-
         filename = f"{temp_dir}/test_offset.csv"
         export_pointing_offset_data(filename, offset)
         assert os.path.exists(filename)

@@ -2,10 +2,10 @@
 """Program with many options using docopt for computing pointing offsets.
 
 Usage:
-  pointing-offset COMMAND [--ms=FILE] [--rdb=FILE] [--save_offset]
+  pointing-offset COMMAND [--ms=FILE] [--save_offset]
                           [--apply_mask] [--rfi_file=FILE]
                           [--results_dir=None] [--start_freq=None]
-                          [--end_freq=None] [--auto]
+                          [--end_freq=None]
 
 Commands:
   compute   Runs all required routines for computing the
@@ -15,7 +15,6 @@ Options:
   -h --help            show this help message and exit
   -q --quiet           report only file names
 
-  --rdb=FILE           RDB file
   --ms=FILE            Measurement set file
   --apply_mask         Apply Mask (Optional) [default:False]
   --rfi_file=FILE      RFI file (Optional)
@@ -23,7 +22,6 @@ Options:
   --results_dir=None   Directory where the results need to be saved (Optional)
   --start_freq=None    Start Frequency (Optional)
   --end_freq=None      End Frequency (Optional)
-  --auto               Auto-correlation visibilities (Optional) [default:False]
 
 """
 import logging
@@ -38,10 +36,7 @@ from ska_sdp_wflow_pointing_offset.export_data import (
     export_pointing_offset_data,
 )
 from ska_sdp_wflow_pointing_offset.freq_select import clean_vis_data
-from ska_sdp_wflow_pointing_offset.read_data import (
-    read_data_from_rdb_file,
-    read_visibilities,
-)
+from ska_sdp_wflow_pointing_offset.read_data import read_visibilities
 
 LOG = logging.getLogger("ska-sdp-pointing-offset")
 LOG.setLevel(logging.INFO)
@@ -58,7 +53,7 @@ def main():
     args = docopt(__doc__)
 
     if args[COMMAND] == "compute":
-        if args["--ms"] and args["--rdb"]:
+        if args["--ms"]:
             compute_offset(args)
         else:
             raise ValueError("MS and RDB files are required!!")
@@ -82,28 +77,25 @@ def compute_offset(args):
     """
 
     # Get visibilities
-    vis, freqs, corr_type, vis_weight, target = read_visibilities(
-        msname=args["--ms"], auto=args["--auto"]
-    )
-
-    # Get the metadata
     (
-        timestamps,
-        target_projection,
+        vis,
+        freqs,
+        source_offsets,
+        vis_weights,
+        corr_type,
         ants,
-        dish_coord,
-    ) = read_data_from_rdb_file(rdbfile=args["--rdb"], auto=args["--auto"])
+    ) = read_visibilities(msname=args["--ms"])
 
     # Optionally select frequency ranges and/or apply RFI mask
     if args["--apply_mask"]:
         if not args["--rfi_file"]:
             raise ValueError("RFI File is required!!")
 
-    avg_vis, selected_freqs, vis_weight, corr_type = clean_vis_data(
+    avg_vis, selected_freqs, vis_weights, corr_type = clean_vis_data(
         vis,
         freqs,
         corr_type,
-        vis_weight=vis_weight,
+        vis_weights=vis_weights,
         start_freq=args["--start_freq"],
         end_freq=args["--end_freq"],
         apply_mask=args["--apply_mask"],
@@ -114,15 +106,10 @@ def compute_offset(args):
     fitted_results = fit_primary_beams(
         avg_vis=avg_vis,
         freqs=selected_freqs,
-        timestamps=timestamps,
         corr_type=corr_type,
-        vis_weight=vis_weight,
+        vis_weights=vis_weights,
         ants=ants,
-        dish_coordinates=dish_coord,
-        target=target,
-        target_projection=target_projection,
-        beamwidth_factor=ants[0].beamwidth,
-        auto=str(args["--auto"]),
+        source_offsets=source_offsets,
     )
 
     # Save the fitted parameters and computed offsets

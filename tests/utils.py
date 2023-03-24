@@ -88,7 +88,7 @@ VIS = numpy.array(
 )
 
 # Weights - used as standard deviation on the y-parameter
-VIS_WEIGHT = numpy.array(
+VIS_WEIGHTS = numpy.array(
     [
         [
             0.16797385,
@@ -126,7 +126,7 @@ VIS_WEIGHT = numpy.array(
         ],
     ]
 )
-DISH_COORD_X = numpy.array(
+SOURCE_OFFSET_X = numpy.array(
     [
         [
             -1.67656219e-05,
@@ -156,7 +156,7 @@ DISH_COORD_X = numpy.array(
     ]
 )
 
-DISH_COORD_Y = numpy.array(
+SOURCE_OFFSET_Y = numpy.array(
     [
         [
             -1.00010232,
@@ -212,7 +212,7 @@ class MockBaseTable:
             return numpy.array(vis_3d.reshape((NCORR, NCHAN, NPOL)))
 
         if columnname == "WEIGHT":
-            return numpy.array(VIS_WEIGHT.reshape((NCORR, NPOL)))
+            return numpy.array(VIS_WEIGHTS.reshape((NCORR, NPOL)))
 
 
 class MockSpectralWindowTable:
@@ -284,47 +284,14 @@ class MockPolarisationTable:
             return numpy.array([9, 12])
 
 
-class MockSourceTable:
+class MockPointingTable:
     """
-    Source Table Class
+    Mock Pointing Table Class
     """
 
     def getcol(self, columnname=None):
         """
         Get column name
         """
-        if columnname == "NAME":
-            return ["J1939-6342"]
-        if columnname == "DIRECTION":
-            return numpy.array([[5.1461782, -1.11199581]])
-
-
-class MockRDBInput:
-    """
-    Mock RDB Input Class
-    """
-
-    @property
-    def timestamps(self):
-        """Timestamps"""
-        return TIMESTAMPS
-
-    @property
-    def target_projection(self):
-        """Target projection"""
-        return "ARC"
-
-    @property
-    def ants(self):
-        """Katpoint antennas"""
-        return ANTS
-
-    @property
-    def target_x(self):
-        """Target x coordinates"""
-        return DISH_COORD_X
-
-    @property
-    def target_y(self):
-        """Target y coordinates"""
-        return DISH_COORD_Y
+        if columnname == "SOURCE_OFFSET":
+            return numpy.array([SOURCE_OFFSET_X, SOURCE_OFFSET_Y])

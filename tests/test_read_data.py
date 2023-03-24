@@ -12,11 +12,11 @@ import pytest
 from ska_sdp_wflow_pointing_offset.read_data import read_visibilities
 from tests.utils import (
     FREQS,
-    VIS_WEIGHT,
+    VIS_WEIGHTS,
     MockAntennaTable,
     MockBaseTable,
+    MockPointingTable,
     MockPolarisationTable,
-    MockSourceTable,
     MockSpectralWindowTable,
 )
 
@@ -31,16 +31,17 @@ def test_read_visibilities(mock_tables):
     mock_tables.return_value = (
         MockAntennaTable(),
         MockBaseTable(),
+        MockPointingTable(),
         MockPolarisationTable(),
         MockSpectralWindowTable(),
-        MockSourceTable(),
     )
     (
         vis,
         freqs,
+        source_offsets,
+        vis_weights,
         corr_type,
-        vis_weight,
-        target,
+        ants,  # new addition. I probably need a mock for this?
     ) = read_visibilities("test_table")
     assert isinstance(vis, numpy.ndarray)
     assert isinstance(freqs, numpy.ndarray)
@@ -48,10 +49,12 @@ def test_read_visibilities(mock_tables):
     # Specific attributes
     assert vis.shape == (15, 5, 2)
     assert (freqs == FREQS).all()
-    assert (corr_type == numpy.array(["XX", "YY"])).all()
-    assert vis_weight.shape == (15, 2)
+
+    assert (source_offsets.shape).all() == (15, 3, 2)
+
+    assert vis_weights.shape == (15, 2)
     assert (
-        vis_weight.reshape(vis_weight.shape[1], vis_weight.shape[0])
-        == VIS_WEIGHT
+        vis_weights.reshape(vis_weights.shape[1], vis_weights.shape[0])
+        == VIS_WEIGHTS
     ).all()
-    assert target.radec() == (5.1461782, -1.11199581)
+    assert (corr_type == numpy.array(["XX", "YY"])).all()

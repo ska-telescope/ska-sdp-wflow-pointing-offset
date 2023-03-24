@@ -2,7 +2,7 @@ ska\_sdp\_wflow\_pointing\_offset.pointing\_offset\_cli module
 ===============================================================
 
 The command line interface to the pipeline for estimating the azimuth and elevation offsets from a
-measurement set and metadata.
+measurement set.
 
 Usage
 -----
@@ -14,10 +14,10 @@ Usage
     Program with many options using docopt for computing pointing offsets.
 
     Usage:
-        pointing-offset COMMAND [--ms=FILE] [--rdb=FILE] [--save_offset]
-                                [--apply_mask] [--rfi_file=FILE]
-                                [--results_dir=None] [--start_freq=None]
-                                [--end_freq=None] [--auto]
+        pointing-offset COMMAND [--ms=FILE] [--save_offset]
+                          [--apply_mask] [--rfi_file=FILE]
+                          [--results_dir=None] [--start_freq=None]
+                          [--end_freq=None]
 
     Commands:
         compute   Runs all required routines for computing the
@@ -27,7 +27,6 @@ Usage
         -h --help            show this help message and exit
         -q --quiet           report only file names
 
-        --rdb=FILE           RDB file
         --ms=FILE            Measurement set file
         --apply_mask         Apply Mask (Optional) [default:False]
         --rfi_file=FILE      RFI file (Optional)
@@ -35,7 +34,7 @@ Usage
         --results_dir=None   Directory where the results needs to be saved (Optional)
         --start_freq=None    Start Frequency (Optional)
         --end_freq=None      End Frequency (Optional)
-        --auto               Auto-correlation visibilities (Optional) [default:False]
+
 
 
 Commands \& Options
@@ -50,8 +49,6 @@ List of commands for accessing the functionalities of the pipeline.
      - Action
    * - **compute**
      - Implements the list of actions below
-   * - **rdb**
-     - Metadata name. Only rdb format is accepted
    * - **ms**
      - Measurement set name
    * - **apply_mask**
@@ -66,6 +63,5 @@ List of commands for accessing the functionalities of the pipeline.
      - Start frequency in Hz to use
    * - **end_freq**
      - End frequency in Hz to use
-   * - **auto**
-     - Boolean to read auto-correlation data or cross-correlation data
+
 

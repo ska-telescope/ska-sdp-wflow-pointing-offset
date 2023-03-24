@@ -1,57 +1,51 @@
 # pylint: disable-msg=too-many-locals
 """
-Functions of reading data from Measurement Set
-and Relational Database file.
+Functions for reading data from Measurement Set.
 """
 
-import katdal  # pylint: disable=import-error
-import katpoint
 import numpy
 
+from ska_sdp_wflow_pointing_offset.coord_support import construct_antennas
 
-def _load_ms_tables(msname, auto=False):
+
+def _load_ms_tables(msname):
     # pylint: disable=import-error,import-outside-toplevel
     """
     Load CASA Measurement Set file tables
 
     :param msname: Measurement set containing visibilities
-    :param auto: Read auto-correlation visibilities?
-    :return: antenna sub-table, measurement set, polarisation
-    sub-table, and spectral window sub-table, and source sub-table.
+    :return: antenna sub-table, measurement set, pointing
+    sub-table, polarisation sub-table, and spectral window
+    sub-table.
     """
     try:
         from casacore.tables import table, taql  # pylint: disable=import-error
     except ModuleNotFoundError as exc:
         raise ModuleNotFoundError("casacore is not installed") from exc
 
+    # Select cross-correlation only
     base_table = table(tablename=msname)
-    if auto:
-        # Select auto-correlation only
-        base_table = taql("select from $base_table where ANTENNA1 == ANTENNA2")
-    else:
-        # Select cross-correlation only
-        base_table = taql("select from $base_table where ANTENNA1 != ANTENNA2")
+    base_table = taql("select from $base_table where ANTENNA1 != ANTENNA2")
 
     # spw --> spectral window, pol--> polarisation
     spw = table(tablename=f"{msname}/SPECTRAL_WINDOW")
-    pol = table(tablename=f"{msname}/POLARIZATION")
-    anttab = table(f"{msname}/ANTENNA", ack=False)
-    source_table = table(tablename=f"{msname}/SOURCE", ack=False)
+    anttab = table(f"{msname}/ANTENNA")
+    pointing_tab = table(f"{msname}/POINTING")
+    pol = table(tablename=f"{msname}/POLARIZATION", ack=False)
 
-    return anttab, base_table, pol, spw, source_table
+    return anttab, base_table, pointing_tab, pol, spw
 
 
-def read_visibilities(msname, auto=False):
+def read_visibilities(msname):
     """
-    Create a numpy array from a table of a specified MS file.
-    This import gain table form calibration table of CASA.
+    Extracts parameters from a measurement set required for
+    computing the pointing offsets.
 
     :param msname: Name of Measurement set file
-    :param auto: Read auto-correlation visibilities?
-    :return: visibilities, frequencies, type of correlation products,
-        dish diameter, visibility weights, and katpoint target.
+    :return: visibilities, frequencies, source_offsets in RA
+        and DEC, visibility weights, type of correlation
+        products, and list of katpoint antennas.
     """
-
     # The following keys match the polarisation IDs
     # from the casa MS file
     correlation_products = {
@@ -68,19 +62,18 @@ def read_visibilities(msname, auto=False):
     (
         ant_table,
         base_table,
+        pointing_tab,
         pol_table,
         spw_table,
-        source_table,
-    ) = _load_ms_tables(msname, auto)
+    ) = _load_ms_tables(msname)
 
     # Get parameters of interest from the tables
     dish_diam = ant_table.getcol(columnname="DISH_DIAMETER")
-    if not all(dish_diam):
-        # Note that this must change for SKA as there would
-        # be dishes of different sizes
-        raise ValueError("Dish diameters must be the same")
+    antenna_names = ant_table.getcol(columnname="NAME")
+    antenna_positions = ant_table.getcol(columnname="POSITION")
+    source_offsets = pointing_tab.getcol(columnname="SOURCE_OFFSET")
     vis = base_table.getcol(columnname="DATA")
-    vis_weight = base_table.getcol(columnname="WEIGHT")
+    vis_weights = base_table.getcol(columnname="WEIGHT")
     freqs = numpy.squeeze(spw_table.getcol(columnname="CHAN_FREQ"))
     corr_type = numpy.array(
         [
@@ -89,66 +82,9 @@ def read_visibilities(msname, auto=False):
         ]
     )
 
-    # Build katpoint target
-    source_position = source_table.getcol(columnname="DIRECTION")[0]
-    try:
-        # When target's name is known
-        source_name = source_table.getcol(columnname="NAME")[0]
-        cat = katpoint.Catalogue(
-            f"{source_name}, radec, "
-            f"{numpy.degrees(source_position[0])}, "
-            f"{numpy.degrees(source_position[1])}"
-        )
-        target = cat.targets[0]
-    except RuntimeError:
-        # When target's name is unknown
-        target = katpoint.construct_radec_target(
-            ra=numpy.degrees(source_position[0]),
-            dec=numpy.degrees(source_position)[1],
-        )
-
-    return vis, freqs, corr_type, vis_weight, target
-
-
-def _open_rdb_file(rdbfile, auto=False):
-    """
-    Open a relational database file
-
-    :param rdbfile: file name
-    :param auto: Read parameters related to auto-correlation
-    data from the metadata?
-    :return: rdb object
-    """
-
-    # Check file exist?
-    rdb = katdal.open(rdbfile, chunk_store=None)
-    if auto:
-        corrprods = "auto"
-    else:
-        corrprods = "cross"
-    rdb.select(scans="track", corrprods=corrprods)
-    return rdb
-
-
-def read_data_from_rdb_file(rdbfile, auto=False):
-    """
-    Read meta-data from RDB file.
-
-    :param rdbname: Name of RDB file
-    :param auto: Read parameters related to auto-correlation
-        data from the metadata?
-    :return: timestamps, target projection, ants, and
-        target coordinates of the dish in radians. The target
-        coordinates with shape (2, number of timestamps, number of
-        antennas) are projections of the spherical coordinates
-        of the dish pointing direction to a plane with the target
-        position at the origin.
-    """
-    rdb = _open_rdb_file(rdbfile, auto)
-
-    return (
-        rdb.timestamps,
-        rdb.target_projection,
-        rdb.ants,
-        numpy.array([rdb.target_x, rdb.target_y]),
+    # Build katpoint Antenna
+    ants = construct_antennas(
+        xyz=antenna_positions, diameter=dish_diam, station=antenna_names
     )
+
+    return vis, freqs, source_offsets, vis_weights, corr_type, ants
