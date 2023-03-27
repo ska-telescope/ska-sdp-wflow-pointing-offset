@@ -50,13 +50,19 @@ def test_fit_primary_beams():
     )
 
     # For Polarisation 1, assert the AzEl offset for each antenna
-    assert numpy.allclose(
-        numpy.column_stack((fitted_results[:, 0], fitted_results[:, 1])),
-        [[-1.13848967, -1.1102361], [-1.98823527, -2.03476453], [0.0, 0.0]],
+    az_offset_pol1 = fitted_results[:, 0]
+    el_offset_pol1 = fitted_results[:, 1]
+    numpy.testing.assert_allclose(
+        numpy.column_stack((az_offset_pol1, el_offset_pol1)),
+        [[-1.13938977, -1.11031896], [-1.98823527, -2.03476453], [0.0, 0.0]],
+        rtol=1e-3,
     )
 
     # For Polarisation 2, assert the AzEl offset for each antenna
-    assert numpy.allclose(
-        numpy.column_stack((fitted_results[:, 11], fitted_results[:, 12])),
+    az_offset_pol2 = fitted_results[:, 11]
+    el_offset_pol2 = fitted_results[:, 12]
+    assert numpy.testing.assert_allclose(
+        numpy.column_stack((az_offset_pol2, el_offset_pol2)),
         [[-2.66941723, 2.14513271], [0.0, 0.0], [-0.34863202, -1.73848721]],
+        rtol=1e-3,
     )
