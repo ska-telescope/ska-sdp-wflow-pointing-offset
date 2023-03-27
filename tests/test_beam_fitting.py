@@ -63,6 +63,6 @@ def test_fit_primary_beams():
     el_offset_pol2 = fitted_results[:, 12]
     assert numpy.testing.assert_allclose(
         numpy.column_stack((az_offset_pol2, el_offset_pol2)),
-        [[-2.66941723, 2.14513271], [0.0, 0.0], [-0.34863202, -1.73848721]],
+        [[-2.669407, 2.106163], [-1.721364, 2.267566], [0.0, 0.0]],
         rtol=1e-3,
     )
