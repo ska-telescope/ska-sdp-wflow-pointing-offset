@@ -1,5 +1,5 @@
 # pylint: disable=too-many-arguments,too-many-locals
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes,abstract-method
 """
 Fits primary beams modelled by a 2D Gaussian to the visibility
 amplitudes and computes the azimuth and elevation offsets.
