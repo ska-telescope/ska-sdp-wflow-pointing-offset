@@ -41,7 +41,7 @@ def test_read_visibilities(mock_tables):
         source_offsets,
         vis_weights,
         corr_type,
-        ants,  # new addition. I probably need a mock for this?
+        ants,
     ) = read_visibilities("test_table")
     assert isinstance(vis, numpy.ndarray)
     assert isinstance(freqs, numpy.ndarray)
@@ -49,12 +49,12 @@ def test_read_visibilities(mock_tables):
     # Specific attributes
     assert vis.shape == (15, 5, 2)
     assert (freqs == FREQS).all()
-
-    assert (source_offsets.shape).all() == (15, 3, 2)
-
+    assert source_offsets.shape == (2, 5, 3)
     assert vis_weights.shape == (15, 2)
     assert (
         vis_weights.reshape(vis_weights.shape[1], vis_weights.shape[0])
         == VIS_WEIGHTS
     ).all()
     assert (corr_type == numpy.array(["XX", "YY"])).all()
+    assert numpy.shape(ants) == (3,)
+    assert ants[0].diameter == 25.0
