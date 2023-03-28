@@ -11,6 +11,7 @@ import numpy
 def apply_rfi_mask(data, freqs, rfi_filename=None):
     """
     Apply RFI mask.
+
     :param data: 3D data in [ncorr, nchan, npol]
     :param freqs: 1D array of frequency in Hz [nchan]
     :param rfi_filename: Name of the rfi pickle file
@@ -27,7 +28,7 @@ def apply_rfi_mask(data, freqs, rfi_filename=None):
 
 def select_channels(data, freqs, start_freq, end_freq):
     """
-    Select from the visibility data the right channels to look at,
+    Select from the visibility data the desired channels to look at,
     inputting starting and end frequency.
     The function will select the channels between these two frequencies
 
@@ -48,7 +49,7 @@ def clean_vis_data(
     vis_array,
     freqs,
     corr_type,
-    vis_weight,
+    vis_weights,
     start_freq=None,
     end_freq=None,
     apply_mask=False,
@@ -61,7 +62,7 @@ def clean_vis_data(
     :param freqs: Numpy array of frequency [nchan]
     :param corr_type: Correlation type e.g. (XX,YY), (RR, LL),
                         (XX,XY,YX,YY) or (RR,RL,LR,LL)
-    :param vis_weight: Weights of the visibilities [ncorr, npol]
+    :param vis_weights: Weights of the visibilities [ncorr, npol]
     :param start_freq: Starting frequency for selection in MHz
                        If no selection needed, use None
     :param end_freq: Ending frequency for selection in MHz
@@ -102,18 +103,18 @@ def clean_vis_data(
         corr_type = [corr_type[0], corr_type[1]]
         vis_h = avg_vis[:, 0]
         vis_v = avg_vis[:, 1]
-        weight_h = vis_weight[:, 0]
-        weight_v = vis_weight[:, 1]
+        weights_h = vis_weights[:, 0]
+        weights_v = vis_weights[:, 1]
     elif len(corr_type) == 4:
         # (XX,XY,YX,YY) or (RR,RL,LR,LL)
         corr_type = [corr_type[0], corr_type[3]]
         vis_h = avg_vis[:, 0]
         vis_v = avg_vis[:, 3]
-        weight_h = vis_weight[:, 0]
-        weight_v = vis_weight[:, 3]
+        weights_h = vis_weights[:, 0]
+        weights_v = vis_weights[:, 3]
     else:
         raise ValueError("Polarisation type not supported")
 
     return numpy.array(
-        [[vis_h, vis_v], selected_freq, [weight_h, weight_v], corr_type]
+        [[vis_h, vis_v], selected_freq, [weights_h, weights_v], corr_type]
     )

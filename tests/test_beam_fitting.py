@@ -2,9 +2,7 @@
 """
 Unit tests for beam fitting functions
 """
-import katpoint
 import numpy
-import pytest
 
 from ska_sdp_wflow_pointing_offset.beam_fitting import (
     _fwhm_to_sigma,
@@ -14,25 +12,12 @@ from ska_sdp_wflow_pointing_offset.beam_fitting import (
 from tests.utils import (
     ANTS,
     CORR_TYPE,
-    DISH_COORD_X,
-    DISH_COORD_Y,
     FREQS,
-    TIMESTAMPS,
+    SOURCE_OFFSET_X,
+    SOURCE_OFFSET_Y,
     VIS,
-    VIS_WEIGHT,
+    VIS_WEIGHTS,
 )
-
-
-@pytest.fixture(name="target")
-def katpoint_target():
-    """
-    Creates a target that can be pointed at
-    """
-    cat = katpoint.Catalogue(
-        "J1939-6342, radec, 19:39:25.02671, -63:42:45.6255"
-    )
-    target = cat.targets[0]
-    return target
 
 
 def test_fwhm_to_sigma():
@@ -51,31 +36,33 @@ def test_sigma_to_fwhm():
     assert _sigma_to_fwhm(sigma) == 0.023548200450309493
 
 
-def test_fit_primary_beams(target):
+def test_fit_primary_beams():
     """
     Unit test for fit primary beams
     """
     fitted_results = fit_primary_beams(
         VIS,
         FREQS,
-        TIMESTAMPS,
         CORR_TYPE,
-        VIS_WEIGHT,
+        VIS_WEIGHTS,
         ANTS,
-        numpy.array([DISH_COORD_X, DISH_COORD_Y]),
-        target,
-        auto=True,
+        numpy.array([SOURCE_OFFSET_X, SOURCE_OFFSET_Y]),
     )
 
-    # Check the fitted beam centres, widths, heights, and AzEl offsets
-    azel_offset = numpy.column_stack(
-        (fitted_results[:, 16], fitted_results[:, 17])
+    # For Polarisation 1, assert the AzEl offset for each antenna
+    az_offset_pol1 = fitted_results[:, 0]
+    el_offset_pol1 = fitted_results[:, 1]
+    numpy.testing.assert_allclose(
+        numpy.column_stack((az_offset_pol1, el_offset_pol1)),
+        [[-1.13938977, -1.11031896], [-1.98823527, -2.03476453], [0.0, 0.0]],
+        rtol=1e-3,
     )
 
-    # Calculated fitted results are different from each machine.
-    # Therefore, cannot really test exact output values
-    # with beam information.
-    # Here just test the AzEl offset instead.
-    assert (
-        azel_offset == numpy.array([[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]])
-    ).all()
+    # For Polarisation 2, assert the AzEl offset for each antenna
+    az_offset_pol2 = fitted_results[:, 11]
+    el_offset_pol2 = fitted_results[:, 12]
+    numpy.testing.assert_allclose(
+        numpy.column_stack((az_offset_pol2, el_offset_pol2)),
+        [[-2.669407, 2.106163], [-1.721364, 2.267566], [0.0, 0.0]],
+        rtol=1e-3,
+    )

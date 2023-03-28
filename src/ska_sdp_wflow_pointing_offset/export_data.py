@@ -1,5 +1,5 @@
 """
-Functions of exporting data to csv file
+Functions for exporting pointing offset data to text file
 """
 
 import numpy
@@ -7,15 +7,14 @@ import numpy
 
 def export_pointing_offset_data(filename, offset):
     """
-    Export results to a csv file.
+    Writes the results of the pointing offset calibration
+    results to a text file.
 
     :param filename: file name
-    :param offset: Fitted parameters and pointing offsets.
-        The columns of the data are : Antenna Name, Fitting
-        flag, fitted beam centre and uncertainty, fitted beamwith
-        and uncertainty, fitted beam height and uncertainty,
-        fitted beam centre (in azel), commanded (azel), delta Az,
-        and delta El.
+    :param offset: The fitted parameters and their uncertainties
+        for each polaristion. The columns of the data are : Fitted
+        beam centre and uncertainty, fitted beamwidth and uncertainty,
+        fitted beam height and uncertainty.
 
     :return: True-Success, False-Failed
     """

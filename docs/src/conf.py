@@ -8,10 +8,10 @@
 import os
 import sys
 
-project = 'SDP Pointing Offset Calibration Pipeline'
-copyright = '2023, SKA Organisation'
-author = 'See CONTRIBUTORS'
-release = '0.0.0'
+project = "SDP Pointing Offset Calibration Pipeline"
+copyright = "2023, SKA Organisation"
+author = "See CONTRIBUTORS"
+release = "0.0.0"
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -43,15 +43,15 @@ extensions = [
 autodoc_mock_imports = [
     "astropy",
     "numpy",
-    "katpoint", 
+    "katpoint",
     "katdal",
     "scikits",
-    "python-casacore", 
+    "python-casacore",
     "pyuvdata",
     "matplotlib",
 ]
 
-templates_path = ['_templates']
+templates_path = ["_templates"]
 exclude_patterns = []
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -76,8 +76,5 @@ html_context = {
     "conf_py_path": "/src/",  # Path in the checkout to the docs root
 }
 
-html_theme = 'sphinx_rtd_theme'
-html_static_path = ['_static']
-
-
-
+html_theme = "sphinx_rtd_theme"
+html_static_path = ["_static"]
