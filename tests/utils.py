@@ -126,6 +126,8 @@ VIS_WEIGHTS = numpy.array(
         ],
     ]
 )
+
+# Position for beam_fitting- the x parameter to be used in the fitting
 SOURCE_OFFSET_X = numpy.array(
     [
         [

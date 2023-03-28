@@ -1,11 +1,12 @@
 # pylint: disable-msg=too-many-locals
 """
-Functions for reading data from Measurement Set.
+Functions for reading data from Measurement Set
+and constructing antenna information.
 """
 
 import numpy
 
-from ska_sdp_wflow_pointing_offset.coord_support import construct_antennas
+from ska_sdp_wflow_pointing_offset.utils import construct_antennas
 
 
 def _load_ms_tables(msname):

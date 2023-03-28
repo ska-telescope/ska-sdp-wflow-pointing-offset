@@ -3,10 +3,10 @@ Init file
 """
 
 
-from .coord_support import construct_antennas
 from .export_data import export_pointing_offset_data
 from .freq_select import apply_rfi_mask, clean_vis_data, select_channels
 from .read_data import read_visibilities
+from .utils import construct_antennas
 
 __all__ = [
     "export_pointing_offset_data",

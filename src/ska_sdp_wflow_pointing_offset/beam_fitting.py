@@ -139,9 +139,8 @@ def fit_primary_beams(
     :param ants: List of antenna information built in katpoint.
     :param source_offsets: Offsets from the target in Az, El coordinates
         with shape [2, number of timestamps, number of antennas].
-    :return: Antenna Name, fitting flag to indicate failed or successful
-        fit, fitted beam centre and uncertainty, fitted beamwidth and
-        uncertainty, fitted beam height and uncertainty.
+    :return: The fitted beam centre and uncertainty, fitted beamwidth and
+        uncertainty, fitted beam height and uncertainty for each polarisation.
     """
     # Compute the primary beam size for use as initial parameter of the
     # Gaussian. Use higher end of the frequency band with smallest beam
@@ -247,9 +246,9 @@ def fit_primary_beams(
             else:
                 log.warning("No valid primary beam fit for %s", antenna.name)
 
-    # Proposed format for now: Antenna Name, Fitting flag, fitted beam
-    # centre and uncertainty, fitted beam width and uncertainty, fitted
-    # beam height and uncertainty
+    # Proposed format for now: Fitted beam centre and uncertainty,
+    # fitted beam width and uncertainty, fitted beam height and
+    # uncertainty for each polarisation
     return numpy.column_stack(
         (
             fitted_centre_pol1,

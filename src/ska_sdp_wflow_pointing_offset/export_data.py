@@ -11,11 +11,10 @@ def export_pointing_offset_data(filename, offset):
     results to a text file.
 
     :param filename: file name
-    :param offset: Antenna names, the fitted parameters and
-        fitting flags. The columns of the data are : Antenna
-        Name, fitting flag to indicate failed or successful
-        fit, fitted beam centre and uncertainty, fitted beamwidth
-        and uncertainty, fitted beam height and uncertainty.
+    :param offset: The fitted parameters and their uncertainties
+        for each polaristion. The columns of the data are : Fitted
+        beam centre and uncertainty, fitted beamwidth and uncertainty,
+        fitted beam height and uncertainty.
 
     :return: True-Success, False-Failed
     """
