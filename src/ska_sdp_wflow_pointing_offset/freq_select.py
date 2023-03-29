@@ -3,9 +3,11 @@
 Optionally applies RFI mask and select frequency ranges
 """
 
-import pickle
+import logging
 
 import numpy
+
+log = logging.getLogger("ska-sdp-pointing-offset")
 
 
 def apply_rfi_mask(data, freqs, rfi_filename=None):
@@ -14,14 +16,18 @@ def apply_rfi_mask(data, freqs, rfi_filename=None):
 
     :param data: 3D data in [ncorr, nchan, npol]
     :param freqs: 1D array of frequency in Hz [nchan]
-    :param rfi_filename: Name of the rfi pickle file
+    :param rfi_filename: Name of the rfi file (in .txt)
     :return: filtered data and freqs array
     """
     # True is flagged channel and False is accepted channel
-    with open(rfi_filename, "rb") as rfi_file:
-        rfi_mask = pickle.load(rfi_file)
+    try:
+        rfi_mask = numpy.loadtxt(rfi_filename)
         data = data[:, rfi_mask == 0]
         freqs = freqs[rfi_mask == 0]
+    except FileNotFoundError:
+        log.warning(
+            "Invalid RFI flagging file provided. No RFI flags applied."
+        )
 
     return data, freqs
 

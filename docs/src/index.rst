@@ -9,8 +9,11 @@ functions used in this pipeline are based on those used by the `SARAO`_ team for
   :width: 500%
   :alt: Pointing Offset Functionality Diagram
 
+The current pipeline can be executed as a CLI-based command line app.
+Please check the `Pointing Offset CLI`_ page for usage instructions.
+
 Installation Instructions
-============================================
+=========================
 The package is installable via pip.
 
 If you would like to view the source code or install from git, use::
@@ -43,3 +46,4 @@ Indices and tables
 .. _repository: https://gitlab.com/ska-telescope/sdp/science-pipeline-workflows/ska-sdp-wflow-pointing-offset
 .. _poetry: https://python-poetry.org/docs/
 .. _SARAO: https://www.sarao.ac.za/
+.. _Pointing Offset CLI: https://developer.skao.int/projects/ska-sdp-wflow-pointing-offset/en/latest/api/ska_sdp_wflow_pointing_offset/pointing_offset_cli.html

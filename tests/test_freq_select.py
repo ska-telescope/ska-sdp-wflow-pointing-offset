@@ -21,7 +21,7 @@ VIS_WEIGHT = numpy.ones((NCORR, NPOL))
 
 
 @patch("builtins.open", MagicMock())
-@patch("pickle.load")
+@patch("numpy.loadtxt")
 def test_apply_rfi_mask(mock_load):
     """
     Unit test for apply_rfi_mask
