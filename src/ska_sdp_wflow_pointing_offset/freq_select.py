@@ -22,12 +22,26 @@ def apply_rfi_mask(data, freqs, rfi_filename=None):
     # True is flagged channel and False is accepted channel
     try:
         rfi_mask = numpy.loadtxt(rfi_filename)
+        if rfi_mask.shape > freqs.shape:
+            log.info(
+                "Only using the first %i lines of RFI mask", freqs.shape[0]
+            )
+            rfi_mask = rfi_mask[: freqs.shape[0]]
+
+        elif rfi_mask.shape < freqs.shape:
+            log.info(
+                "Only apply mask to the first %i channels", rfi_mask.shape[0]
+            )
+            # Keep the remaining channels by setting their mask to False
+            rfi_extended = numpy.zeros(freqs.shape)
+            rfi_extended[: rfi_mask.shape[0]] = rfi_mask
+            rfi_mask = rfi_extended
+
         data = data[:, rfi_mask == 0]
         freqs = freqs[rfi_mask == 0]
+
     except FileNotFoundError:
-        log.warning(
-            "Invalid RFI flagging file provided. No RFI flags applied."
-        )
+        log.info("Invalid RFI flagging file provided. No RFI flags applied.")
 
     return data, freqs
 

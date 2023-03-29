@@ -35,6 +35,19 @@ def test_apply_rfi_mask(mock_load):
     assert result_freqs == numpy.array([2.0e8])
 
 
+def test_apply_rfi_mask_wrong_file():
+    """
+    Unit test for apply_rfi_mask
+    If wrong file name is provided
+    """
+    result_vis, result_freqs = apply_rfi_mask(
+        VIS, FREQS, rfi_filename="fake_file"
+    )
+
+    assert (result_vis == VIS).all()
+    assert (result_freqs == FREQS).all()
+
+
 def test_select_channels():
     """
     Unit test for select_channels
