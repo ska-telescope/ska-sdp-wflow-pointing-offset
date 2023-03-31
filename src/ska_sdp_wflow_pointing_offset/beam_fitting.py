@@ -124,7 +124,7 @@ def fit_primary_beams(
     vis_weights,
     ants,
     source_offsets,
-    beamwidth_factor,
+    beam_width_factor,
 ):
     """
     Fit the beam pattern to the frequency-averaged and optionally
@@ -186,7 +186,7 @@ def fit_primary_beams(
         for i, antenna in enumerate(ants):
             # Assume using the default beamwidth factor of 1.22
             expected_width = numpy.sqrt(2.0) * (
-                beamwidth_factor * wavelength / antenna.diameter
+                beam_width_factor * wavelength / antenna.diameter
             )
             expected_width = (0.8 * expected_width, 0.9 * expected_width)
             fitted_beam = BeamPatternFit(

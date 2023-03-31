@@ -28,19 +28,21 @@ PERSIST = False
 
 @patch("ska_sdp_wflow_pointing_offset.read_data._load_ms_tables")
 @pytest.mark.parametrize(
-    "enabled, mode, start_freq, end_freq",
+    "enabled, mode, start_freq, end_freq, beam_width",
     [
         (
             DEFAULT_RUN,
             "no_frequency_selection",
             None,
             None,
+            1.22,
         ),
         (
             DEFAULT_RUN,
             "frequency_selection",
             8.562e8,
             8.567e8,
+            1.22,
         ),
     ],
 )
@@ -50,6 +52,7 @@ def test_wflow_pointing_offset(
     mode,
     start_freq,
     end_freq,
+    beam_width,
 ):
     """
     Main test routine.
@@ -91,6 +94,7 @@ def test_wflow_pointing_offset(
             "--save_offset": True,
             "--results_dir": tempdir,
             "--ms": "fake_ms",
+            "--bw_factor": beam_width,
         }
 
         compute_offset(args)
