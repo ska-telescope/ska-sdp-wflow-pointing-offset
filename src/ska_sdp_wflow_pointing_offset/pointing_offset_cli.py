@@ -116,7 +116,7 @@ def compute_offset(args):
         vis_weights=vis_weights,
         ants=ants,
         source_offsets=source_offsets,
-        beamwidth_factor=beamwidth_factor,
+        beam_width_factor=beamwidth_factor,
     )
 
     # Save the fitted parameters and computed offsets
