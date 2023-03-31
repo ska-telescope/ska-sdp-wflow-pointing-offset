@@ -25,6 +25,7 @@ VIS_WEIGHT = numpy.ones((NCORR, NPOL))
 def test_apply_rfi_mask(mock_load):
     """
     Unit test for apply_rfi_mask
+    Assume same length for RFI mask and visibility frequency
     """
     mock_load.return_value = numpy.array([1, 1, 0, 1, 1])
     result_vis, result_freqs = apply_rfi_mask(
@@ -46,6 +47,38 @@ def test_apply_rfi_mask_wrong_file():
 
     assert (result_vis == VIS).all()
     assert (result_freqs == FREQS).all()
+
+
+@patch("builtins.open", MagicMock())
+@patch("numpy.loadtxt")
+def test_apply_rfi_mask_short_mask(mock_load):
+    """
+    Unit test when the RFI mask has fewer channels
+    than Visibility frequency
+    """
+    mock_load.return_value = numpy.array([1, 1, 0])
+    result_vis, result_freqs = apply_rfi_mask(
+        VIS, FREQS, rfi_filename="fake_file"
+    )
+
+    assert result_vis.shape == (15, 3, 2)
+    assert (result_freqs == numpy.array([2.0e8, 2.5e8, 3.0e8])).all()
+
+
+@patch("builtins.open", MagicMock())
+@patch("numpy.loadtxt")
+def test_apply_rfi_mask_long_mask(mock_load):
+    """
+    Unit test when the RFI mask has more channels
+    than Visibility frequency
+    """
+    mock_load.return_value = numpy.array([1, 1, 0, 1, 1, 0])
+    result_vis, result_freqs = apply_rfi_mask(
+        VIS, FREQS, rfi_filename="fake_file"
+    )
+
+    assert result_vis.shape == (15, 1, 2)
+    assert result_freqs == numpy.array([2.0e8])
 
 
 def test_select_channels():
