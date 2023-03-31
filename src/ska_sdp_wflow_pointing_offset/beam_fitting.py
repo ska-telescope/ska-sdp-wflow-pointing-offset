@@ -124,6 +124,7 @@ def fit_primary_beams(
     vis_weights,
     ants,
     source_offsets,
+    beamwidth_factor,
 ):
     """
     Fit the beam pattern to the frequency-averaged and optionally
@@ -139,6 +140,8 @@ def fit_primary_beams(
     :param ants: List of antenna information built in katpoint.
     :param source_offsets: Offsets from the target in Az, El coordinates
         with shape [2, number of timestamps, number of antennas].
+    :param beamwidth_factor: beamwidth factor between 1.03 and 1.22
+        depending on the illumination pattern of the dish.
     :return: The fitted beam centre and uncertainty, fitted beamwidth and
         uncertainty, fitted beam height and uncertainty for each polarisation.
     """
@@ -182,11 +185,8 @@ def fit_primary_beams(
         weight = numpy.mean(weight, axis=1)
         for i, antenna in enumerate(ants):
             # Assume using the default beamwidth factor of 1.22
-            # for the MeerKAT array, which should handle the
-            # larger effective dish diameter in the H direction.
-            # Same may not apply for the SKA
             expected_width = numpy.sqrt(2.0) * (
-                antenna.beamwidth * wavelength / antenna.diameter
+                beamwidth_factor * wavelength / antenna.diameter
             )
             expected_width = (0.8 * expected_width, 0.9 * expected_width)
             fitted_beam = BeamPatternFit(

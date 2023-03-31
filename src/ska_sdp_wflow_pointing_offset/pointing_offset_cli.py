@@ -22,6 +22,7 @@ Options:
   --results_dir=None   Directory where the results need to be saved (Optional)
   --start_freq=None    Start Frequency (Optional)
   --end_freq=None      End Frequency (Optional)
+  --beam_width_factor  Beam width factor (default 1.22)
 
 """
 import logging
@@ -102,6 +103,11 @@ def compute_offset(args):
         rfi_filename=args["--rfi_file"],
     )
 
+    # Set default beamwidth factor
+    if args["--bw_factor"]:
+        beamwidth_factor = args["--bw_factor"]
+    else:
+        beamwidth_factor = 1.22
     # Fit primary beams to visibilities
     fitted_results = fit_primary_beams(
         avg_vis=avg_vis,
@@ -110,6 +116,7 @@ def compute_offset(args):
         vis_weights=vis_weights,
         ants=ants,
         source_offsets=source_offsets,
+        beamwidth_factor=beamwidth_factor,
     )
 
     # Save the fitted parameters and computed offsets
