@@ -6,6 +6,7 @@ Usage:
                           [--apply_mask] [--rfi_file=FILE]
                           [--results_dir=None] [--start_freq=None]
                           [--end_freq=None]
+                          [(--bw_factor <bw_factor>) [<bw_factor>...]]
 
 Commands:
   compute   Runs all required routines for computing the
@@ -22,7 +23,7 @@ Options:
   --results_dir=None   Directory where the results need to be saved (Optional)
   --start_freq=None    Start Frequency (Optional)
   --end_freq=None      End Frequency (Optional)
-  --beam_width_factor  Beam width factor (default 1.22)
+  --bw_factor          Beam width factor [default:1.22 1.22]
 
 """
 import logging
@@ -77,6 +78,9 @@ def compute_offset(args):
     :param args: required and optional arguments
     """
 
+    def safe_float(number):
+        return float(number)
+
     # Get visibilities
     (
         vis,
@@ -105,9 +109,12 @@ def compute_offset(args):
 
     # Set default beamwidth factor
     if args["--bw_factor"]:
-        beamwidth_factor = args["--bw_factor"]
+        beamwidth_factor = args["<bw_factor>"]
+        beamwidth_factor = list(map(safe_float, beamwidth_factor))
+        if len(beamwidth_factor) == 1:
+            beamwidth_factor.append(beamwidth_factor[0])
     else:
-        beamwidth_factor = 1.22
+        beamwidth_factor = [1.22, 1.22]
     # Fit primary beams to visibilities
     fitted_results = fit_primary_beams(
         avg_vis=avg_vis,
