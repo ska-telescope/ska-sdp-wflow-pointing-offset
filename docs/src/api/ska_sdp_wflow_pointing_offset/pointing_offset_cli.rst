@@ -54,7 +54,7 @@ List of commands for accessing the functionalities of the pipeline.
    * - **apply_mask**
      - Boolean to apply the RFI mask provided by the **rfi_file** command
    * - **rfi_file**
-     - Filename containing RFI mask to be applied with the **apply_mask** command. Only pickle format are read
+     - Filename containing RFI mask to be applied with the **apply_mask** command, in the format of .txt file
    * - **save_offset**
      - Boolean to save the fitted parameters and calculated offsets
    * - **results_dir**
