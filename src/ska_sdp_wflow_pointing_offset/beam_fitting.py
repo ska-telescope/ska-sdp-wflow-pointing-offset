@@ -140,8 +140,11 @@ def fit_primary_beams(
     :param ants: List of antenna information built in katpoint.
     :param source_offsets: Offsets from the target in Az, El coordinates
         with shape [2, number of timestamps, number of antennas].
-    :param beam_width_factor: beamwidth factor between 1.03 and 1.22
-        depending on the illumination pattern of the dish.
+    :param beam_width_factor: The beamwidth factor for the two orthogonal
+        directions. Two values are expected as one value for the horizontal
+        direction and the other value for the vertical direction. These
+        values often range between 1.03 and 1.22 depending on the illumination
+        pattern of the dish.
     :return: The fitted beam centre and uncertainty, fitted beamwidth and
         uncertainty, fitted beam height and uncertainty for each polarisation.
     """

@@ -23,7 +23,7 @@ Options:
   --results_dir=None   Directory where the results need to be saved (Optional)
   --start_freq=None    Start Frequency (Optional)
   --end_freq=None      End Frequency (Optional)
-  --bw_factor          Beam width factor [default:1.22 1.22]
+  --bw_factor          Beam width factor [default:0.976, 1.098]
 
 """
 import logging
@@ -119,7 +119,14 @@ def compute_offset(args):
         if len(beamwidth_factor) == 1:
             beamwidth_factor.append(beamwidth_factor[0])
     else:
-        beamwidth_factor = [1.22, 1.22]
+        # The beamwidth in katpoint.Antenna is actually a misnomer as it
+        # actually referring to the beamwidth_factor only accepts one
+        # value. To account for the different beamwidths
+        # (beamwidth factor * wavelength/dish diameter)
+        # for the two orthogonal polarisation directions, the MeerKAT takes
+        # their default 1.22 and multiplies it by 0.8 and 0.9.
+        # In effect, their beamwidth factors are 0.976 and 1.098.
+        beamwidth_factor = [0.976, 1.098]
     LOG.info(
         "Beam width factor: %f %f", beamwidth_factor[0], beamwidth_factor[1]
     )
