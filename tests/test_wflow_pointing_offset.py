@@ -96,7 +96,7 @@ def test_wflow_pointing_offset(
             "--ms": "fake_ms",
             "--bw_factor": beam_width,
         }
-
+        log.info(args)
         compute_offset(args)
 
         assert os.path.exists(outfile)

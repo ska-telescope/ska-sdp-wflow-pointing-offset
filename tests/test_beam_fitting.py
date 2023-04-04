@@ -48,7 +48,7 @@ def test_fit_primary_beams():
         VIS_WEIGHTS,
         ANTS,
         numpy.array([SOURCE_OFFSET_X, SOURCE_OFFSET_Y]),
-        BEAMWIDTH,
+        (BEAMWIDTH, BEAMWIDTH),
     )
 
     # For Polarisation 1, assert the AzEl offset for each antenna
