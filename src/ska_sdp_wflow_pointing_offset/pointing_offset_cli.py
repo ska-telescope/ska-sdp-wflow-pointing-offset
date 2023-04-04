@@ -120,7 +120,9 @@ def compute_offset(args):
             beamwidth_factor.append(beamwidth_factor[0])
     else:
         beamwidth_factor = [1.22, 1.22]
-    LOG.info(f"Beamwidth factor: {beamwidth_factor[0]}, {beamwidth_factor[1]}")
+    LOG.info(
+        "Beam width factor: %f %f", beamwidth_factor[0], beamwidth_factor[1]
+    )
     # Fit primary beams to visibilities
     fitted_results = fit_primary_beams(
         avg_vis=avg_vis,
