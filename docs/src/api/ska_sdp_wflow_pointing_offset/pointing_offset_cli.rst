@@ -66,5 +66,7 @@ List of commands for accessing the functionalities of the pipeline.
      - Start frequency in Hz to use
    * - **end_freq**
      - End frequency in Hz to use
+   * - **bw_factor**
+     - Beam width factor for different polarisations.
 
 
