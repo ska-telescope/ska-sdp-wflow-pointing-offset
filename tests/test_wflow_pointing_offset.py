@@ -28,21 +28,19 @@ PERSIST = False
 
 @patch("ska_sdp_wflow_pointing_offset.read_data._load_ms_tables")
 @pytest.mark.parametrize(
-    "enabled, mode, start_freq, end_freq, beam_width",
+    "enabled, mode, start_freq, end_freq",
     [
         (
             DEFAULT_RUN,
             "no_frequency_selection",
             None,
             None,
-            1.22,
         ),
         (
             DEFAULT_RUN,
             "frequency_selection",
             8.562e8,
             8.567e8,
-            1.22,
         ),
     ],
 )
@@ -52,7 +50,6 @@ def test_wflow_pointing_offset(
     mode,
     start_freq,
     end_freq,
-    beam_width,
 ):
     """
     Main test routine.
@@ -85,7 +82,7 @@ def test_wflow_pointing_offset(
             MockSpectralWindowTable(),
         )
         outfile = f"{tempdir}/pointing_offsets.txt"
-        bw_temp = (beam_width * 0.8, beam_width * 0.9)
+        beam_width_factor = [0.976, 1.098]
         args = {
             "--start_freq": start_freq,
             "--end_freq": end_freq,
@@ -94,7 +91,7 @@ def test_wflow_pointing_offset(
             "--save_offset": True,
             "--results_dir": tempdir,
             "--ms": "fake_ms",
-            "--bw_factor": bw_temp,
+            "--bw_factor": beam_width_factor,
         }
         compute_offset(args)
 

@@ -35,7 +35,7 @@ Usage
         --results_dir=None   Directory where the results needs to be saved (Optional)
         --start_freq=None    Start Frequency (Optional)
         --end_freq=None      End Frequency (Optional)
-        --bw_factor          Beam width factor [default:1.22 1.22]
+        --bw_factor          Beam width factor [default:0.976 1.098]
 
 
 
