@@ -188,12 +188,14 @@ def fit_primary_beams(
         weight = numpy.mean(weight, axis=1)
         for i, antenna in enumerate(ants):
             expected_width = (
-                numpy.sqrt(
-                    beam_width_factor[0] * wavelength / antenna.diameter
-                ),
-                numpy.sqrt(
-                    beam_width_factor[1] * wavelength / antenna.diameter
-                ),
+                numpy.sqrt(2)
+                * beam_width_factor[0]
+                * wavelength
+                / antenna.diameter,
+                numpy.sqrt(2)
+                * beam_width_factor[1]
+                * wavelength
+                / antenna.diameter,
             )
             fitted_beam = BeamPatternFit(
                 centre=(0.0, 0.0), width=expected_width, height=1.0
