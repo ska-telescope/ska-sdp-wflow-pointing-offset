@@ -109,11 +109,7 @@ def compute_offset(args):
 
     # Set default beamwidth factor
     if args["--bw_factor"]:
-        # To deal with the arguments passed from docopt or pytest,
-        # we have to judge if <bw_factor> exists
-        beamwidth_factor = args["--bw_factor"]
-        if "<bw_factor>" in args:
-            beamwidth_factor = args["<bw_factor>"]
+        beamwidth_factor = args["<bw_factor>"]
         beamwidth_factor = list(map(_safe_float, beamwidth_factor))
         if len(beamwidth_factor) == 1:
             beamwidth_factor.append(beamwidth_factor[0])
