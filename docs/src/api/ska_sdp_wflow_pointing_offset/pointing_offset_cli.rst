@@ -35,7 +35,7 @@ Usage
         --results_dir=None   Directory where the results needs to be saved (Optional)
         --start_freq=None    Start Frequency (Optional)
         --end_freq=None      End Frequency (Optional)
-        --bw_factor          Beam width factor [default:0.976 1.098]
+        --bw_factor          Two beam width factors [default:0.976 1.098].
 
 
 
@@ -67,6 +67,6 @@ List of commands for accessing the functionalities of the pipeline.
    * - **end_freq**
      - End frequency in Hz to use
    * - **bw_factor**
-     - Beam width factor for different polarisations.
+     - Beam width factors for different polarisations.
 
 

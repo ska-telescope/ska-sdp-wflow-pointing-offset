@@ -1,4 +1,4 @@
-# pylint: disable=too-many-locals, too-many-branches
+# pylint: disable=too-many-locals
 """Program with many options using docopt for computing pointing offsets.
 
 Usage:
@@ -111,10 +111,9 @@ def compute_offset(args):
     if args["--bw_factor"]:
         # To deal with the arguments passed from docopt or pytest,
         # we have to judge if <bw_factor> exists
+        beamwidth_factor = args["--bw_factor"]
         if "<bw_factor>" in args:
             beamwidth_factor = args["<bw_factor>"]
-        else:
-            beamwidth_factor = args["--bw_factor"]
         beamwidth_factor = list(map(safe_float, beamwidth_factor))
         if len(beamwidth_factor) == 1:
             beamwidth_factor.append(beamwidth_factor[0])
