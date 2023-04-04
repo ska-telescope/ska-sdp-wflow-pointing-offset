@@ -28,7 +28,7 @@ PERSIST = False
 
 @patch("ska_sdp_wflow_pointing_offset.read_data._load_ms_tables")
 @pytest.mark.parametrize(
-    "enabled, mode, start_freq, end_freq",
+    "enabled, mode, start_freq, end_freq, beam_width",
     [
         (
             DEFAULT_RUN,
