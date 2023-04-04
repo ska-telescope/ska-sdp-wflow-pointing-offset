@@ -113,9 +113,9 @@ def compute_offset(args):
         # we have to judge if <bw_factor> exists
         if "<bw_factor>" in args:
             beamwidth_factor = args["<bw_factor>"]
-            beamwidth_factor = list(map(safe_float, beamwidth_factor))
         else:
-            beamwidth_factor = [args["--bw_factor"]]
+            beamwidth_factor = args["--bw_factor"]
+        beamwidth_factor = list(map(safe_float, beamwidth_factor))
         if len(beamwidth_factor) == 1:
             beamwidth_factor.append(beamwidth_factor[0])
     else:
