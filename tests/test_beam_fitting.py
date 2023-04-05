@@ -11,6 +11,7 @@ from ska_sdp_wflow_pointing_offset.beam_fitting import (
 )
 from tests.utils import (
     ANTS,
+    BEAMWIDTH,
     CORR_TYPE,
     FREQS,
     SOURCE_OFFSET_X,
@@ -47,6 +48,7 @@ def test_fit_primary_beams():
         VIS_WEIGHTS,
         ANTS,
         numpy.array([SOURCE_OFFSET_X, SOURCE_OFFSET_Y]),
+        BEAMWIDTH,
     )
 
     # For Polarisation 1, assert the AzEl offset for each antenna
@@ -54,7 +56,7 @@ def test_fit_primary_beams():
     el_offset_pol1 = fitted_results[:, 1]
     numpy.testing.assert_allclose(
         numpy.column_stack((az_offset_pol1, el_offset_pol1)),
-        [[-1.13938977, -1.11031896], [-1.98823527, -2.03476453], [0.0, 0.0]],
+        [[2.944959, -1.174023], [0.0, 0.0], [0.0, 0.0]],
         rtol=1e-3,
     )
 
@@ -63,6 +65,6 @@ def test_fit_primary_beams():
     el_offset_pol2 = fitted_results[:, 12]
     numpy.testing.assert_allclose(
         numpy.column_stack((az_offset_pol2, el_offset_pol2)),
-        [[-2.669407, 2.106163], [-1.721364, 2.267566], [0.0, 0.0]],
+        [[-2.62429, 0.773366], [0.0, 0.0], [0.0, 0.0]],
         rtol=1e-3,
     )

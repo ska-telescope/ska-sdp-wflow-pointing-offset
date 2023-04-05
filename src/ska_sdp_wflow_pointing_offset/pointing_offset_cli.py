@@ -6,6 +6,7 @@ Usage:
                           [--apply_mask] [--rfi_file=FILE]
                           [--results_dir=None] [--start_freq=None]
                           [--end_freq=None]
+                          [(--bw_factor <bw_factor>) [<bw_factor>...]]
 
 Commands:
   compute   Runs all required routines for computing the
@@ -22,6 +23,7 @@ Options:
   --results_dir=None   Directory where the results need to be saved (Optional)
   --start_freq=None    Start Frequency (Optional)
   --end_freq=None      End Frequency (Optional)
+  --bw_factor          Beam width factor [default:0.976, 1.098]
 
 """
 import logging
@@ -76,6 +78,9 @@ def compute_offset(args):
     :param args: required and optional arguments
     """
 
+    def _safe_float(number):
+        return float(number)
+
     # Get visibilities
     (
         vis,
@@ -102,6 +107,18 @@ def compute_offset(args):
         rfi_filename=args["--rfi_file"],
     )
 
+    # Set default beamwidth factor
+    if args["--bw_factor"]:
+        beamwidth_factor = args["<bw_factor>"]
+        beamwidth_factor = list(map(_safe_float, beamwidth_factor))
+        if len(beamwidth_factor) == 1:
+            beamwidth_factor.append(beamwidth_factor[0])
+    else:
+        # We would use the values for the MeerKAT as known in April 2023.
+        beamwidth_factor = [0.976, 1.098]
+    LOG.info(
+        "Beam width factor: %f %f", beamwidth_factor[0], beamwidth_factor[1]
+    )
     # Fit primary beams to visibilities
     fitted_results = fit_primary_beams(
         avg_vis=avg_vis,
@@ -110,6 +127,7 @@ def compute_offset(args):
         vis_weights=vis_weights,
         ants=ants,
         source_offsets=source_offsets,
+        beam_width_factor=beamwidth_factor,
     )
 
     # Save the fitted parameters and computed offsets

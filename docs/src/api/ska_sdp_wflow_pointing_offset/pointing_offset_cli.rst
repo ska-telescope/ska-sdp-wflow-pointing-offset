@@ -18,6 +18,7 @@ Usage
                           [--apply_mask] [--rfi_file=FILE]
                           [--results_dir=None] [--start_freq=None]
                           [--end_freq=None]
+                          [(--bw_factor <bw_factor>) [<bw_factor>...]]
 
     Commands:
         compute   Runs all required routines for computing the
@@ -34,6 +35,8 @@ Usage
         --results_dir=None   Directory where the results needs to be saved (Optional)
         --start_freq=None    Start Frequency (Optional)
         --end_freq=None      End Frequency (Optional)
+        --bw_factor          Two beam width factors [default:0.976 1.098].
+
 
 
 
@@ -63,5 +66,7 @@ List of commands for accessing the functionalities of the pipeline.
      - Start frequency in Hz to use
    * - **end_freq**
      - End frequency in Hz to use
+   * - **bw_factor**
+     - Beam width factors for different polarisations.
 
 

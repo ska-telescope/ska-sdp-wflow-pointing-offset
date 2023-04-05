@@ -82,7 +82,7 @@ def test_wflow_pointing_offset(
             MockSpectralWindowTable(),
         )
         outfile = f"{tempdir}/pointing_offsets.txt"
-
+        beam_width_factor = [0.976, 1.098]
         args = {
             "--start_freq": start_freq,
             "--end_freq": end_freq,
@@ -91,8 +91,9 @@ def test_wflow_pointing_offset(
             "--save_offset": True,
             "--results_dir": tempdir,
             "--ms": "fake_ms",
+            "--bw_factor": True,
+            "<bw_factor>": beam_width_factor,
         }
-
         compute_offset(args)
 
         assert os.path.exists(outfile)
