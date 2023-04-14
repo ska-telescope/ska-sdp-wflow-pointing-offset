@@ -4,88 +4,115 @@ Functions for reading data from Measurement Set
 and constructing antenna information.
 """
 
+import logging
+
 import numpy
+from rascil.processing_components import create_visibility_from_ms
 
 from ska_sdp_wflow_pointing_offset.utils import construct_antennas
 
+log = logging.getLogger("ska-sdp-pointing-offset")
+
 
 def _load_ms_tables(msname):
-    # pylint: disable=import-error,import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
     """
-    Load CASA Measurement Set file tables
+    Loads Measurement Set.
 
-    :param msname: Measurement set containing visibilities
-    :return: antenna sub-table, measurement set, pointing
-    sub-table, polarisation sub-table, and spectral window
-    sub-table.
+    :param msname: Measurement set containing visibilities.
+    :return: spectral window and pointing sub-table.
     """
     try:
-        from casacore.tables import table, taql  # pylint: disable=import-error
+        from casacore.tables import table
     except ModuleNotFoundError as exc:
         raise ModuleNotFoundError("casacore is not installed") from exc
 
-    # Select cross-correlation only
-    base_table = table(tablename=msname)
-    base_table = taql("select from $base_table where ANTENNA1 != ANTENNA2")
-
-    # spw --> spectral window, pol--> polarisation
-    spw = table(tablename=f"{msname}/SPECTRAL_WINDOW")
-    anttab = table(f"{msname}/ANTENNA")
-    pointing_tab = table(f"{msname}/POINTING")
-    pol = table(tablename=f"{msname}/POLARIZATION", ack=False)
-
-    return anttab, base_table, pointing_tab, pol, spw
+    spw_table = table(tablename=f"{msname}/SPECTRAL_WINDOW", ack=False)
+    pointing_table = table(f"{msname}/POINTING", ack=False)
+    return spw_table, pointing_table
 
 
-def read_visibilities(msname):
+def read_visibilities(msname, start_freq=None, end_freq=None):
     """
     Extracts parameters from a measurement set required for
     computing the pointing offsets.
 
-    :param msname: Name of Measurement set file
-    :return: visibilities, frequencies, source_offsets in RA
-        and DEC, visibility weights, type of correlation
-        products, and list of katpoint antennas.
+    :param msname: Name of Measurement set file.
+    :param start_freq: Starting frequency for selection in MHz.
+        If no selection needed, use None
+    :param end_freq: Ending frequency for selection in MHz.
+        If no selection needed, use None
+    :param fit_tovis: Fit primary beam to visibilities instead
+        of antenna gains.
+    :return: List of Visibility, source_offsets in RA and DEC,
+        and list of katpoint Antennas.
     """
-    # The following keys match the polarisation IDs
-    # from the casa MS file
-    correlation_products = {
-        5: "RR",
-        6: "RL",
-        7: "LR",
-        8: "LL",
-        9: "XX",
-        10: "XY",
-        11: "YX",
-        12: "YY",
-    }
-
-    (
-        ant_table,
-        base_table,
-        pointing_tab,
-        pol_table,
-        spw_table,
-    ) = _load_ms_tables(msname)
+    spw_table, pointing_table = _load_ms_tables(msname)
 
     # Get parameters of interest from the tables
-    dish_diam = ant_table.getcol(columnname="DISH_DIAMETER")
-    antenna_names = ant_table.getcol(columnname="NAME")
-    antenna_positions = ant_table.getcol(columnname="POSITION")
-    source_offsets = pointing_tab.getcol(columnname="SOURCE_OFFSET")
-    vis = base_table.getcol(columnname="DATA")
-    vis_weights = base_table.getcol(columnname="WEIGHT")
+    source_offsets = pointing_table.getcol(columnname="SOURCE_OFFSET")
     freqs = numpy.squeeze(spw_table.getcol(columnname="CHAN_FREQ"))
-    corr_type = numpy.array(
-        [
-            correlation_products[corr]
-            for corr in numpy.squeeze(pol_table.getcol(columnname="CORR_TYPE"))
-        ]
-    )
+    nchan = numpy.squeeze(spw_table.getcol(columnname="NUM_CHAN"))
+    if len(freqs) != nchan:
+        raise ValueError(
+            "Length of frequencies does not match number of channels!"
+        )
+    if (start_freq and end_freq) is not None:
+        # Get the channel numbers matching the start and end frequencies
+        chan_low = numpy.full(1, numpy.nan)
+        chan_high = numpy.full(1, numpy.nan)
+        for i, frequency in enumerate(freqs / 1.0e6):
+            if numpy.allclose(frequency, start_freq / 1.0e6, rtol=1.0e-5):
+                chan_low = i
+            if numpy.allclose(frequency, end_freq / 1.0e6, rtol=1.0e-4):
+                chan_high = i
+        if numpy.all(numpy.isfinite(numpy.r_[chan_low, chan_high])):
+            log.info(
+                "Channel %s matches input start frequency %s MHz",
+                chan_low,
+                start_freq / 1.0e6,
+            )
+            log.info(
+                "Channel %s matches input end frequency %s MHz",
+                chan_high,
+                end_freq / 1.0e6,
+            )
+        else:
+            raise ValueError(
+                "Channel number for start_freq and/or end_freq was not found!"
+            )
+        vis = create_visibility_from_ms(
+            msname=msname,
+            channum=None,
+            start_chan=chan_low,
+            end_chan=chan_high,
+            ack=False,
+            datacolumn="DATA",
+            selected_sources=None,
+            selected_dds=None,
+            average_channels=False,
+        )[0]
+    else:
+        vis = create_visibility_from_ms(
+            msname=msname,
+            channum=None,
+            start_chan=None,
+            end_chan=None,
+            ack=False,
+            datacolumn="DATA",
+            selected_sources=None,
+            selected_dds=None,
+            average_channels=False,
+        )[0]
 
-    # Build katpoint Antenna
+    # Build katpoint Antenna from antenna configuration
+    antenna_positions = vis.configuration.data_vars["xyz"].data
+    antenna_diameters = vis.configuration.data_vars["diameter"].data
+    antenna_names = vis.configuration.data_vars["names"].data
     ants = construct_antennas(
-        xyz=antenna_positions, diameter=dish_diam, station=antenna_names
+        xyz=antenna_positions,
+        diameter=antenna_diameters,
+        station=antenna_names,
     )
 
-    return vis, freqs, source_offsets, vis_weights, corr_type, ants
+    return vis, source_offsets, ants
