@@ -80,7 +80,10 @@ def read_visibilities(msname, start_freq=None, end_freq=None):
                 end_freq,
             )
         else:
-            # Should we allow users to set tolerance level from the command-line?
+            ### TO DO: only one value for each frequency must be
+            # identified and use same tolerance 1e-6
+            # Should we allow users to set tolerance level
+            # from the command-line?
             raise ValueError(
                 "Channel number for start_freq and/or end_freq "
                 + "was not found. Modify the tolerance level!"

@@ -1,4 +1,4 @@
-# pylint: disable=too-many-locals
+# pylint: disable=too-many-locals,too-many-branches
 """Program with many options using docopt for computing pointing offsets.
 
 Usage:
@@ -23,8 +23,8 @@ Options:
   --rfi_file=FILE      RFI file (Optional)
   --save_offset        Save the Offset Results (Optional) [default:False]
   --results_dir=None   Directory where the results need to be saved (Optional)
-  --start_freq=None    Start Frequency (Optional)
-  --end_freq=None      End Frequency (Optional)
+  --start_freq=None    Start Frequency in MHz (Optional)
+  --end_freq=None      End Frequency in MHz (Optional)
   --bw_factor          Beamwidth factor [default:0.976, 1.098]
 
 """
@@ -43,11 +43,7 @@ from ska_sdp_wflow_pointing_offset.export_data import (
 )
 from ska_sdp_wflow_pointing_offset.freq_select import clean_vis_data
 from ska_sdp_wflow_pointing_offset.read_data import read_visibilities
-from ska_sdp_wflow_pointing_offset.utils import (
-    compute_gains,
-    get_gain_results,
-    gt_single_plot,
-)
+from ska_sdp_wflow_pointing_offset.utils import compute_gains, gt_single_plot
 
 log = logging.getLogger("ska-sdp-pointing-offset")
 log.setLevel(logging.INFO)
@@ -110,47 +106,43 @@ def compute_offset(args):
     )
 
     # Get visibilities
-    vis, source_offsets, ants = read_visibilities(
-        msname=args["--ms"],
-        start_freq=args["--start_freq"],
-        end_freq=args["--end_freq"],
+    vis, source_offset, ants = read_visibilities(
+        args["--ms"],
+        args["--start_freq"],
+        args["--end_freq"],
     )
 
     # Optionally select frequency ranges and/or apply RFI mask
     modified_vis = clean_vis_data(
-        vis=vis,
-        start_freq=args["--start_freq"],
-        end_freq=args["--end_freq"],
-        apply_mask=args["--apply_mask"],
-        rfi_filename=args["--rfi_file"],
+        vis,
+        args["--start_freq"],
+        args["--end_freq"],
+        args["--apply_mask"],
+        args["--rfi_file"],
     )
 
     if args["--fit_tovis"]:
         y_param = modified_vis
     else:
         # Solve for the antenna gains and save the plot
-        gt_list = compute_gains(vis=modified_vis)
-        amp, weight = get_gain_results(gt_list=gt_list)
-        y_param = {
-            "frequency": numpy.mean(modified_vis.frequency.data),
-            "amp": amp,
-            "weight": weight,
-        }
+        log.info("Solving for the antenna complex gains...")
+        gt_list = compute_gains(modified_vis)
+        y_param = gt_list
 
         # Save gain plot
         plot_name = os.path.join(
             PurePosixPath(args["--ms"]).parent.as_posix(),
             "computed_gains",
         )
-        gt_single_plot(gt_list=gt_list, plot_name=plot_name)
+        gt_single_plot(gt_list, plot_name)
 
     # Fit primary beams to the visibilities or gain amplitudes
     fitted_results = fit_primary_beams(
-        source_offset=source_offsets,
-        y_param=y_param,
-        beamwidth_factor=beamwidth_factor,
-        ants=ants,
-        fit_tovis=args["--fit_tovis"],
+        source_offset,
+        y_param,
+        beamwidth_factor,
+        ants,
+        args["--fit_tovis"],
     )
 
     # Save the fitted parameters and computed offsets
@@ -196,8 +188,8 @@ def compute_offset(args):
 
     end = time.time()
     print(
-        "\nProcess finished in %s"
-        % str(datetime.timedelta(seconds=end - begin))
+        "\nProcess finished in %s",
+        str(datetime.timedelta(seconds=end - begin)),
     )
 
 

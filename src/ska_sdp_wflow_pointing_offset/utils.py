@@ -60,15 +60,24 @@ def get_gain_results(gt_list):
     :param gt_list: GainTable list to plot
 
     :return: List of arrays in format of [time, amplitude-1,
-        phase-phase(antenna0), residual]
+    phase-phase(antenna0), residual]
 
     """
+
+    def angle_wrap(angle):
+        if angle > 180.0:
+            angle = 360.0 - angle
+        if angle < -180.0:
+            angle = 360.0 + angle
+
+        return angle
 
     if not isinstance(gt_list, list):
         gt_list = [gt_list]
 
     with time_support(format="iso", scale="utc"):
         gains = []
+        residual = []
         time = []
         weight = []
 
@@ -93,6 +102,20 @@ def get_gain_results(gt_list):
                     axis=1,
                 )
             )
+            residual.append(
+                numpy.average(
+                    gain_table.residual.data[
+                        0,
+                        central_chan
+                        - half_of_chans_to_avg : central_chan
+                        + half_of_chans_to_avg
+                        + 1,
+                        0,
+                        0,
+                    ],
+                    axis=0,
+                )
+            )
             weight.append(
                 numpy.average(
                     gain_table.weight.data[
@@ -112,12 +135,20 @@ def get_gain_results(gt_list):
         gains = numpy.array(gains)
         amp = numpy.abs(gains)
         amp = amp.reshape(amp.shape[1], amp.shape[0])
+        phase = numpy.angle(gains, deg=True)
         weight = numpy.array(weight)
         weight = weight.reshape(weight.shape[1], weight.shape[0])
 
+        phase_rel = []
+        for i in range(len(phase[0])):
+            phase_now = phase[:, i] - phase[:, 0]
+            phase_now = [angle_wrap(element) for element in phase_now]
+            phase_rel.append(phase_now)
+        phase_rel = numpy.array(phase_rel)
+
         timeseries = Time(time, format="mjd", out_subfmt="str")
 
-        return amp, weight
+        return timeseries, amp, phase_rel, residual, weight
 
 
 def compute_gains(vis):
@@ -135,9 +166,9 @@ def compute_gains(vis):
         niter=200,
         tol=1e-06,
         crosspol=False,
-        normalise_gains=True,  # we need to agree on this
+        normalise_gains=True,
         jones_type="G",
-        timeslice="auto",  # we need to agree on this
+        timeslice="auto",
     )
 
     return gt_list
