@@ -5,6 +5,7 @@ Optionally applies RFI mask and select frequency ranges
 import logging
 
 import numpy
+from ska_sdp_datamodels.visibility.vis_model import Visibility
 
 log = logging.getLogger("ska-sdp-pointing-offset")
 
@@ -15,10 +16,11 @@ def apply_rfi_mask(vis, rfi_filename=None):
 
     :param vis: Visibility containing the observed data_models
     :param rfi_filename: Name of the rfi file (in .txt)
-    :return: filtered data, freqs, and weights array
+    :return: Visibility containing the observed data_models with
+        flagged frequency channels
     """
     # True is flagged channel and False is accepted channel
-    freqs = vis.frequency.data
+    freqs = vis.frequency
     try:
         rfi_mask = numpy.loadtxt(rfi_filename)
         if rfi_mask.shape > freqs.shape:
@@ -35,37 +37,73 @@ def apply_rfi_mask(vis, rfi_filename=None):
             rfi_extended[: rfi_mask.shape[0]] = rfi_mask
             rfi_mask = rfi_extended
 
-        data = vis.vis.data[:, :, rfi_mask == 0]
+        data = vis.vis[:, :, rfi_mask == 0]
+        weight = vis.weight[:, :, rfi_mask == 0]
+        flags = vis.flags[:, :, rfi_mask == 0]
         freqs = freqs[rfi_mask == 0]
-        weights = vis.weight.data[:, :, rfi_mask == 0]
+        channel_bandwidth = vis.channel_bandwidth[rfi_mask == 0]
 
     except FileNotFoundError:
         log.warning(
             "Invalid RFI flagging file provided. No RFI flags applied."
         )
 
-    return data, freqs, weights
+    return Visibility.constructor(
+        frequency=freqs.data,
+        channel_bandwidth=channel_bandwidth.data,
+        phasecentre=vis.phasecentre,
+        configuration=vis.configuration,
+        uvw=vis.uvw.data,
+        time=vis.time.data,
+        vis=data.data,
+        weight=weight.data,
+        integration_time=vis.integration_time.data,
+        flags=flags.data,
+        baselines=vis.baselines,
+        polarisation_frame=vis.visibility_acc.polarisation_frame,
+        source=vis.source,
+        meta=vis.meta,
+    )
 
 
-def select_channels(data, freqs, weights, start_freq, end_freq):
+def select_channels(vis, start_freq=1326.0e6, end_freq=1367.0e6):
     """
     Select from the visibility data the desired channels to look at,
     inputting starting and end frequency.
     The function will select the channels between these two frequencies.
 
-    :param data: 4D visibility data [timestamps, ncorr, nchan, npol]
-    :param freqs: 1D frequency array in Hz [nchan]
-    :param weights: visibility weights in [timestamps, ncorr, nchan, npol]
-    :param start_freq: Starting frequency in Hz (float)
-    :param end_freq: Ending frequency in Hz (float)
-    :return: selected array of (data, freqs)
+    :param vis. Visibility containing the observed data_models with
+        optionally flagged frequency channels.
+    :param start_freq: Starting frequency in MHz (float)
+    :param end_freq: Ending frequency in MHz (float)
+    :return: Visibility containing the observed data_models with
+        some selected frequencies
     """
-    select_mask = (freqs > start_freq) & (freqs < end_freq)
-    data = data[:, :, select_mask, :]
-    weights = weights[:, :, select_mask, :]
-    freqs = freqs[select_mask]
+    select_mask = (vis.frequency / 1.0e6 > start_freq) & (
+        vis.frequency / 1.0e6 < end_freq
+    )
+    data = vis.data[:, :, select_mask, :]
+    weight = vis.weight[:, :, select_mask, :]
+    flags = vis.flags[:, :, select_mask == 0]
+    freqs = vis.frequency[select_mask]
+    channel_bandwidth = vis.channel_bandwidth[select_mask]
 
-    return data, freqs, weights
+    return Visibility.constructor(
+        frequency=freqs.data,
+        channel_bandwidth=channel_bandwidth.data,
+        phasecentre=vis.phasecentre,
+        configuration=vis.configuration,
+        uvw=vis.uvw.data,
+        time=vis.time.data,
+        vis=data.data,
+        weight=weight.data,
+        integration_time=vis.integration_time.data,
+        flags=flags.data,
+        baselines=vis.baselines,
+        polarisation_frame=vis.visibility_acc.polarisation_frame,
+        source=vis.source,
+        meta=vis.meta,
+    )
 
 
 def clean_vis_data(
@@ -78,56 +116,22 @@ def clean_vis_data(
     """
     Clean visibility data and split into polarisations.
 
-    :param vis: Visibility containing the observed data_models
-    :param start_freq: Starting frequency for selection in MHz
-                       If no selection needed, use None
-    :param end_freq: Ending frequency for selection in MHz
-                       If no selection needed, use None
+    :param vis: Visibility containing the raw observed data_models
+    :param start_freq: Starting frequency for selection in MHz.
+        If no selection needed, use None
+    :param end_freq: Ending frequency for selection in MHz.
+        If no selection needed, use None
     :param apply_mask: Apply RFI mask?
     :param rfi_filename: Name of RFI mask file
-    :return: numpy array of visibility with shape [ncorr,]
-             If split_pol is True, return each polarisation
-             Else return the polarisation-averaged visibilities
+    :return: Visibility containing the observed data_models with
+        optionally flagged and/or some selected frequencies.
     """
     # Apply RFI mask
     if apply_mask:
-        filtered_vis, filtered_freqs, filtered_weights = apply_rfi_mask(
-            vis, rfi_filename
-        )
-    else:
-        filtered_vis, filtered_freqs, filtered_weights = (
-            vis.vis.data,
-            vis.frequency.data,
-            vis.weight.data,
-        )
+        vis = apply_rfi_mask(vis, rfi_filename)
 
     # Optionally select a range of frequencies
-    if (start_freq and end_freq) is None:
-        # No frequency selection is needed
-        selected_vis, selected_freqs, selected_weights = (
-            filtered_vis,
-            filtered_freqs,
-            filtered_weights,
-        )
-    else:
-        # Frequency selection is needed
-        selected_vis, selected_freqs, selected_weights = select_channels(
-            filtered_vis,
-            filtered_freqs,
-            filtered_weights,
-            start_freq,
-            end_freq,
-        )
+    if (start_freq and end_freq) is not None:
+        vis = select_channels(vis)
 
-    # Average visibilities and weights in frequency
-    avg_vis = numpy.mean(selected_vis, axis=2)
-    avg_weights = numpy.mean(selected_weights, axis=2)
-
-    # Update the Visibility list for easy reading by RASCIL"s gain solver
-    # Check if this really works.
-    vis.vis.data = avg_vis
-    vis.weight.data = avg_weights
-    vis.frequency.data = numpy.mean(selected_freqs)
-    vis.channel_bandwidth.data = numpy.mean(vis.channel_bandwidth.data)
-
-    return vis, selected_freqs
+    return vis

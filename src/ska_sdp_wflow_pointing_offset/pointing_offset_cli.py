@@ -28,9 +28,11 @@ Options:
   --bw_factor          Beamwidth factor [default:0.976, 1.098]
 
 """
+import datetime
 import logging
 import os
 import sys
+import time
 from pathlib import PurePosixPath
 
 from docopt import docopt
@@ -85,6 +87,8 @@ def compute_offset(args):
     :param args: required and optional arguments
     """
 
+    begin = time.time()
+
     def _safe_float(number):
         return float(number)
 
@@ -113,7 +117,7 @@ def compute_offset(args):
     )
 
     # Optionally select frequency ranges and/or apply RFI mask
-    avg_vis, selected_freqs = clean_vis_data(
+    modified_vis = clean_vis_data(
         vis=vis,
         start_freq=args["--start_freq"],
         end_freq=args["--end_freq"],
@@ -121,47 +125,34 @@ def compute_offset(args):
         rfi_filename=args["--rfi_file"],
     )
 
-    # Perform gain calibration if fitting primary beams to antenna gains
-    if args["fit_tovis"]:
-        y_param = avg_vis.vis.data
-        weights = avg_vis.weights.data
+    if args["--fit_tovis"]:
+        y_param = modified_vis
     else:
-        gt_list = compute_gains(vis=avg_vis)
-        timeseries, amp, phase_rel, residual, weights = get_gain_results(
-            gt_list=gt_list
-        )
-        y_param = amp
+        # Solve for the antenna gains and save the plot
+        gt_list = compute_gains(vis=modified_vis)
+        amp, weight = get_gain_results(gt_list=gt_list)
+        y_param = {
+            "frequency": numpy.mean(modified_vis.frequency.data),
+            "amp": amp,
+            "weight": weight,
+        }
 
-        # Save plot of computed gains
+        # Save gain plot
         plot_name = os.path.join(
             PurePosixPath(args["--ms"]).parent.as_posix(),
             "computed_gains",
         )
         gt_single_plot(gt_list=gt_list, plot_name=plot_name)
 
-    # Fit primary beams to visibilities or gains
+    # Fit primary beams to the visibilities or gain amplitudes
     fitted_results = fit_primary_beams(
+        source_offset=source_offsets,
         y_param=y_param,
-        freqs=selected_freqs,
-        weights=weights,
-        ants=ants,
-        x_param=source_offsets,
         beamwidth_factor=beamwidth_factor,
+        ants=ants,
         fit_tovis=args["--fit_tovis"],
     )
 
-    # fitted_results = fit_primary_beams(
-    #    avg_vis=avg_vis, #y_param
-    #    freqs=selected_freqs,
-    #    corr_type=corr_type,
-    #    vis_weights=vis_weights,
-    #    ants=ants,
-    #    source_offsets=source_offsets,  #x_param
-    #    beamwidth_factor=beamwidth_factor,
-    #    fit_tovis=args["--fit_tovis"],
-    # )
-
-    """
     # Save the fitted parameters and computed offsets
     if args["--save_offset"]:
         log.info("Writing fitted parameters and computed offsets to file...")
@@ -202,7 +193,12 @@ def compute_offset(args):
                 "Please set --save_offsets as True "
                 "to save the offsets to a file. "
             )
-    """
+
+    end = time.time()
+    print(
+        "\nProcess finished in %s"
+        % str(datetime.timedelta(seconds=end - begin))
+    )
 
 
 if __name__ == "__main__":

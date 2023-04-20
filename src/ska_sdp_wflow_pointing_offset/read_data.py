@@ -50,8 +50,10 @@ def read_visibilities(msname, start_freq=None, end_freq=None):
     spw_table, pointing_table = _load_ms_tables(msname)
 
     # Get parameters of interest from the tables
-    source_offsets = pointing_table.getcol(columnname="SOURCE_OFFSET")
-    freqs = numpy.squeeze(spw_table.getcol(columnname="CHAN_FREQ"))
+    source_offset = pointing_table.getcol(columnname="SOURCE_OFFSET")
+    freqs = (
+        numpy.squeeze(spw_table.getcol(columnname="CHAN_FREQ")) / 1.0e6
+    )  # in MHz
     nchan = numpy.squeeze(spw_table.getcol(columnname="NUM_CHAN"))
     if len(freqs) != nchan:
         raise ValueError(
@@ -61,25 +63,27 @@ def read_visibilities(msname, start_freq=None, end_freq=None):
         # Get the channel numbers matching the start and end frequencies
         chan_low = numpy.full(1, numpy.nan)
         chan_high = numpy.full(1, numpy.nan)
-        for i, frequency in enumerate(freqs / 1.0e6):
-            if numpy.allclose(frequency, start_freq / 1.0e6, rtol=1.0e-5):
+        for i, frequency in enumerate(freqs):
+            if numpy.allclose(frequency, start_freq, rtol=1.0e-5):
                 chan_low = i
-            if numpy.allclose(frequency, end_freq / 1.0e6, rtol=1.0e-4):
+            if numpy.allclose(frequency, end_freq, rtol=1.0e-4):
                 chan_high = i
         if numpy.all(numpy.isfinite(numpy.r_[chan_low, chan_high])):
             log.info(
                 "Channel %s matches input start frequency %s MHz",
                 chan_low,
-                start_freq / 1.0e6,
+                start_freq,
             )
             log.info(
                 "Channel %s matches input end frequency %s MHz",
                 chan_high,
-                end_freq / 1.0e6,
+                end_freq,
             )
         else:
+            # Should we allow users to set tolerance level from the command-line?
             raise ValueError(
-                "Channel number for start_freq and/or end_freq was not found!"
+                "Channel number for start_freq and/or end_freq "
+                + "was not found. Modify the tolerance level!"
             )
         vis = create_visibility_from_ms(
             msname=msname,
@@ -115,4 +119,4 @@ def read_visibilities(msname, start_freq=None, end_freq=None):
         station=antenna_names,
     )
 
-    return vis, source_offsets, ants
+    return vis, source_offset, ants

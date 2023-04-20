@@ -12,102 +12,6 @@ from astropy.visualization import time_support
 from ska_sdp_func_python.calibration import solve_gaintable
 
 
-def get_gain_results(gt_list):
-    """Get data from a list of GainTables used for plotting.
-
-    :param gt_list: GainTable list to plot
-
-    :return: List of arrays in format of [time, amplitude-1, phase-phase(antenna0), residual]
-
-    """
-
-    def angle_wrap(angle):
-        if angle > 180.0:
-            angle = 360.0 - angle
-        if angle < -180.0:
-            angle = 360.0 + angle
-
-        return angle
-
-    if not isinstance(gt_list, list):
-        gt_list = [gt_list]
-
-    with time_support(format="iso", scale="utc"):
-        gains = []
-        residual = []
-        time = []
-        weight = []
-
-        # We only look at the central channel at the moment
-        half_of_chans_to_avg = 0
-        for gt in gt_list:
-            time.append(gt.time.data[0] / 86400.0)
-            current_gain = gt.gain.data[0]
-            nchan = current_gain.shape[1]
-            central_chan = nchan // 2
-            gains.append(
-                numpy.average(
-                    current_gain[
-                        :,
-                        central_chan
-                        - half_of_chans_to_avg : central_chan
-                        + half_of_chans_to_avg
-                        + 1,
-                        0,
-                        0,
-                    ],
-                    axis=1,
-                )
-            )
-            residual.append(
-                numpy.average(
-                    gt.residual.data[
-                        0,
-                        central_chan
-                        - half_of_chans_to_avg : central_chan
-                        + half_of_chans_to_avg
-                        + 1,
-                        0,
-                        0,
-                    ],
-                    axis=0,
-                )
-            )
-            weight.append(
-                numpy.average(
-                    gt.weight.data[
-                        0,
-                        :,
-                        central_chan
-                        - half_of_chans_to_avg : central_chan
-                        + half_of_chans_to_avg
-                        + 1,
-                        0,
-                        0,
-                    ],
-                    axis=1,
-                )
-            )
-
-        gains = numpy.array(gains)
-        amp = numpy.abs(gains)
-        amp = amp.reshape(amp.shape[1], amp.shape[0])
-        phase = numpy.angle(gains, deg=True)
-        weight = numpy.array(weight)
-        weight = weight.reshape(weight.shape[1], weight.shape[0])
-
-        phase_rel = []
-        for i in range(len(phase[0])):
-            phase_now = phase[:, i] - phase[:, 0]
-            phase_now = [angle_wrap(element) for element in phase_now]
-            phase_rel.append(phase_now)
-        phase_rel = numpy.array(phase_rel)
-
-        timeseries = Time(time, format="mjd", out_subfmt="str")
-
-        return timeseries, amp, phase_rel, residual, weight
-
-
 def construct_antennas(xyz, diameter, station):
     """
     Construct list of katpoint antenna objects
@@ -150,6 +54,72 @@ def construct_antennas(xyz, diameter, station):
     return ants
 
 
+def get_gain_results(gt_list):
+    """Get data from a list of GainTables used for plotting.
+
+    :param gt_list: GainTable list to plot
+
+    :return: List of arrays in format of [time, amplitude-1,
+        phase-phase(antenna0), residual]
+
+    """
+
+    if not isinstance(gt_list, list):
+        gt_list = [gt_list]
+
+    with time_support(format="iso", scale="utc"):
+        gains = []
+        time = []
+        weight = []
+
+        # We only look at the central channel at the moment
+        half_of_chans_to_avg = 0
+        for gain_table in gt_list:
+            time.append(gain_table.time.data[0] / 86400.0)
+            current_gain = gain_table.gain.data[0]
+            nchan = current_gain.shape[1]
+            central_chan = nchan // 2
+            gains.append(
+                numpy.average(
+                    current_gain[
+                        :,
+                        central_chan
+                        - half_of_chans_to_avg : central_chan
+                        + half_of_chans_to_avg
+                        + 1,
+                        0,
+                        0,
+                    ],
+                    axis=1,
+                )
+            )
+            weight.append(
+                numpy.average(
+                    gain_table.weight.data[
+                        0,
+                        :,
+                        central_chan
+                        - half_of_chans_to_avg : central_chan
+                        + half_of_chans_to_avg
+                        + 1,
+                        0,
+                        0,
+                    ],
+                    axis=1,
+                )
+            )
+
+        gains = numpy.array(gains)
+        amp = numpy.abs(gains)
+        amp = amp.reshape(amp.shape[1], amp.shape[0])
+        weight = numpy.array(weight)
+        weight = weight.reshape(weight.shape[1], weight.shape[0])
+
+        timeseries = Time(time, format="mjd", out_subfmt="str")
+
+        return amp, weight
+
+
 def compute_gains(vis):
     """
     Solves for the antenna gains for the parallel hands only.
@@ -165,28 +135,12 @@ def compute_gains(vis):
         niter=200,
         tol=1e-06,
         crosspol=False,
-        normalise_gains=True,
+        normalise_gains=True,  # we need to agree on this
         jones_type="G",
-        timeslice="auto",
+        timeslice="auto",  # we need to agree on this
     )
 
     return gt_list
-
-
-def plot_azel(az_data, el_data):
-    """
-    Plot az, el for visual examination.
-
-    :param az_data: Azimuth values of observation.
-    :param el_data: Elevation values of observation.
-    :return Plot of elevation vs azimuth
-    """
-
-    plt.figure(figsize=(10, 5))
-    plt.plot(az_data, el_data, "bo")
-    plt.xlabel("Azimuth [degrees]")
-    plt.ylabel("Elevation [degrees]")
-    plt.savefig("az_el_plot.png")
 
 
 def gt_single_plot(gt_list, plot_name=None):
@@ -203,7 +157,9 @@ def gt_single_plot(gt_list, plot_name=None):
         gt_list = [gt_list]
 
     with time_support(format="iso", scale="utc"):
-        timeseries, amp, phase_rel, residual, weight = get_gain_data(gt_list)
+        timeseries, amp, phase_rel, residual, weight = get_gain_results(
+            gt_list=gt_list
+        )
 
         plt.cla()
         fig, (ax1, ax2, ax3, ax4) = plt.subplots(
@@ -234,4 +190,18 @@ def gt_single_plot(gt_list, plot_name=None):
         fig.suptitle(f"Updated GainTable at {datetime}")
         plt.savefig(plot_name + ".png")
 
-    return
+
+def plot_azel(az_data, el_data):
+    """
+    Plot az, el for visual examination.
+
+    :param az_data: Azimuth values of observation.
+    :param el_data: Elevation values of observation.
+    :return Plot of elevation vs azimuth
+    """
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(az_data, el_data, "bo")
+    plt.xlabel("Azimuth [degrees]")
+    plt.ylabel("Elevation [degrees]")
+    plt.savefig("az_el_plot.png")
