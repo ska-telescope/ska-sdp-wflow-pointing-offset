@@ -187,9 +187,8 @@ def compute_offset(args):
             )
 
     end = time.time()
-    print(
-        "\nProcess finished in %s",
-        str(datetime.timedelta(seconds=end - begin)),
+    log.info(
+        "\nProcess finished in %s", (datetime.timedelta(seconds=end - begin))
     )
 
 

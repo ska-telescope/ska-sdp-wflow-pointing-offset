@@ -53,7 +53,7 @@ def read_visibilities(msname, start_freq=None, end_freq=None):
     source_offset = pointing_table.getcol(columnname="SOURCE_OFFSET")
     freqs = (
         numpy.squeeze(spw_table.getcol(columnname="CHAN_FREQ")) / 1.0e6
-    )  # in MHz
+    )  # Hz -> MHz
     nchan = numpy.squeeze(spw_table.getcol(columnname="NUM_CHAN"))
     if len(freqs) != nchan:
         raise ValueError(
@@ -61,13 +61,14 @@ def read_visibilities(msname, start_freq=None, end_freq=None):
         )
     if (start_freq and end_freq) is not None:
         # Get the channel numbers matching the start and end frequencies
-        chan_low = numpy.full(1, numpy.nan)
-        chan_high = numpy.full(1, numpy.nan)
         for i, frequency in enumerate(freqs):
-            if numpy.allclose(frequency, start_freq, rtol=1.0e-5):
+            if numpy.allclose(frequency, float(start_freq), rtol=1.0e-4):
                 chan_low = i
-            if numpy.allclose(frequency, end_freq, rtol=1.0e-4):
+            if numpy.allclose(frequency, float(end_freq), rtol=1.0e-4):
                 chan_high = i
+        assert (
+            numpy.size(chan_low) == numpy.size(chan_high) == 1
+        ), "More than one channel cannot have the same frequency!"
         if numpy.all(numpy.isfinite(numpy.r_[chan_low, chan_high])):
             log.info(
                 "Channel %s matches input start frequency %s MHz",
@@ -80,13 +81,8 @@ def read_visibilities(msname, start_freq=None, end_freq=None):
                 end_freq,
             )
         else:
-            ### TO DO: only one value for each frequency must be
-            # identified and use same tolerance 1e-6
-            # Should we allow users to set tolerance level
-            # from the command-line?
             raise ValueError(
-                "Channel number for start_freq and/or end_freq "
-                + "was not found. Modify the tolerance level!"
+                "Channel numbers for start and end freq was not found!"
             )
         vis = create_visibility_from_ms(
             msname=msname,

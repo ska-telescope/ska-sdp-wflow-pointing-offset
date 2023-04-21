@@ -15,9 +15,9 @@ Usage
 
     Usage:
         pointing-offset COMMAND [--ms=FILE] [--save_offset]
-                          [--apply_mask] [--rfi_file=FILE]
-                          [--results_dir=None] [--start_freq=None]
-                          [--end_freq=None]
+                          [--apply_mask] [--fit_tovis]
+                          [--rfi_file=FILE] [--results_dir=None]
+                          [--start_freq=None] [--end_freq=None]
                           [(--bw_factor <bw_factor>) [<bw_factor>...]]
 
     Commands:
@@ -29,15 +29,15 @@ Usage
         -q --quiet           report only file names
 
         --ms=FILE            Measurement set file
+        --fit_tovis          Fit primary beam to visibilities instead of antenna
+                             gains (Optional) [default:False]
         --apply_mask         Apply Mask (Optional) [default:False]
         --rfi_file=FILE      RFI file (Optional)
         --save_offset        Save the Offset Results (Optional) [default:False]
-        --results_dir=None   Directory where the results needs to be saved (Optional)
-        --start_freq=None    Start Frequency (Optional)
-        --end_freq=None      End Frequency (Optional)
-        --bw_factor          Two beam width factors [default:0.976 1.098].
-
-
+        --results_dir=None   Directory where the results need to be saved (Optional)
+        --start_freq=None    Start Frequency in MHz (Optional)
+        --end_freq=None      End Frequency in MHz (Optional)
+        --bw_factor          Beamwidth factor [default:0.976, 1.098]
 
 
 Commands \& Options
@@ -54,6 +54,8 @@ List of commands for accessing the functionalities of the pipeline.
      - Implements the list of actions below
    * - **ms**
      - Measurement set name
+   * - **fit_tovis**
+     - Fit primary beam to visibilities instead of antenna gains
    * - **apply_mask**
      - Boolean to apply the RFI mask provided by the **rfi_file** command
    * - **rfi_file**
@@ -63,10 +65,10 @@ List of commands for accessing the functionalities of the pipeline.
    * - **results_dir**
      - Directory to save the fitted parameters and calculated offsets from the **save_offset** command
    * - **start_freq**
-     - Start frequency in Hz to use
+     - Start frequency in MHz to use
    * - **end_freq**
-     - End frequency in Hz to use
+     - End frequency in MHz to use
    * - **bw_factor**
-     - Beam width factors for different polarisations.
+     - Beamwidth factors for the horizontal and vertical polarisations
 
 

@@ -41,7 +41,6 @@ extensions = [
 
 
 autodoc_mock_imports = [
-    "astropy",
     "numpy",
     "katpoint",
     "katdal",
@@ -49,6 +48,7 @@ autodoc_mock_imports = [
     "python-casacore",
     "pyuvdata",
     "matplotlib",
+    "rascil",
 ]
 
 templates_path = ["_templates"]

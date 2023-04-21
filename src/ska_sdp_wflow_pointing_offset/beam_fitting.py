@@ -1,5 +1,7 @@
-# pylint: disable=too-many-arguments,too-many-locals,too-many-statements
-# pylint: disable=too-many-instance-attributes,abstract-method,too-many-branches
+# pylint: disable=too-many-arguments,too-many-locals
+# pylint: disable=too-many-statements
+# pylint: disable=too-many-instance-attributes
+# pylint: disable=abstract-method,too-many-branches
 """
 Fits primary beams modelled by a 2D Gaussian to the visibility
 amplitudes and computes the azimuth and elevation offsets.
@@ -271,14 +273,12 @@ def fit_primary_beams(
                         "No valid primary beam fit for %s", antenna.name
                     )
     else:
-        # The shape of the gain is dumps, nants, averaged-frequency, receptor1, receptor2
+        # The shape of the gain is dumps, nants, averaged-frequency,
+        # receptor1, receptor2
         log.info("Fitting primary beams to gain amplitudes...")
         wavelength = numpy.degrees(lightspeed / y_param.frequency.data[0])
         gain = numpy.abs(numpy.squeeze(y_param.gain.data))
         gain_weight = numpy.abs(numpy.squeeze(y_param.weight.data))
-        print(numpy.moveaxis(source_offset, 2, 0).shape)
-        print("=" * 30)
-        print("=" * 30)
         receptor1 = y_param.receptor1.data
         receptor2 = y_param.receptor2.data
         corr = (receptor1[0] + receptor2[0], receptor1[1] + receptor2[1])

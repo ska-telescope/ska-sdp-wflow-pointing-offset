@@ -66,7 +66,7 @@ def apply_rfi_mask(vis, rfi_filename=None):
     )
 
 
-def select_channels(vis, start_freq=1326.0e6, end_freq=1367.0e6):
+def select_channels(vis, start_freq=1326.0, end_freq=1367.0):
     """
     Select from the visibility data the desired channels to look at,
     inputting starting and end frequency.
@@ -79,12 +79,12 @@ def select_channels(vis, start_freq=1326.0e6, end_freq=1367.0e6):
     :return: Visibility containing the observed data_models with
         some selected frequencies
     """
-    select_mask = (vis.frequency / 1.0e6 > start_freq) & (
-        vis.frequency / 1.0e6 < end_freq
+    select_mask = (vis.frequency / 1.0e6 > float(start_freq)) & (
+        vis.frequency / 1.0e6 < float(end_freq)
     )
-    data = vis.data[:, :, select_mask, :]
+    data = vis.vis[:, :, select_mask, :]
     weight = vis.weight[:, :, select_mask, :]
-    flags = vis.flags[:, :, select_mask == 0]
+    flags = vis.flags[:, :, select_mask, :]
     freqs = vis.frequency[select_mask]
     channel_bandwidth = vis.channel_bandwidth[select_mask]
 
@@ -132,6 +132,6 @@ def clean_vis_data(
 
     # Optionally select a range of frequencies
     if (start_freq and end_freq) is not None:
-        vis = select_channels(vis)
+        vis = select_channels(vis, start_freq, end_freq)
 
     return vis
