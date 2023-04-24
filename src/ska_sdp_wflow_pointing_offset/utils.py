@@ -93,7 +93,7 @@ def get_gain_results(gt_list):
                     current_gain[
                         :,
                         central_chan
-                        - half_of_chans_to_avg:central_chan
+                        - half_of_chans_to_avg : central_chan
                         + half_of_chans_to_avg
                         + 1,
                         0,
@@ -107,7 +107,7 @@ def get_gain_results(gt_list):
                     gain_table.residual.data[
                         0,
                         central_chan
-                        - half_of_chans_to_avg:central_chan
+                        - half_of_chans_to_avg : central_chan
                         + half_of_chans_to_avg
                         + 1,
                         0,
@@ -122,7 +122,7 @@ def get_gain_results(gt_list):
                         0,
                         :,
                         central_chan
-                        - half_of_chans_to_avg:central_chan
+                        - half_of_chans_to_avg : central_chan
                         + half_of_chans_to_avg
                         + 1,
                         0,

@@ -1,7 +1,5 @@
 # pylint: disable=too-many-arguments,too-many-locals
-# pylint: disable=too-many-statements
-# pylint: disable=too-many-instance-attributes
-# pylint: disable=abstract-method,too-many-branches
+# pylint: disable=too-many-instance-attributes,abstract-method
 """
 Fits primary beams modelled by a 2D Gaussian to the visibility
 amplitudes and computes the azimuth and elevation offsets.
@@ -119,9 +117,7 @@ class BeamPatternFit(ScatterFit):
         self.is_valid &= all(norm_width > 0.9) and all(norm_width < 1.25)
 
 
-def fit_primary_beams(
-    source_offset, y_param, beamwidth_factor, ants, fit_tovis=False
-):
+class SolveForOffsets:
     """
     Fit the beam pattern to the frequency-averaged and optionally
     polarisation-averaged visibilities and outputs the fitted
@@ -138,32 +134,45 @@ def fit_primary_beams(
         values often range between 1.03 and 1.22 depending on the illumination
         pattern of the dish
     :param ants: List of antenna information built in katpoint.
-    :param fit_tovis: Fit primary beam to visibilities instead of antenna
-        gains
-    :return: The fitted beam centre and uncertainty, fitted beamwidth and
-        uncertainty, fitted beam height and uncertainty for each polarisation
     """
-    fitted_centre_pol1 = numpy.zeros((len(ants), 2))
-    fitted_centre_std_pol1 = numpy.zeros((len(ants), 2))
-    fitted_width_pol1 = numpy.zeros((len(ants), 2))
-    fitted_width_std_pol1 = numpy.zeros((len(ants), 2))
-    fitted_height_pol1 = numpy.zeros((len(ants), 2))
-    fitted_centre_pol2 = numpy.zeros((len(ants), 2))
-    fitted_centre_std_pol2 = numpy.zeros((len(ants), 2))
-    fitted_width_pol2 = numpy.zeros((len(ants), 2))
-    fitted_width_std_pol2 = numpy.zeros((len(ants), 2))
-    fitted_height_pol2 = numpy.zeros((len(ants), 2))
 
-    if fit_tovis:
+    def __init__(self, source_offset, y_param, beamwidth_factor, ants):
+        self.source_offset = source_offset
+        self.y_param = y_param
+        self.beamwidth_factor = beamwidth_factor
+        self.ants = ants
+        self.wavelength = numpy.degrees(
+            lightspeed / self.y_param.frequency.data
+        )
+        if not numpy.all(numpy.isfinite(self.wavelength)):
+            raise ValueError(
+                "Wavelength cannot be infinite. Check start and end frequencies!"
+            )
+
+        # Fitted parameters of interest to be saved to file
+        self.fitted_centre_pol1 = numpy.zeros((len(self.ants), 2))
+        self.fitted_centre_std_pol1 = numpy.zeros((len(self.ants), 2))
+        self.fitted_width_pol1 = numpy.zeros((len(self.ants), 2))
+        self.fitted_width_std_pol1 = numpy.zeros((len(self.ants), 2))
+        self.fitted_height_pol1 = numpy.zeros((len(self.ants), 2))
+        self.fitted_centre_pol2 = numpy.zeros((len(self.ants), 2))
+        self.fitted_centre_std_pol2 = numpy.zeros((len(self.ants), 2))
+        self.fitted_width_pol2 = numpy.zeros((len(self.ants), 2))
+        self.fitted_width_std_pol2 = numpy.zeros((len(self.ants), 2))
+        self.fitted_height_pol2 = numpy.zeros((len(self.ants), 2))
+
+    def fit_to_visibilities(self):
+        """
+        Fit primary beams to the visibility amplitude of each antenna
+
+        :return: The fitted beam centre and uncertainty, fitted beamwidth and
+        uncertainty, fitted beam height and uncertainty for each polarisation
+        """
         log.info("Fitting primary beams to visibilities...")
-        # Compute the primary beam size for use as initial parameter of the
-        # Gaussian. Use higher end of the frequency band with smallest beam
-        # for better pointing accuracy
-        wavelength = numpy.degrees(lightspeed / y_param.frequency[-1])
         # Average the parallel hand visibilities in frequency
-        avg_vis = numpy.mean(y_param.vis.data, axis=2)
-        avg_weight = numpy.mean(y_param.weight.data, axis=2)
-        corr_type = y_param.polarisation.data
+        avg_vis = numpy.mean(self.y_param.vis.data, axis=2)
+        avg_weight = numpy.mean(self.y_param.weight.data, axis=2)
+        corr_type = self.y_param.polarisation.data
         if len(corr_type) == 2:
             # (XX,YY) or (RR, LL)
             corr_type = numpy.array([corr_type[0], corr_type[1]], dtype=object)
@@ -193,24 +202,30 @@ def fit_primary_beams(
             # reshape the baseline-based visibilities to antenna-based.
             # Is this the correct way to do it? To be addressed by
             # ORC-1572 ticket
-            vis = vis.reshape(dumps, int(ncorr / len(ants)), len(ants))
-            weight = weight.reshape(dumps, int(ncorr / len(ants)), len(ants))
-            # Keep only dumps and nants axes
+            vis = vis.reshape(
+                dumps, int(ncorr / len(self.ants)), len(self.ants)
+            )
+            weight = weight.reshape(
+                dumps, int(ncorr / len(self.ants)), len(self.ants)
+            )
+            # Keep only dumps and ants axes
             vis = numpy.mean(vis, axis=1)
             weight = numpy.mean(weight, axis=1)
-            for i, antenna in enumerate(ants):
+            for i, antenna in enumerate(self.ants):
                 # Convert power beamwidth (for single dish) to
-                # gain/voltage beamwidth (interferometer)
+                # gain/voltage beamwidth (interferometer). Use
+                # the higher end of the frequency band to compute
+                # beam size for better pointing accuracy
                 expected_width_h = (
                     numpy.sqrt(2)
-                    * beamwidth_factor[0]
-                    * wavelength
+                    * self.beamwidth_factor[0]
+                    * self.wavelength[-1]
                     / antenna.diameter
                 )
                 expected_width_v = (
                     numpy.sqrt(2)
-                    * beamwidth_factor[1]
-                    * wavelength
+                    * self.beamwidth_factor[1]
+                    * self.wavelength[-1]
                     / antenna.diameter
                 )
                 fitted_beam = BeamPatternFit(
@@ -222,7 +237,7 @@ def fit_primary_beams(
                     "Fitting primary beam to visibilities of %s", antenna.name
                 )
                 fitted_beam.fit(
-                    x=numpy.moveaxis(source_offset, 2, 0)[:, :, i],
+                    x=numpy.moveaxis(self.source_offset, 2, 0)[:, :, i],
                     y=numpy.abs(vis).astype(float)[:, i],
                     std_y=numpy.sqrt(1 / weight.astype(float)[:, i]),
                 )
@@ -243,28 +258,36 @@ def fit_primary_beams(
                 )
                 if valid_fit:
                     if corr in ("XX", "RR"):
-                        fitted_centre_pol1[i] = wrap_angle(fitted_beam.centre)
-                        fitted_centre_std_pol1[i] = wrap_angle(
+                        self.fitted_centre_pol1[i] = wrap_angle(
+                            fitted_beam.centre
+                        )
+                        self.fitted_centre_std_pol1[i] = wrap_angle(
                             fitted_beam.std_centre
                         )
-                        fitted_width_pol1[i] = wrap_angle(fitted_beam.width)
-                        fitted_width_std_pol1[i] = wrap_angle(
+                        self.fitted_width_pol1[i] = wrap_angle(
+                            fitted_beam.width
+                        )
+                        self.fitted_width_std_pol1[i] = wrap_angle(
                             fitted_beam.std_width
                         )
-                        fitted_height_pol1[i] = (
+                        self.fitted_height_pol1[i] = (
                             fitted_beam.height,
                             fitted_beam.std_height,
                         )
                     elif corr in ("YY", "LL"):
-                        fitted_centre_pol2[i] = wrap_angle(fitted_beam.centre)
-                        fitted_centre_std_pol2[i] = wrap_angle(
+                        self.fitted_centre_pol2[i] = wrap_angle(
+                            fitted_beam.centre
+                        )
+                        self.fitted_centre_std_pol2[i] = wrap_angle(
                             fitted_beam.std_centre
                         )
-                        fitted_width_pol2[i] = wrap_angle(fitted_beam.width)
-                        fitted_width_std_pol2[i] = wrap_angle(
+                        self.fitted_width_pol2[i] = wrap_angle(
+                            fitted_beam.width
+                        )
+                        self.fitted_width_std_pol2[i] = wrap_angle(
                             fitted_beam.std_width
                         )
-                        fitted_height_pol2[i] = (
+                        self.fitted_height_pol2[i] = (
                             fitted_beam.height,
                             fitted_beam.std_height,
                         )
@@ -272,31 +295,51 @@ def fit_primary_beams(
                     log.warning(
                         "No valid primary beam fit for %s", antenna.name
                     )
-    else:
-        # The shape of the gain is dumps, nants, averaged-frequency,
+        return numpy.column_stack(
+            (
+                self.fitted_centre_pol1,
+                self.fitted_centre_std_pol1,
+                self.fitted_width_pol1,
+                self.fitted_width_std_pol1,
+                self.fitted_height_pol1,
+                self.fitted_centre_pol2,
+                self.fitted_centre_std_pol2,
+                self.fitted_width_pol2,
+                self.fitted_width_std_pol2,
+                self.fitted_height_pol2,
+            )
+        )
+
+    def fit_to_gains(self):
+        """
+        Fit primary beams to the amplitude gains of each antenna
+
+        :return: The fitted beam centre and uncertainty, fitted beamwidth and
+        uncertainty, fitted beam height and uncertainty for each polarisation
+        """
+        # The shape of the gain is dumps, nself.ants, averaged-frequency,
         # receptor1, receptor2
         log.info("Fitting primary beams to gain amplitudes...")
-        wavelength = numpy.degrees(lightspeed / y_param.frequency.data[0])
-        gain = numpy.abs(numpy.squeeze(y_param.gain.data))
-        gain_weight = numpy.abs(numpy.squeeze(y_param.weight.data))
-        receptor1 = y_param.receptor1.data
-        receptor2 = y_param.receptor2.data
+        gain = numpy.abs(numpy.squeeze(self.y_param.gain.data))
+        gain_weight = numpy.abs(numpy.squeeze(self.y_param.weight.data))
+        receptor1 = self.y_param.receptor1.data
+        receptor2 = self.y_param.receptor2.data
         corr = (receptor1[0] + receptor2[0], receptor1[1] + receptor2[1])
         for i, corr in enumerate(corr):
             log.info("\nFitting primary beams to %s", corr)
-            for j, antenna in enumerate(ants):
+            for j, antenna in enumerate(self.ants):
                 # Convert power beamwidth (for single dish) to
                 # gain/voltage beamwidth (interferometer)
                 expected_width_h = (
                     numpy.sqrt(2)
-                    * beamwidth_factor[0]
-                    * wavelength
+                    * self.beamwidth_factor[0]
+                    * self.wavelength[0]
                     / antenna.diameter
                 )
                 expected_width_v = (
                     numpy.sqrt(2)
-                    * beamwidth_factor[1]
-                    * wavelength
+                    * self.beamwidth_factor[1]
+                    * self.wavelength[0]
                     / antenna.diameter
                 )
                 fitted_beam = BeamPatternFit(
@@ -310,7 +353,7 @@ def fit_primary_beams(
                     antenna.name,
                 )
                 fitted_beam.fit(
-                    x=numpy.moveaxis(source_offset, 2, 0)[:, :, j],
+                    x=numpy.moveaxis(self.source_offset, 2, 0)[:, :, j],
                     y=gain[:, j, i, i],
                     std_y=gain_weight[:, j, i, i],
                 )
@@ -331,28 +374,36 @@ def fit_primary_beams(
                 )
                 if valid_fit:
                     if corr in ("XX", "RR"):
-                        fitted_centre_pol1[i] = wrap_angle(fitted_beam.centre)
-                        fitted_centre_std_pol1[i] = wrap_angle(
+                        self.fitted_centre_pol1[i] = wrap_angle(
+                            fitted_beam.centre
+                        )
+                        self.fitted_centre_std_pol1[i] = wrap_angle(
                             fitted_beam.std_centre
                         )
-                        fitted_width_pol1[i] = wrap_angle(fitted_beam.width)
-                        fitted_width_std_pol1[i] = wrap_angle(
+                        self.fitted_width_pol1[i] = wrap_angle(
+                            fitted_beam.width
+                        )
+                        self.fitted_width_std_pol1[i] = wrap_angle(
                             fitted_beam.std_width
                         )
-                        fitted_height_pol1[i] = (
+                        self.fitted_height_pol1[i] = (
                             fitted_beam.height,
                             fitted_beam.std_height,
                         )
                     elif corr in ("YY", "LL"):
-                        fitted_centre_pol2[i] = wrap_angle(fitted_beam.centre)
-                        fitted_centre_std_pol2[i] = wrap_angle(
+                        self.fitted_centre_pol2[i] = wrap_angle(
+                            fitted_beam.centre
+                        )
+                        self.fitted_centre_std_pol2[i] = wrap_angle(
                             fitted_beam.std_centre
                         )
-                        fitted_width_pol2[i] = wrap_angle(fitted_beam.width)
-                        fitted_width_std_pol2[i] = wrap_angle(
+                        self.fitted_width_pol2[i] = wrap_angle(
+                            fitted_beam.width
+                        )
+                        self.fitted_width_std_pol2[i] = wrap_angle(
                             fitted_beam.std_width
                         )
-                        fitted_height_pol2[i] = (
+                        self.fitted_height_pol2[i] = (
                             fitted_beam.height,
                             fitted_beam.std_height,
                         )
@@ -361,20 +412,20 @@ def fit_primary_beams(
                         "No valid primary beam fit for %s", antenna.name
                     )
 
-    # Proposed format for now: Fitted beam centre and uncertainty,
-    # fitted beam width and uncertainty, fitted beam height and
-    # uncertainty for each polarisation
-    return numpy.column_stack(
-        (
-            fitted_centre_pol1,
-            fitted_centre_std_pol1,
-            fitted_width_pol1,
-            fitted_width_std_pol1,
-            fitted_height_pol1,
-            fitted_centre_pol2,
-            fitted_centre_std_pol2,
-            fitted_width_pol2,
-            fitted_width_std_pol2,
-            fitted_height_pol2,
+        # Proposed format for now: Fitted beam centre and uncertainty,
+        # fitted beam width and uncertainty, fitted beam height and
+        # uncertainty for each polarisation
+        return numpy.column_stack(
+            (
+                self.fitted_centre_pol1,
+                self.fitted_centre_std_pol1,
+                self.fitted_width_pol1,
+                self.fitted_width_std_pol1,
+                self.fitted_height_pol1,
+                self.fitted_centre_pol2,
+                self.fitted_centre_std_pol2,
+                self.fitted_width_pol2,
+                self.fitted_width_std_pol2,
+                self.fitted_height_pol2,
+            )
         )
-    )

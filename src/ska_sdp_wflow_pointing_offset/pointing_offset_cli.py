@@ -37,7 +37,7 @@ from pathlib import PurePosixPath
 
 from docopt import docopt
 
-from ska_sdp_wflow_pointing_offset.beam_fitting import fit_primary_beams
+from ska_sdp_wflow_pointing_offset.beam_fitting import SolveForOffsets
 from ska_sdp_wflow_pointing_offset.export_data import (
     export_pointing_offset_data,
 )
@@ -88,9 +88,9 @@ def compute_offset(args):
     def _safe_float(number):
         return float(number)
 
-    if args["--apply_mask"]:
-        if not args["--rfi_file"]:
-            raise ValueError("RFI File is required!!")
+    # if args["--apply_mask"]:
+    #    if not args["--rfi_file"]:
+    #        raise ValueError("RFI File is required!!")
 
     # Set beamwidth factor
     if args["--bw_factor"]:
@@ -113,20 +113,23 @@ def compute_offset(args):
     )
 
     # Optionally select frequency ranges and/or apply RFI mask
-    modified_vis = clean_vis_data(
-        vis,
-        args["--start_freq"],
-        args["--end_freq"],
-        args["--apply_mask"],
-        args["--rfi_file"],
-    )
+    if args["--apply_mask"]:
+        if not args["--rfi_file"]:
+            raise ValueError("RFI File is required!!")
+        vis = clean_vis_data(
+            vis,
+            args["--start_freq"],
+            args["--end_freq"],
+            args["--apply_mask"],
+            args["--rfi_file"],
+        )
 
     if args["--fit_tovis"]:
-        y_param = modified_vis
+        y_param = vis
     else:
-        # Solve for the antenna gains and save the plot
+        # Solve for the antenna gains
         log.info("Solving for the antenna complex gains...")
-        gt_list = compute_gains(modified_vis)
+        gt_list = compute_gains(vis)
         y_param = gt_list
 
         # Save gain plot
@@ -136,14 +139,14 @@ def compute_offset(args):
         )
         gt_single_plot(gt_list, plot_name)
 
-    # Fit primary beams to the visibilities or gain amplitudes
-    fitted_results = fit_primary_beams(
-        source_offset,
-        y_param,
-        beamwidth_factor,
-        ants,
-        args["--fit_tovis"],
+    # Solve for the pointing offsets
+    init_results = SolveForOffsets(
+        source_offset, y_param, beamwidth_factor, ants
     )
+    if args["--fit_tovis"]:
+        fitted_results = init_results.fit_to_visibilities()
+    else:
+        fitted_results = init_results.fit_to_gains()
 
     # Save the fitted parameters and computed offsets
     if args["--save_offset"]:

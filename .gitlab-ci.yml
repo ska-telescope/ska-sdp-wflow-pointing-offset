@@ -23,3 +23,9 @@ include:
   # Run finalizer, inc. ci-metrics
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/finaliser.gitlab-ci.yml'
+
+# override default images with image having cmake installed
+python-lint:
+  image:artefact.skao.int/ska-cicd-k8s-tools-build-deploy:0.8.6
+python-test:
+  image:artefact.skao.int/ska-cicd-k8s-tools-build-deploy:0.8.6

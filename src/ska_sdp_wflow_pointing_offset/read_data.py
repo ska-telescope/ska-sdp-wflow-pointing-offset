@@ -54,11 +54,6 @@ def read_visibilities(msname, start_freq=None, end_freq=None):
     freqs = (
         numpy.squeeze(spw_table.getcol(columnname="CHAN_FREQ")) / 1.0e6
     )  # Hz -> MHz
-    nchan = numpy.squeeze(spw_table.getcol(columnname="NUM_CHAN"))
-    if len(freqs) != nchan:
-        raise ValueError(
-            "Length of frequencies does not match number of channels!"
-        )
     if (start_freq and end_freq) is not None:
         # Get the channel numbers matching the start and end frequencies
         for i, frequency in enumerate(freqs):
@@ -84,29 +79,23 @@ def read_visibilities(msname, start_freq=None, end_freq=None):
             raise ValueError(
                 "Channel numbers for start and end freq was not found!"
             )
-        vis = create_visibility_from_ms(
-            msname=msname,
-            channum=None,
-            start_chan=chan_low,
-            end_chan=chan_high,
-            ack=False,
-            datacolumn="DATA",
-            selected_sources=None,
-            selected_dds=None,
-            average_channels=False,
-        )[0]
+    elif start_freq is None and end_freq is None:
+        chan_low = None
+        chan_high = None
     else:
-        vis = create_visibility_from_ms(
-            msname=msname,
-            channum=None,
-            start_chan=None,
-            end_chan=None,
-            ack=False,
-            datacolumn="DATA",
-            selected_sources=None,
-            selected_dds=None,
-            average_channels=False,
-        )[0]
+        raise ValueError("Use default start and end freq or set both!!")
+
+    vis = create_visibility_from_ms(
+        msname=msname,
+        channum=None,
+        start_chan=chan_low,
+        end_chan=chan_high,
+        ack=False,
+        datacolumn="DATA",
+        selected_sources=None,
+        selected_dds=None,
+        average_channels=False,
+    )[0]
 
     # Build katpoint Antenna from antenna configuration
     antenna_positions = vis.configuration.data_vars["xyz"].data

@@ -43,7 +43,6 @@ extensions = [
 autodoc_mock_imports = [
     "numpy",
     "katpoint",
-    "katdal",
     "scikits",
     "python-casacore",
     "pyuvdata",
@@ -67,7 +66,7 @@ master_doc = "index"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 html_context = {
     "favicon": "img/favicon.ico",
-    "logo": "img/logo.jpg",
+    "logo": "img/logo.png",
     "theme_logo_only": True,
     "display_github": False,  # Integrate GitHub
     "github_user": "",  # Username
