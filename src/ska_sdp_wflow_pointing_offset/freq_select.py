@@ -66,7 +66,7 @@ def apply_rfi_mask(vis, rfi_filename=None):
     )
 
 
-def select_channels(vis, start_freq=1326.0, end_freq=1367.0):
+def select_channels(vis, start_freq, end_freq):
     """
     Select from the visibility data the desired channels to look at,
     inputting starting and end frequency.
