@@ -41,7 +41,6 @@ from ska_sdp_wflow_pointing_offset.beam_fitting import SolveForOffsets
 from ska_sdp_wflow_pointing_offset.export_data import (
     export_pointing_offset_data,
 )
-from ska_sdp_wflow_pointing_offset.freq_select import clean_vis_data
 from ska_sdp_wflow_pointing_offset.read_data import read_visibilities
 from ska_sdp_wflow_pointing_offset.utils import compute_gains, gt_single_plot
 
@@ -88,10 +87,6 @@ def compute_offset(args):
     def _safe_float(number):
         return float(number)
 
-    # if args["--apply_mask"]:
-    #    if not args["--rfi_file"]:
-    #        raise ValueError("RFI File is required!!")
-
     # Set beamwidth factor
     if args["--bw_factor"]:
         beamwidth_factor = args["<bw_factor>"]
@@ -105,24 +100,18 @@ def compute_offset(args):
         "Beamwidth factor: %f %f", beamwidth_factor[0], beamwidth_factor[1]
     )
 
-    # Get visibilities
-    vis, source_offset, ants = read_visibilities(
-        args["--ms"],
-        args["--start_freq"],
-        args["--end_freq"],
-    )
-
-    # Optionally select frequency ranges and/or apply RFI mask
+    # Get visibilities and optionally apply RFI mask and/or select
+    # frequency range of interest
     if args["--apply_mask"]:
         if not args["--rfi_file"]:
             raise ValueError("RFI File is required!!")
-        vis = clean_vis_data(
-            vis,
-            args["--start_freq"],
-            args["--end_freq"],
-            args["--apply_mask"],
-            args["--rfi_file"],
-        )
+    vis, source_offset, ants = read_visibilities(
+        args["--ms"],
+        args["--apply_mask"],
+        args["--rfi_file"],
+        args["--start_freq"],
+        args["--end_freq"],
+    )
 
     if args["--fit_tovis"]:
         y_param = vis

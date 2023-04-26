@@ -146,7 +146,7 @@ class SolveForOffsets:
         )
         if not numpy.all(numpy.isfinite(self.wavelength)):
             raise ValueError(
-                "Wavelength cannot be infinite. Check start and end frequencies!"
+                "Wavelength cannot be infinite. Check frequency range!"
             )
 
         # Fitted parameters of interest to be saved to file
