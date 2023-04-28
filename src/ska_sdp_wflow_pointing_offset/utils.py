@@ -220,19 +220,3 @@ def gt_single_plot(gt_list, plot_name=None):
 
         fig.suptitle(f"Updated GainTable at {datetime}")
         plt.savefig(plot_name + ".png")
-
-
-def plot_azel(az_data, el_data):
-    """
-    Plot az, el for visual examination.
-
-    :param az_data: Azimuth values of observation.
-    :param el_data: Elevation values of observation.
-    :return Plot of elevation vs azimuth
-    """
-
-    plt.figure(figsize=(10, 5))
-    plt.plot(az_data, el_data, "bo")
-    plt.xlabel("Azimuth [degrees]")
-    plt.ylabel("Elevation [degrees]")
-    plt.savefig("az_el_plot.png")

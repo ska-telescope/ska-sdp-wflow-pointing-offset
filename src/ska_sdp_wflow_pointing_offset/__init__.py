@@ -10,7 +10,6 @@ from .utils import (
     construct_antennas,
     get_gain_results,
     gt_single_plot,
-    plot_azel,
 )
 
 __all__ = [
@@ -18,9 +17,8 @@ __all__ = [
     "apply_rfi_mask",
     "select_channels",
     "read_visibilities",
+    "compute_gains",
     "construct_antennas",
     "get_gain_results",
-    "compute_gains",
     "gt_single_plot",
-    "plot_azel",
 ]

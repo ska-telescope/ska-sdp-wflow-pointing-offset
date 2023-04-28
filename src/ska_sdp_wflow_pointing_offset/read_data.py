@@ -7,7 +7,7 @@ and constructing antenna information.
 import logging
 
 import numpy
-from rascil.processing_components import create_visibility_from_ms
+from ska_sdp_datamodels.visibility import create_visibility_from_ms
 from ska_sdp_datamodels.visibility.vis_model import Visibility
 
 from ska_sdp_wflow_pointing_offset.freq_select import (
@@ -30,7 +30,7 @@ def _load_ms_tables(msname):
     try:
         from casacore.tables import table
     except ModuleNotFoundError as exc:
-        raise ModuleNotFoundError("casacore is not installed") from exc
+        raise ModuleNotFoundError("caacore is not installed") from exc
 
     spw_table = table(tablename=f"{msname}/SPECTRAL_WINDOW", ack=False)
     pointing_table = table(f"{msname}/POINTING", ack=False)

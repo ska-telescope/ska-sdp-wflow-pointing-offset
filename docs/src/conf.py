@@ -47,7 +47,8 @@ autodoc_mock_imports = [
     "python-casacore",
     "pyuvdata",
     "matplotlib",
-    "rascil",
+    "ska-sdp-datamodels",
+    "ska-sdp-func-python",
 ]
 
 templates_path = ["_templates"]
