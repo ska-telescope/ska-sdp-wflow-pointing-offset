@@ -1,4 +1,3 @@
-# pylint: disable=too-many-arguments,too-many-locals
 # pylint: disable=too-many-instance-attributes,abstract-method
 """
 Fits primary beams modelled by a 2D Gaussian to the visibility
