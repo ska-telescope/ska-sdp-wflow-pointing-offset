@@ -317,7 +317,7 @@ class SolveForOffsets:
         :return: The fitted beam centre and uncertainty, fitted beamwidth and
         uncertainty, fitted beam height and uncertainty for each polarisation
         """
-        # The shape of the gain is dumps, nself.ants, averaged-frequency,
+        # The shape of the gain is dumps, ants, averaged-frequency,
         # receptor1, receptor2
         log.info("Fitting primary beams to gain amplitudes...")
         gain = numpy.abs(numpy.squeeze(self.y_param.gain.data))

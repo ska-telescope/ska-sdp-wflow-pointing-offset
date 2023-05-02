@@ -8,6 +8,7 @@ from .read_data import read_visibilities
 from .utils import (
     compute_gains,
     construct_antennas,
+    generate_baselines,
     get_gain_results,
     gt_single_plot,
 )
@@ -17,6 +18,7 @@ __all__ = [
     "apply_rfi_mask",
     "select_channels",
     "read_visibilities",
+    "generate_baselines",
     "compute_gains",
     "construct_antennas",
     "get_gain_results",

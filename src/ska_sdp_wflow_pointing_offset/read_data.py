@@ -30,10 +30,11 @@ def _load_ms_tables(msname):
     try:
         from casacore.tables import table
     except ModuleNotFoundError as exc:
-        raise ModuleNotFoundError("caacore is not installed") from exc
+        raise ModuleNotFoundError("casacore is not installed") from exc
 
-    spw_table = table(tablename=f"{msname}/SPECTRAL_WINDOW", ack=False)
-    pointing_table = table(f"{msname}/POINTING", ack=False)
+    # Get the spectral window and pointing sub-tables
+    spw_table = table(msname + "::SPECTRAL_WINDOW", ack=False)
+    pointing_table = table(msname + "::POINTING", ack=False)
     return spw_table, pointing_table
 
 
@@ -56,11 +57,9 @@ def read_visibilities(
     """
     spw_table, pointing_table = _load_ms_tables(msname)
 
-    # Get parameters of interest from the tables
-    source_offset = pointing_table.getcol(columnname="SOURCE_OFFSET")
-    freqs = (
-        numpy.squeeze(spw_table.getcol(columnname="CHAN_FREQ")) / 1.0e6
-    )  # Hz -> MHz
+    # Get the frequencies and source offsets
+    source_offset = pointing_table.getcol("SOURCE_OFFSET")
+    freqs = numpy.squeeze(spw_table.getcol("CHAN_FREQ")) / 1.0e6  # Hz -> MHz
 
     if apply_mask:
         # Apply RFI mask

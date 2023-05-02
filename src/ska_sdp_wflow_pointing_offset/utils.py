@@ -54,6 +54,21 @@ def construct_antennas(xyz, diameter, station):
     return ants
 
 
+def generate_baselines(nant):
+    """Generate mapping from antennas to baselines
+
+    Note that we need to include autocorrelations
+    since some input measurement sets
+    may contain autocorrelations
+
+    :param nant:
+    :return:
+    """
+    for ant1 in range(0, nant):
+        for ant2 in range(ant1, nant):
+            yield ant1, ant2
+
+
 def get_gain_results(gt_list):
     """Get data from a list of GainTables used for plotting.
 

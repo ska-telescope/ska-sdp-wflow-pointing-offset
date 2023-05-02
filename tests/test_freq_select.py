@@ -7,17 +7,11 @@ import numpy
 
 from ska_sdp_wflow_pointing_offset.freq_select import (
     apply_rfi_mask,
-    clean_vis_data,
     select_channels,
 )
 
-NCORR = 15
 NCHAN = 5
-NPOL = 2
 FREQS = numpy.linspace(1.0e8, 3.0e8, NCHAN)
-VIS = numpy.ones((NCORR, NCHAN, NPOL))
-CORR_TYPE = ["XX", "YY"]
-VIS_WEIGHT = numpy.ones((NCORR, NPOL))
 
 
 @patch("builtins.open", MagicMock())
@@ -28,12 +22,12 @@ def test_apply_rfi_mask(mock_load):
     Assume same length for RFI mask and visibility frequency
     """
     mock_load.return_value = numpy.array([1, 1, 0, 1, 1])
-    result_vis, result_freqs = apply_rfi_mask(
-        VIS, FREQS, rfi_filename="fake_file"
+    result_freqs, result_channels = apply_rfi_mask(
+        FREQS, rfi_filename="fake_file"
     )
 
-    assert result_vis.shape == (15, 1, 2)
     assert result_freqs == numpy.array([2.0e8])
+    assert result_channels == numpy.array([2])
 
 
 def test_apply_rfi_mask_wrong_file():
@@ -41,44 +35,12 @@ def test_apply_rfi_mask_wrong_file():
     Unit test for apply_rfi_mask
     If wrong file name is provided
     """
-    result_vis, result_freqs = apply_rfi_mask(
-        VIS, FREQS, rfi_filename="fake_file"
+    result_freqs, result_channels = apply_rfi_mask(
+        FREQS, rfi_filename="fake_file"
     )
 
-    assert (result_vis == VIS).all()
     assert (result_freqs == FREQS).all()
-
-
-@patch("builtins.open", MagicMock())
-@patch("numpy.loadtxt")
-def test_apply_rfi_mask_short_mask(mock_load):
-    """
-    Unit test when the RFI mask has fewer channels
-    than Visibility frequency
-    """
-    mock_load.return_value = numpy.array([1, 1, 0])
-    result_vis, result_freqs = apply_rfi_mask(
-        VIS, FREQS, rfi_filename="fake_file"
-    )
-
-    assert result_vis.shape == (15, 3, 2)
-    assert (result_freqs == numpy.array([2.0e8, 2.5e8, 3.0e8])).all()
-
-
-@patch("builtins.open", MagicMock())
-@patch("numpy.loadtxt")
-def test_apply_rfi_mask_long_mask(mock_load):
-    """
-    Unit test when the RFI mask has more channels
-    than Visibility frequency
-    """
-    mock_load.return_value = numpy.array([1, 1, 0, 1, 1, 0])
-    result_vis, result_freqs = apply_rfi_mask(
-        VIS, FREQS, rfi_filename="fake_file"
-    )
-
-    assert result_vis.shape == (15, 1, 2)
-    assert result_freqs == numpy.array([2.0e8])
+    assert (result_channels == numpy.array(range(NCHAN))).all()
 
 
 def test_select_channels():
@@ -86,25 +48,9 @@ def test_select_channels():
     Unit test for select_channels
     """
 
-    result_vis, result_freq = select_channels(VIS, FREQS, 1.8e8, 2.8e8)
-    assert result_vis.shape == (15, 2, 2)
-    assert result_freq.all() == numpy.array([2.0e8, 2.5e8]).all()
-
-
-def test_clean_vis_data():
-    """
-    Unit test for clean_vis_data
-    """
-
-    vis_pols, selected_freq, weight, corr_type = clean_vis_data(
-        VIS, FREQS, CORR_TYPE, VIS_WEIGHT
+    result_freqs, result_channels = select_channels(
+        FREQS, numpy.array(range(NCHAN)), 1.8e8, 2.8e8
     )
 
-    # The outputs have different sizes
-    assert numpy.array(vis_pols).shape == (2, 15)
-    assert numpy.sum(numpy.array(vis_pols)) == 30
-    assert (
-        selected_freq == numpy.array([1.0e08, 1.5e08, 2.0e08, 2.5e08, 3.0e08])
-    ).all()
-    assert numpy.array(weight).shape == (2, 15)
-    assert (corr_type == numpy.array(["XX", "YY"])).all()
+    assert result_freqs.all() == numpy.array([2.0e8, 2.5e8]).all()
+    assert result_channels.all() == numpy.array([2, 3]).all()
