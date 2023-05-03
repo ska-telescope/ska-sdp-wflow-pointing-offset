@@ -5,6 +5,7 @@ from CASA Measurement Tables
 from unittest.mock import patch
 
 import numpy
+import pytest
 
 from tests.utils import (
     ANTS,
@@ -14,6 +15,8 @@ from tests.utils import (
     FREQS,
     VIS_ARRAY,
 )
+
+casacore = pytest.importorskip("casacore")
 
 
 @patch("ska_sdp_wflow_pointing_offset.read_data.read_visibilities")

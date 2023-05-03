@@ -27,9 +27,10 @@ def apply_rfi_mask(freqs, rfi_filename=None):
 
 def select_channels(freqs, channels, start_freq, end_freq):
     """
-    Select from the visibility data the desired channels to look at,
-    inputting starting and end frequency.
-    The function will select the channels between these two frequencies
+    Select the desired frequencies and corresponding channels
+    of interest by inputting the start and end frequency. The
+    function will select the channels between these two
+    frequencies.
 
     :param freqs: 1D frequency array in MHz [nchan]
     :param channels: 1D frequency channels

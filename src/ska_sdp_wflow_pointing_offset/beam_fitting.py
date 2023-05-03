@@ -1,7 +1,7 @@
 # pylint: disable=too-many-instance-attributes,abstract-method
 """
 Fits primary beams modelled by a 2D Gaussian to the visibility
-amplitudes and computes the azimuth and elevation offsets.
+or gain amplitudes and computes the azimuth and elevation offsets.
 This follows the routines used by the SARAO team for the MeerKAT
 array.
 """
