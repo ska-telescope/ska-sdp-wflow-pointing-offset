@@ -19,7 +19,7 @@ katpoint = "^0.10"
 scikits-fitting = "^0.7"
 pyuvdata = "^2.2"
 ska-sdp-datamodels = { git = "https://gitlab.com/ska-telescope/sdp/ska-sdp-datamodels.git", branch = "orc-1644-refactor-rascil-visibility"}
-ska-sdp-func-python = { git  = "https://gitlab.com/ska-telescope/sdp/ska-sdp-func-python.git", branch = "main"}
+ska-sdp-func-python = { git  = "https://gitlab.com/ska-telescope/sdp/ska-sdp-func-python.git", branch = "orc-1644-make-ska-sdp-func-optional"}
 
 # optional dependencies; used by "extras"
 python-casacore = {version = "^3.5", optional = true}
