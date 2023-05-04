@@ -1,4 +1,4 @@
-# pylint: disable=inconsistent-return-statements
+# pylint: disable=inconsistent-return-statements,too-many-arguments
 """ Regression test for the pointing offset pipeline
 
 """
