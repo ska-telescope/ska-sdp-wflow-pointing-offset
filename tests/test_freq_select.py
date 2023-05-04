@@ -1,7 +1,7 @@
 """
 Unit tests for frequency selection functions
 """
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import numpy
 
@@ -14,7 +14,6 @@ NCHAN = 5
 FREQS = numpy.linspace(1.0e8, 3.0e8, NCHAN)
 
 
-@patch("builtins.open", MagicMock())
 @patch("numpy.loadtxt")
 def test_apply_rfi_mask(mock_load):
     """

@@ -49,6 +49,7 @@ autodoc_mock_imports = [
     "matplotlib",
     "ska-sdp-datamodels",
     "ska-sdp-func-python",
+    "pandas",
 ]
 
 templates_path = ["_templates"]

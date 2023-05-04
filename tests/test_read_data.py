@@ -20,19 +20,16 @@ casacore = pytest.importorskip("casacore")
 
 
 @patch("ska_sdp_wflow_pointing_offset.read_data.read_visibilities")
-def test_read_visibilities(mock_tables):
+def test_read_visibilities(read_visibilities):
     """
-    Test importing gaintable from cal table
+    Unit test for read_visibilities function
     """
-    mock_tables.return_value = (
+    read_visibilities.return_value = (
         VIS_ARRAY,
         numpy.dstack((DISH_COORD_AZ, DISH_COORD_EL)),
         ANTS,
     )
-
-    vis = mock_tables.return_value[0]
-    source_offset = mock_tables.return_value[1]
-    ants = mock_tables.return_value[2]
+    vis, source_offset, ants = read_visibilities("test_table")
 
     # Specific attributes
     assert vis.vis.data.shape == (5, 6, 5, 2)

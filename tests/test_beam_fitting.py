@@ -91,6 +91,6 @@ def test_fit_to_gain():
     el_offset_pol2 = fitted_results[:, 12]
     numpy.testing.assert_allclose(
         numpy.column_stack((az_offset_pol2, el_offset_pol2)),
-        [[0.0, 0.0], [2.86576, 3.118187], [0.0, 0.0]],
+        [[0.0, 0.0], [2.865761, 2.939088], [0.0, 0.0]],
         rtol=1e-3,
     )

@@ -9,7 +9,7 @@ import numpy
 log = logging.getLogger("ska-sdp-pointing-offset")
 
 
-def apply_rfi_mask(freqs, rfi_filename=None):
+def apply_rfi_mask(freqs, rfi_filename):
     """
     Apply RFI mask.
 
@@ -17,10 +17,13 @@ def apply_rfi_mask(freqs, rfi_filename=None):
     :param rfi_filename: Name of the rfi file (in .txt)
     :return: Filtered frequency and channels array
     """
-    rfi_mask = numpy.loadtxt(rfi_filename)
     channels = numpy.array(range(len(freqs)))
-    freqs = freqs[rfi_mask == 0]
-    channels = channels[rfi_mask == 0]
+    try:
+        rfi_mask = numpy.loadtxt(rfi_filename)
+        freqs = freqs[rfi_mask == 0]
+        channels = channels[rfi_mask == 0]
+    except FileNotFoundError:
+        log.info("Invalid RFI flagging file provided. No RFI flags applied.")
 
     return freqs, channels
 
