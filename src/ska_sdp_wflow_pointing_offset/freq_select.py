@@ -5,6 +5,7 @@ Optionally applies RFI mask and select frequency ranges
 import logging
 
 import numpy
+from scipy.interpolate import InterpolatedUnivariateSpline
 
 log = logging.getLogger("ska-sdp-pointing-offset")
 
@@ -42,3 +43,39 @@ def select_channels(freqs, channels, start_freq, end_freq):
     channels = channels[select_mask]
 
     return freqs, channels
+
+def interp_timestamps(origin, ntimes):
+    """
+    Interpolate timestamps using offset data.
+
+    :param origin: Offset array in [2, ntimes_origin, nants]
+    :param ntimes: Number of timestamps needed for output data
+    :return: Offset array in [2, ntimes, nants]
+    """
+
+    def _interp_data(array, new_size):
+        """ Basic routine to call scipy.interpolate"""
+        x = numpy.linspace(-1., 1.,len(array))
+        spl = InterpolatedUnivariateSpline(x, array)
+        xs = numpy.linspace(-1., 1., new_size)
+
+        return spl(xs)
+
+    if (origin.ndim != 3 or origin.shape[0] != 2):
+        log.warning("Input offset data has the wrong shape, no interpolation done.")
+        return origin
+
+    direction_az = origin[0]
+    direction_el = origin[1]
+    output = numpy.zeros((2, ntimes, origin.shape[2]))
+    for i in range(origin.shape[2]):
+        az_ant = direction_az[:, i]
+        el_ant = direction_el[:, i]
+        new_az_ant = _interp_data(az_ant, ntimes)
+        new_el_ant = _interp_data(el_ant, ntimes)
+
+        output[0, :, i] = new_az_ant
+        output[1, :, i] = new_el_ant
+
+    return output
+

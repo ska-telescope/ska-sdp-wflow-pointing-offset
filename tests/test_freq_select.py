@@ -7,9 +7,10 @@ import numpy
 
 from ska_sdp_wflow_pointing_offset.freq_select import (
     apply_rfi_mask,
-    clean_vis_data,
     select_channels,
+    interp_timestamps,
 )
+from tests.utils import SOURCE_OFFSET_X, SOURCE_OFFSET_Y
 
 NCORR = 15
 NCHAN = 5
@@ -90,21 +91,16 @@ def test_select_channels():
     assert result_vis.shape == (15, 2, 2)
     assert result_freq.all() == numpy.array([2.0e8, 2.5e8]).all()
 
-
-def test_clean_vis_data():
+def test_interp_timestamps():
     """
-    Unit test for clean_vis_data
+    Unit test for interp_timestamps
     """
+    offset = numpy.array([SOURCE_OFFSET_X, SOURCE_OFFSET_Y])
+    assert offset.shape == (2,5,3)
 
-    vis_pols, selected_freq, weight, corr_type = clean_vis_data(
-        VIS, FREQS, CORR_TYPE, VIS_WEIGHT
-    )
+    out = interp_timestamps(offset, 10)
 
-    # The outputs have different sizes
-    assert numpy.array(vis_pols).shape == (2, 15)
-    assert numpy.sum(numpy.array(vis_pols)) == 30
-    assert (
-        selected_freq == numpy.array([1.0e08, 1.5e08, 2.0e08, 2.5e08, 3.0e08])
-    ).all()
-    assert numpy.array(weight).shape == (2, 15)
-    assert (corr_type == numpy.array(["XX", "YY"])).all()
+    assert out.shape == (2,10,3)
+    # The start and end should be the same
+    numpy.testing.assert_array_almost_equal(out[:,0,:], offset[:,0,:])
+    numpy.testing.assert_array_almost_equal(out[:, -1, :], offset[:, -1, :])
