@@ -3,7 +3,7 @@
 
 Usage:
   pointing-offset COMMAND [--ms=FILE] [--save_offset]
-                          [--apply_mask] [--fit_tovis]
+                          [--apply_mask] [--fit_to_vis]
                           [--rfi_file=FILE] [--results_dir=None]
                           [--start_freq=None] [--end_freq=None]
                           [(--bw_factor <bw_factor>) [<bw_factor>...]]
@@ -17,7 +17,7 @@ Options:
   -q --quiet           report only file names
 
   --ms=FILE            Measurement set file
-  --fit_tovis          Fit primary beam to visibilities instead of antenna
+  --fit_to_vis          Fit primary beam to visibilities instead of antenna
                        gains (Optional) [default:False]
   --apply_mask         Apply Mask (Optional) [default:False]
   --rfi_file=FILE      RFI file (Optional)
@@ -81,7 +81,6 @@ def compute_offset(args):
 
     :param args: required and optional arguments
     """
-
     begin = time.time()
 
     def _safe_float(number):
@@ -105,6 +104,7 @@ def compute_offset(args):
     if args["--apply_mask"]:
         if not args["--rfi_file"]:
             raise ValueError("RFI File is required!!")
+
     vis, source_offset, ants = read_visibilities(
         args["--ms"],
         args["--apply_mask"],
@@ -113,7 +113,7 @@ def compute_offset(args):
         args["--end_freq"],
     )
 
-    if args["--fit_tovis"]:
+    if args["--fit_to_vis"]:
         y_param = vis
     else:
         # Solve for the antenna gains
@@ -132,7 +132,7 @@ def compute_offset(args):
     init_results = SolveForOffsets(
         source_offset, y_param, beamwidth_factor, ants
     )
-    if args["--fit_tovis"]:
+    if args["--fit_to_vis"]:
         fitted_results = init_results.fit_to_visibilities()
     else:
         fitted_results = init_results.fit_to_gains()
