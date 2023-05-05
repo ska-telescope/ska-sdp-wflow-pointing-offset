@@ -60,7 +60,7 @@ def read_visibilities(
     # Get the frequencies and source offsets
     source_offset = pointing_table.getcol("SOURCE_OFFSET")
     freqs = numpy.squeeze(spw_table.getcol("CHAN_FREQ")) / 1.0e6  # Hz -> MHz
-    channels = numpy.array(range(len(freqs)))
+    channels = numpy.arange(len(freqs))
 
     if apply_mask:
         # Apply RFI mask
@@ -74,15 +74,14 @@ def read_visibilities(
         )
         start_chan = channels[0]
         end_chan = channels[-1]
-    elif start_freq is None and end_freq is None:
+    else:
         if apply_mask:
             start_chan = channels[0]
             end_chan = channels[-1]
         else:
             start_chan = None
             end_chan = None
-    else:
-        raise ValueError("Use default start and end freq or set both!")
+
     log.info("Selected channel numbers are %s to %s", start_chan, end_chan)
     vis = create_visibility_from_ms(
         msname=msname,

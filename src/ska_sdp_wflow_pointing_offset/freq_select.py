@@ -17,7 +17,7 @@ def apply_rfi_mask(freqs, rfi_filename):
     :param rfi_filename: Name of the rfi file (in .txt)
     :return: Filtered frequency and channels array
     """
-    channels = numpy.array(range(len(freqs)))
+    channels = numpy.arange(len(freqs))
     try:
         rfi_mask = numpy.loadtxt(rfi_filename)
         freqs = freqs[rfi_mask == 0]
