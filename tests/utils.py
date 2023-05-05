@@ -532,7 +532,6 @@ GAIN_ARRAY = GainTable.constructor(
     configuration=CONFIGURATION,
     jones_type="G",
 )
-print(GAIN_ARRAY)
 
 
 # y-parameter when fitting the primary beam to the visibilities

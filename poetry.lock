@@ -1589,64 +1589,65 @@ files = [
 
 [[package]]
 name = "ska-sdp-datamodels"
-version = "0.2.0"
+version = "0.2.1"
 description = "SKA SDP Python-based Data Models"
 category = "main"
 optional = false
-python-versions = "^3.9"
-files = []
-develop = false
+python-versions = ">=3.9,<4.0"
+files = [
+    {file = "ska_sdp_datamodels-0.2.1-py3-none-any.whl", hash = "sha256:e38342f2af0113af940c2478e159766e284bdfbc5e42c4e6dacd06faa241cc38"},
+    {file = "ska_sdp_datamodels-0.2.1.tar.gz", hash = "sha256:07b917e6db2d34d0d90a802e49d55abd5338e6d082fdf56a440171ea19328b3a"},
+]
 
 [package.dependencies]
-astroplan = "^0.8"
-astropy = "^5.1"
-h5py = "^3.7"
-numpy = "^1.23, <1.24"
-pandas = "^1.5"
-xarray = "^2022.11.0"
+astroplan = ">=0.8,<0.9"
+astropy = ">=5.1,<6.0"
+h5py = ">=3.7,<4.0"
+numpy = ">=1.23,<1.24"
+pandas = ">=1.5,<2.0"
+xarray = ">=2022.11.0,<2023.0.0"
 
 [package.extras]
 python-casacore = ["python-casacore (>=3.5.1,<4.0.0)"]
 
 [package.source]
-type = "git"
-url = "https://gitlab.com/ska-telescope/sdp/ska-sdp-datamodels.git"
-reference = "orc-1644-refactor-rascil-visibility"
-resolved_reference = "094f38a55ec5d7d2212974cd5113f49a7573909e"
+type = "legacy"
+url = "https://artefact.skao.int/repository/pypi-internal/simple"
+reference = "ska"
 
 [[package]]
 name = "ska-sdp-func-python"
-version = "0.2.0"
+version = "0.2.1"
 description = "SKA SDP Python-Based Processing Functions"
 category = "main"
 optional = false
-python-versions = "^3.9"
-files = []
-develop = false
+python-versions = ">=3.9,<4.0"
+files = [
+    {file = "ska_sdp_func_python-0.2.1-py3-none-any.whl", hash = "sha256:30570afe712f723725d22f5d1579b2a68fa39bdcd39099cdbc4181bd3814e454"},
+    {file = "ska_sdp_func_python-0.2.1.tar.gz", hash = "sha256:774d1689af82f1808e64e4b2ac700a2cec2fd7a90327a780314683e251affa40"},
+]
 
 [package.dependencies]
-astroplan = "^0.8"
-astropy = "^5.1"
-ducc0 = "^0.27.0"
-numpy = "^1.23, <1.24"
-photutils = "^1.5.0"
-scipy = "^1.9.3"
-ska-sdp-datamodels = "^0.2.0"
-xarray = "^2022.11.0"
+astroplan = ">=0.8,<0.9"
+astropy = ">=5.1,<6.0"
+ducc0 = ">=0.27.0,<0.28.0"
+numpy = ">=1.23,<1.24"
+photutils = ">=1.5.0,<2.0.0"
+scipy = ">=1.9.3,<2.0.0"
+ska-sdp-datamodels = ">=0.2.0,<0.3.0"
+xarray = ">=2022.11.0,<2023.0.0"
 
 [package.extras]
 dp3 = ["dp3 (>=5.4.0,<6.0.0)"]
 fft-support = ["pyfftw (>=0.13.0,<0.14.0)"]
 gpu = ["cupy (>=11.3.0,<12.0.0)"]
-h5py = []
 radler = ["radler (>=0.0.1,<0.0.2)"]
 ska-sdp-func = ["ska-sdp-func @ git+https://gitlab.com/ska-telescope/sdp/ska-sdp-func.git@main"]
 
 [package.source]
-type = "git"
-url = "https://gitlab.com/ska-telescope/sdp/ska-sdp-func-python.git"
-reference = "orc-1644-make-ska-sdp-func-optional"
-resolved_reference = "88579177864af892bf3cd19ed8193e660e12969c"
+type = "legacy"
+url = "https://artefact.skao.int/repository/pypi-internal/simple"
+reference = "ska"
 
 [[package]]
 name = "tomli"
@@ -1816,4 +1817,4 @@ python-casacore = ["python-casacore"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "af77d205cc0a76f929acb019f291283b410e41fe765c335552f0af8980e9c47d"
+content-hash = "2c8361fdc262fdb4d5ca792df13c9669227b390bbed1a9acdb4502d49cfa554f"

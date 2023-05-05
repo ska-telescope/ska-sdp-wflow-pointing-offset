@@ -125,7 +125,7 @@ class SolveForOffsets:
 
     :param source_offset: Offsets from the target in Az, El coordinates
         with shape [2, number of timestamps, number of antennas]
-    :param y_param: Visibility containing the observed data_models or
+    :param y_param: Visibility containing the observed data or
         amplitude gains of each antenna
     :param beamwidth_factor: The beamwidth factor for the two orthogonal
         directions. Two values are expected as one value for the horizontal

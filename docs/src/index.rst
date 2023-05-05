@@ -1,10 +1,10 @@
 SKA SDP Pointing Offset Calibration Pipeline
 ============================================
 This is a `repository`_ for the SDP pointing offset calibration pipeline. This repository reads measurement set, optionally applies
-and RFI mask and/or select some frequency range of interest, and then fits the primary beams (modelled by 2D Gaussian) to the
+an RFI mask and/or select some frequency range of interest, and then fits the primary beams (modelled by 2D Gaussian) to the
 visibility or gain amplitudes. The fitted parameters are the Gaussian centre (provides the Azimuth-Elevation offsets), width
 (the fitted beamwidth), and height. These offsets are then optionally written to a text file for further analysis. The pipeline
-reads measurement set using the Visibility class in `RASCIL`_. When an RFI mask is applied and/or some frequency range is
+reads measurement set using the Visibility class in `SKA datamodels`_. When an RFI mask is applied and/or some frequency range is
 selected, the modified visibility is created with the `SKA datamodels`_ Visibility class for gain calibration or provides easy
 access to the visibilities and their associated parameters when fitting to them. The gains of each antenna are solved for using
 the gain solver in the `SKA python processing functions`_. The functions in `scikits.fitting`_ are used for the fitting following
