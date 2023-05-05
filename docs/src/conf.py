@@ -16,7 +16,9 @@ release = "0.0.0"
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
+sys.path.insert(0, os.path.abspath("../.."))
 sys.path.insert(0, os.path.abspath("../../src"))
+
 
 
 def setup(app):
@@ -41,6 +43,7 @@ extensions = [
 
 autodoc_mock_imports = [
     "numpy",
+    "numpy.core.multiarray",
     "katpoint",
     "scikits",
     "python-casacore",
@@ -50,6 +53,7 @@ autodoc_mock_imports = [
     "ska-sdp-func-python",
     "pandas",
 ]
+
 templates_path = ["_templates"]
 exclude_patterns = []
 # The suffix(es) of source filenames.
