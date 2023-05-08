@@ -13,7 +13,7 @@ import numpy
 from katpoint import lightspeed, wrap_angle
 from scikits.fitting import GaussianFit, ScatterFit
 
-from ska_sdp_wflow_pointing_offset.freq_select import interp_timestamps
+from ska_sdp_wflow_pointing_offset.array_data_func import interp_timestamps
 
 log = logging.getLogger("ska-sdp-pointing-offset")
 

@@ -10,7 +10,7 @@ import numpy
 from ska_sdp_datamodels.visibility import create_visibility_from_ms
 from ska_sdp_datamodels.visibility.vis_model import Visibility
 
-from ska_sdp_wflow_pointing_offset.freq_select import (
+from ska_sdp_wflow_pointing_offset.array_data_func import (
     apply_rfi_mask,
     select_channels,
 )
