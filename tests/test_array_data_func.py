@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import numpy
 
-from ska_sdp_wflow_pointing_offset.freq_select import (
+from ska_sdp_wflow_pointing_offset.array_data_func import (
     apply_rfi_mask,
     interp_timestamps,
     select_channels,

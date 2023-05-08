@@ -1,5 +1,8 @@
 """
-Optionally applies RFI mask and select frequency ranges
+Functions for manipulation of data that are numpy arrays.
+Currently contains:
+1. Applying RFI mask and select frequency ranges for input data
+2. Interpolate timestamps for source offset data
 """
 
 import logging
