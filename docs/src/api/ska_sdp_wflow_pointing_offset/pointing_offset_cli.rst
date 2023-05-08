@@ -15,7 +15,7 @@ Usage
 
     Usage:
         pointing-offset COMMAND [--ms=FILE] [--save_offset]
-                          [--apply_mask] [--fit_tovis]
+                          [--apply_mask] [--fit_to_vis]
                           [--rfi_file=FILE] [--results_dir=None]
                           [--start_freq=None] [--end_freq=None]
                           [(--bw_factor <bw_factor>) [<bw_factor>...]]
@@ -29,7 +29,7 @@ Usage
         -q --quiet           report only file names
 
         --ms=FILE            Measurement set file
-        --fit_tovis          Fit primary beam to visibilities instead of antenna
+        --fit_to_vis          Fit primary beam to visibilities instead of antenna
                              gains (Optional) [default:False]
         --apply_mask         Apply Mask (Optional) [default:False]
         --rfi_file=FILE      RFI file (Optional)
@@ -54,7 +54,7 @@ List of commands for accessing the functionalities of the pipeline.
      - Implements the list of actions below
    * - **ms**
      - Measurement set name
-   * - **fit_tovis**
+   * - **fit_to_vis**
      - Fit primary beam to visibilities instead of antenna gains
    * - **apply_mask**
      - Boolean to apply the RFI mask provided by the **rfi_file** command

@@ -1,4 +1,3 @@
-# pylint: disable=inconsistent-return-statements, too-few-public-methods
 """
 Unit Tests to create GainTable
 from CASA Tables
@@ -15,7 +14,7 @@ from ska_sdp_wflow_pointing_offset.export_data import (
 
 def test_export_pointing_data_file():
     """
-    Test importing gaintable from cal table
+    Unit test for exporting the fitted parameters to text file
     """
     offset = numpy.array([[148.95, 35.62], [999.99, 99.99]])
     with tempfile.TemporaryDirectory() as temp_dir:

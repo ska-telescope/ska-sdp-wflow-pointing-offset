@@ -1,7 +1,7 @@
 # pylint: disable=too-many-locals
 """
-Util functions for constructing antenna information
-and plotting.
+Util functions for constructing katpoint antenna information,
+solving for antenna gains and plotting the solutions.
 """
 import katpoint
 import matplotlib.pyplot as plt

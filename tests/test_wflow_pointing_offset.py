@@ -1,4 +1,4 @@
-# pylint: disable=too-many-arguments, inconsistent-return-statements
+# pylint: disable=inconsistent-return-statements,too-many-arguments
 """ Regression test for the pointing offset pipeline
 
 """
@@ -11,13 +11,7 @@ import numpy
 import pytest
 
 from ska_sdp_wflow_pointing_offset.pointing_offset_cli import compute_offset
-from tests.utils import (
-    MockAntennaTable,
-    MockBaseTable,
-    MockPointingTable,
-    MockPolarisationTable,
-    MockSpectralWindowTable,
-)
+from tests.utils import ANTS, DISH_COORD_AZ, DISH_COORD_EL, VIS_ARRAY
 
 log = logging.getLogger("pointing-offset-logger")
 log.setLevel(logging.WARNING)
@@ -26,7 +20,8 @@ DEFAULT_RUN = True
 PERSIST = False
 
 
-@patch("ska_sdp_wflow_pointing_offset.read_data._load_ms_tables")
+@patch("ska_sdp_wflow_pointing_offset.pointing_offset_cli.read_visibilities")
+@pytest.mark.parametrize("fitting_method", [True, False])
 @pytest.mark.parametrize(
     "enabled, mode, start_freq, end_freq",
     [
@@ -45,7 +40,8 @@ PERSIST = False
     ],
 )
 def test_wflow_pointing_offset(
-    mock_ms,
+    read_visibilities,
+    fitting_method,
     enabled,
     mode,
     start_freq,
@@ -74,26 +70,28 @@ def test_wflow_pointing_offset(
     with tempfile.TemporaryDirectory() as tempdir:
         log.info("Putting output data into temporary %s.", tempdir)
 
-        mock_ms.return_value = (
-            MockAntennaTable(),
-            MockBaseTable(),
-            MockPointingTable(),
-            MockPolarisationTable(),
-            MockSpectralWindowTable(),
-        )
         outfile = f"{tempdir}/pointing_offsets.txt"
-        beam_width_factor = [0.976, 1.098]
+        beamwidth_factor = [0.976, 1.098]
+
+        read_visibilities.return_value = (
+            VIS_ARRAY,
+            numpy.dstack((DISH_COORD_AZ, DISH_COORD_EL)),
+            ANTS,
+        )
+
         args = {
             "--start_freq": start_freq,
             "--end_freq": end_freq,
             "--apply_mask": False,
             "--rfi_file": None,
             "--save_offset": True,
+            "--fit_to_vis": fitting_method,
             "--results_dir": tempdir,
-            "--ms": "fake_ms",
+            "--ms": tempdir,
             "--bw_factor": True,
-            "<bw_factor>": beam_width_factor,
+            "<bw_factor>": beamwidth_factor,
         }
+
         compute_offset(args)
 
         assert os.path.exists(outfile)

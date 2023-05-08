@@ -10,7 +10,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 log = logging.getLogger("ska-sdp-pointing-offset")
 
 
-def apply_rfi_mask(freqs, rfi_filename=None):
+def apply_rfi_mask(freqs, rfi_filename):
     """
     Apply RFI mask.
 
@@ -18,19 +18,23 @@ def apply_rfi_mask(freqs, rfi_filename=None):
     :param rfi_filename: Name of the rfi file (in .txt)
     :return: Filtered frequency and channels array
     """
-    rfi_mask = numpy.loadtxt(rfi_filename)
-    channels = numpy.array(range(len(freqs)))
-    freqs = freqs[rfi_mask == 0]
-    channels = channels[rfi_mask == 0]
+    channels = numpy.arange(len(freqs))
+    try:
+        rfi_mask = numpy.loadtxt(rfi_filename)
+        freqs = freqs[rfi_mask == 0]
+        channels = channels[rfi_mask == 0]
+    except FileNotFoundError:
+        log.info("Invalid RFI flagging file provided. No RFI flags applied.")
 
     return freqs, channels
 
 
 def select_channels(freqs, channels, start_freq, end_freq):
     """
-    Select from the visibility data the desired channels to look at,
-    inputting starting and end frequency.
-    The function will select the channels between these two frequencies
+    Select the desired frequencies and corresponding channels
+    of interest by inputting the start and end frequency. The
+    function will select the channels between these two
+    frequencies.
 
     :param freqs: 1D frequency array in MHz [nchan]
     :param channels: 1D frequency channels

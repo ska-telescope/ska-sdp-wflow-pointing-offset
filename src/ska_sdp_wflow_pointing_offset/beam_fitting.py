@@ -1,8 +1,7 @@
-# pylint: disable=too-many-arguments,too-many-locals
 # pylint: disable=too-many-instance-attributes,abstract-method
 """
 Fits primary beams modelled by a 2D Gaussian to the visibility
-amplitudes and computes the azimuth and elevation offsets.
+or gain amplitudes and computes the azimuth and elevation offsets.
 This follows the routines used by the SARAO team for the MeerKAT
 array.
 """
@@ -126,7 +125,7 @@ class SolveForOffsets:
 
     :param source_offset: Offsets from the target in Az, El coordinates
         with shape [2, number of timestamps, number of antennas]
-    :param y_param: Visibility containing the observed data_models or
+    :param y_param: Visibility containing the observed data or
         amplitude gains of each antenna
     :param beamwidth_factor: The beamwidth factor for the two orthogonal
         directions. Two values are expected as one value for the horizontal
@@ -317,7 +316,7 @@ class SolveForOffsets:
         :return: The fitted beam centre and uncertainty, fitted beamwidth and
         uncertainty, fitted beam height and uncertainty for each polarisation
         """
-        # The shape of the gain is dumps, nself.ants, averaged-frequency,
+        # The shape of the gain is dumps, ants, averaged-frequency,
         # receptor1, receptor2
         log.info("Fitting primary beams to gain amplitudes...")
         gain = numpy.abs(numpy.squeeze(self.y_param.gain.data))
