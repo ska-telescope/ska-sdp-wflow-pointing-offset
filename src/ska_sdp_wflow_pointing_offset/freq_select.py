@@ -48,38 +48,40 @@ def select_channels(freqs, channels, start_freq, end_freq):
 
     return freqs, channels
 
+
 def interp_timestamps(origin, ntimes):
     """
     Interpolate timestamps using offset data.
 
-    :param origin: Offset array in [2, ntimes_origin, nants]
+    :param origin: Offset array in [ntimes_origin, nants, 2]
     :param ntimes: Number of timestamps needed for output data
-    :return: Offset array in [2, ntimes, nants]
+    :return: Offset array in [ntimes, nants, 2]
     """
 
     def _interp_data(array, new_size):
-        """ Basic routine to call scipy.interpolate"""
-        x = numpy.linspace(-1., 1.,len(array))
-        spl = InterpolatedUnivariateSpline(x, array)
-        xs = numpy.linspace(-1., 1., new_size)
+        """Basic routine to call scipy.interpolate"""
+        arr_to_interp = numpy.linspace(-1.0, 1.0, len(array))
+        spl = InterpolatedUnivariateSpline(arr_to_interp, array)
+        arr_to_fill = numpy.linspace(-1.0, 1.0, new_size)
 
-        return spl(xs)
+        return spl(arr_to_fill)
 
-    if (origin.ndim != 3 or origin.shape[0] != 2):
-        log.warning("Input offset data has the wrong shape, no interpolation done.")
+    if origin.ndim != 3 or origin.shape[2] != 2:
+        log.warning(
+            "Input offset data has the wrong shape, no interpolation done."
+        )
         return origin
 
-    direction_az = origin[0]
-    direction_el = origin[1]
-    output = numpy.zeros((2, ntimes, origin.shape[2]))
-    for i in range(origin.shape[2]):
+    direction_az = origin[:, :, 0]
+    direction_el = origin[:, :, 1]
+    output = numpy.zeros((ntimes, origin.shape[1], 2))
+    for i in range(origin.shape[1]):
         az_ant = direction_az[:, i]
         el_ant = direction_el[:, i]
         new_az_ant = _interp_data(az_ant, ntimes)
         new_el_ant = _interp_data(el_ant, ntimes)
 
-        output[0, :, i] = new_az_ant
-        output[1, :, i] = new_el_ant
+        output[:, i, 0] = new_az_ant
+        output[:, i, 1] = new_el_ant
 
     return output
-
