@@ -52,38 +52,36 @@ def select_channels(freqs, channels, start_freq, end_freq):
     return freqs, channels
 
 
-def interp_timestamps(origin, ntimes):
+def interp_timestamps(origin_data, origin_times, new_times):
     """
     Interpolate timestamps using offset data.
 
-    :param origin: Offset array in [ntimes_origin, nants, 2]
-    :param ntimes: Number of timestamps needed for output data
-                   From Visibility or gains
-    :return: Offset array in [ntimes, nants, 2]
+    :param origin_data: Offset array in [ntimes_origin, nants, 2]
+    :param origin_times: Original times information [ntimes_origin]
+    :param new_times: New times information [ntimes_new]
+                      From Visibility or gains
+    :return: Offset array in [ntimes_new, nants, 2]
     """
 
-    def _interp_data(array, new_size):
-        """Basic routine to call scipy.interpolate"""
-        arr_to_interp = numpy.linspace(-1.0, 1.0, len(array))
-        spl = InterpolatedUnivariateSpline(arr_to_interp, array)
-        arr_to_fill = numpy.linspace(-1.0, 1.0, new_size)
-
-        return spl(arr_to_fill)
-
-    if origin.ndim != 3 or origin.shape[2] != 2:
+    if origin_data.ndim != 3 or origin_data.shape[2] != 2:
         log.warning(
             "Input offset data has the wrong shape, no interpolation done."
         )
-        return origin
+        return origin_data
 
-    direction_az = origin[:, :, 0]
-    direction_el = origin[:, :, 1]
-    output = numpy.zeros((ntimes, origin.shape[1], 2))
-    for i in range(origin.shape[1]):
+    ntimes_new = new_times.shape[0]
+
+    direction_az = origin_data[:, :, 0]
+    direction_el = origin_data[:, :, 1]
+    output = numpy.zeros((ntimes_new, origin_data.shape[1], 2))
+    for i in range(origin_data.shape[1]):
         az_ant = direction_az[:, i]
         el_ant = direction_el[:, i]
-        new_az_ant = _interp_data(az_ant, ntimes)
-        new_el_ant = _interp_data(el_ant, ntimes)
+
+        spl_az = InterpolatedUnivariateSpline(origin_times, az_ant)
+        new_az_ant = spl_az(new_times)
+        spl_el = InterpolatedUnivariateSpline(origin_times, el_ant)
+        new_el_ant = spl_el(new_times)
 
         output[:, i, 0] = new_az_ant
         output[:, i, 1] = new_el_ant

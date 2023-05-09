@@ -723,3 +723,6 @@ class MockPointingTable:
         """
         if columnname == "SOURCE_OFFSET":
             return numpy.dstack((DISH_COORD_AZ, DISH_COORD_EL))
+
+        if columnname == "TIME":
+            return TIMESTAMPS
