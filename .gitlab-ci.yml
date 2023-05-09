@@ -24,8 +24,14 @@ include:
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/finaliser.gitlab-ci.yml'
 
+python-lint:
+  before_script:
+    - poetry config virtualenvs.in-project true
+    - poetry config virtualenvs.create $POETRY_CONFIG_VIRTUALENVS_CREATE
+    - time poetry install
+
 python-test:
-    before_script:
-      poetry config virtualenvs.in-project true    
-      poetry config virtualenvs.create $POETRY_CONFIG_VIRTUALENVS_CREATE    
-      time poetry install --extras "python-casacore"
+  before_script:
+    - poetry config virtualenvs.in-project true
+    - poetry config virtualenvs.create $POETRY_CONFIG_VIRTUALENVS_CREATE
+    - time poetry install --extras "python-casacore"
