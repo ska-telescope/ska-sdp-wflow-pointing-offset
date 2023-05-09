@@ -5,6 +5,7 @@ from CASA Measurement Tables
 from unittest.mock import patch
 
 import numpy
+import pytest
 
 from ska_sdp_wflow_pointing_offset.read_data import read_visibilities
 from tests.utils import (
@@ -14,6 +15,8 @@ from tests.utils import (
     MockPointingTable,
     MockSpectralWindowTable,
 )
+
+casacore = pytest.importorskip("casacore")
 
 
 @patch("ska_sdp_datamodels.visibility.create_visibility_from_ms")
