@@ -38,7 +38,7 @@ STATION = [
     "SKAMID-CORE",
     "SKAMID-CORE",
 ]
-NAME = ["SKA001 ", "SKA002", "SKA003"]
+NAME = ["SKA001", "SKA002", "SKA003"]
 MOUNT = ["ALT-AZ", "ALT-AZ", "ALT-AZ"]
 OFFSET = numpy.array(
     [

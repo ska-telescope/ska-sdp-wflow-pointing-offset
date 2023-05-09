@@ -18,7 +18,7 @@ from tests.utils import (
 casacore = pytest.importorskip("casacore")
 
 
-@patch("ska_sdp_datamodels.visibility.create_visibility_from_ms")
+@patch("ska_sdp_wflow_pointing_offset.read_data.create_visibility_from_ms")
 @patch("ska_sdp_wflow_pointing_offset.read_data._load_ms_tables")
 def test_read_visibilities(mock_tables, mock_ms, vis_array):
     """
@@ -38,5 +38,5 @@ def test_read_visibilities(mock_tables, mock_ms, vis_array):
     assert (vis.polarisation.data == CORR_TYPE).all()
     assert source_offset.shape == (5, 3, 2)
     assert numpy.array(ants).shape == (3,)
-    assert ants[0].name == "SKAMID-CORE"
+    assert ants[0].name == "SKA001"
     assert ants[0].diameter == 25.0

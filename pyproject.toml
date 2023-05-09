@@ -20,10 +20,10 @@ scikits-fitting = "^0.7"
 pyuvdata = "^2.2"
 ska-sdp-datamodels = "^0.2.1"
 ska-sdp-func-python = "^0.2.1"
+docopt = "^0.6"
 
 # optional dependencies; used by "extras"
 python-casacore = {version = "^3.5", optional = true}
-docopt = "^0.6"
 
 [tool.poetry.extras]
 python-casacore = ["python-casacore"]
