@@ -14,8 +14,7 @@ def export_pointing_offset_data(filename, offset):
     :param offset: The fitted parameters and their uncertainties
         for each polaristion. The columns of the data are : Fitted
         beam centre and uncertainty, fitted beamwidth and uncertainty,
-        fitted beam height and uncertainty.
-
+        fitted beam height and uncertainty
     :return: True-Success, False-Failed
     """
 

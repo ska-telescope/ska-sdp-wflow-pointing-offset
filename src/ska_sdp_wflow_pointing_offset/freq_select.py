@@ -1,4 +1,3 @@
-# pylint: disable=too-many-arguments, too-many-locals
 """
 Optionally applies RFI mask and select frequency ranges
 """
@@ -10,131 +9,40 @@ import numpy
 log = logging.getLogger("ska-sdp-pointing-offset")
 
 
-def apply_rfi_mask(data, freqs, rfi_filename=None):
+def apply_rfi_mask(freqs, rfi_filename):
     """
     Apply RFI mask.
 
-    :param data: 3D data in [ncorr, nchan, npol]
     :param freqs: 1D array of frequency in Hz [nchan]
     :param rfi_filename: Name of the rfi file (in .txt)
-    :return: filtered data and freqs array
+    :return: Filtered frequency and channels array
     """
-    # True is flagged channel and False is accepted channel
+    channels = numpy.arange(len(freqs))
     try:
         rfi_mask = numpy.loadtxt(rfi_filename)
-        if rfi_mask.shape > freqs.shape:
-            log.info(
-                "Only using the first %i lines of RFI mask", freqs.shape[0]
-            )
-            rfi_mask = rfi_mask[: freqs.shape[0]]
-
-        elif rfi_mask.shape < freqs.shape:
-            log.info(
-                "Only apply mask to the first %i channels", rfi_mask.shape[0]
-            )
-            # Keep the remaining channels by setting their mask to False
-            rfi_extended = numpy.zeros(freqs.shape)
-            rfi_extended[: rfi_mask.shape[0]] = rfi_mask
-            rfi_mask = rfi_extended
-
-        data = data[:, rfi_mask == 0]
         freqs = freqs[rfi_mask == 0]
-
+        channels = channels[rfi_mask == 0]
     except FileNotFoundError:
         log.info("Invalid RFI flagging file provided. No RFI flags applied.")
 
-    return data, freqs
+    return freqs, channels
 
 
-def select_channels(data, freqs, start_freq, end_freq):
+def select_channels(freqs, channels, start_freq, end_freq):
     """
-    Select from the visibility data the desired channels to look at,
-    inputting starting and end frequency.
-    The function will select the channels between these two frequencies
+    Select the desired frequencies and corresponding channels
+    of interest by inputting the start and end frequency. The
+    function will select the channels between these two
+    frequencies.
 
-    :param data: 3D visibility data [ncorr, nchan, numpyol]
-    :param freqs: 1D frequency array in Hz [nchan]
-    :param start_freq: Starting frequency in Hz (float)
-    :param end_freq: Ending frequency in Hz (float)
-    :return: selected array of (data, freqs)
+    :param freqs: 1D frequency array in MHz [nchan]
+    :param channels: 1D frequency channels
+    :param start_freq: Starting frequency in MHz (float)
+    :param end_freq: Ending frequency in MHz (float)
+    :return: selected array of (frequencies, channels)
     """
-    select_mask = (freqs > start_freq) & (freqs < end_freq)
-    data = data[:, select_mask, :]
+    select_mask = (freqs > float(start_freq)) & (freqs < float(end_freq))
     freqs = freqs[select_mask]
+    channels = channels[select_mask]
 
-    return data, freqs
-
-
-def clean_vis_data(
-    vis_array,
-    freqs,
-    corr_type,
-    vis_weights,
-    start_freq=None,
-    end_freq=None,
-    apply_mask=False,
-    rfi_filename=None,
-):
-    """
-    Clean visibility data and split into polarisations.
-
-    :param vis_array: Numpy array of visibility data [ncorr, nchan, npol]
-    :param freqs: Numpy array of frequency [nchan]
-    :param corr_type: Correlation type e.g. (XX,YY), (RR, LL),
-                        (XX,XY,YX,YY) or (RR,RL,LR,LL)
-    :param vis_weights: Weights of the visibilities [ncorr, npol]
-    :param start_freq: Starting frequency for selection in MHz
-                       If no selection needed, use None
-    :param end_freq: Ending frequency for selection in MHz
-                       If no selection needed, use None
-    :param apply_mask: Apply RFI mask?
-    :param rfi_filename: Name of RFI mask file
-    :return: numpy array of visibility with shape [ncorr,]
-             If split_pol is True, return each polarisation
-             Else return the polarisation-averaged visibilities
-    """
-
-    # Use amplitude for visibility
-    amp_vis = numpy.abs(vis_array)
-
-    # Apply RFI
-    if apply_mask:
-        filtered_vis, filtered_freq = apply_rfi_mask(
-            amp_vis, freqs, rfi_filename
-        )
-    else:
-        filtered_vis, filtered_freq = amp_vis, freqs
-
-    # Optionally select a range of frequencies
-    if (start_freq and end_freq) is None:
-        # No frequency selection is needed
-        selected_vis, selected_freq = filtered_vis, filtered_freq
-    else:
-        # Frequency selection is needed
-        selected_vis, selected_freq = select_channels(
-            filtered_vis, filtered_freq, start_freq, end_freq
-        )
-
-    # Average over frequency and split visibilities, weights,
-    # and correlation type into the parallel hands
-    avg_vis = numpy.mean(selected_vis, axis=1)
-    if len(corr_type) == 2:
-        # (XX,YY) or (RR, LL)
-        corr_type = [corr_type[0], corr_type[1]]
-        vis_h = avg_vis[:, 0]
-        vis_v = avg_vis[:, 1]
-        weights_h = vis_weights[:, 0]
-        weights_v = vis_weights[:, 1]
-    elif len(corr_type) == 4:
-        # (XX,XY,YX,YY) or (RR,RL,LR,LL)
-        corr_type = [corr_type[0], corr_type[3]]
-        vis_h = avg_vis[:, 0]
-        vis_v = avg_vis[:, 3]
-        weights_h = vis_weights[:, 0]
-        weights_v = vis_weights[:, 3]
-    else:
-        raise ValueError("Polarisation type not supported")
-
-    return numpy.array(
-        [[vis_h, vis_v], selected_freq, [weights_h, weights_v], corr_type]
-    )
+    return freqs, channels

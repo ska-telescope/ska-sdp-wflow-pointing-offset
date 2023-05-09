@@ -16,7 +16,9 @@ release = "0.0.0"
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
+sys.path.insert(0, os.path.abspath("../.."))
 sys.path.insert(0, os.path.abspath("../../src"))
+
 
 
 def setup(app):
@@ -39,16 +41,17 @@ extensions = [
     "sphinx_automodapi.smart_resolver",
 ]
 
-
 autodoc_mock_imports = [
-    "astropy",
     "numpy",
+    "numpy.core.multiarray",
     "katpoint",
-    "katdal",
     "scikits",
     "python-casacore",
     "pyuvdata",
     "matplotlib",
+    "ska-sdp-datamodels",
+    "ska-sdp-func-python",
+    "pandas",
 ]
 
 templates_path = ["_templates"]
@@ -66,8 +69,8 @@ master_doc = "index"
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 html_context = {
-    "favicon": "img/favicon.ico",
-    "logo": "img/logo.jpg",
+    "favicon": "img/favicon_mono.ico",
+    "logo": "img/logo.png",
     "theme_logo_only": True,
     "display_github": False,  # Integrate GitHub
     "github_user": "",  # Username

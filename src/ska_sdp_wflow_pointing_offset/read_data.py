@@ -4,88 +4,131 @@ Functions for reading data from Measurement Set
 and constructing antenna information.
 """
 
-import numpy
+import logging
 
+import numpy
+from ska_sdp_datamodels.visibility import create_visibility_from_ms
+from ska_sdp_datamodels.visibility.vis_model import Visibility
+
+from ska_sdp_wflow_pointing_offset.freq_select import (
+    apply_rfi_mask,
+    select_channels,
+)
 from ska_sdp_wflow_pointing_offset.utils import construct_antennas
+
+log = logging.getLogger("ska-sdp-pointing-offset")
 
 
 def _load_ms_tables(msname):
-    # pylint: disable=import-error,import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
     """
-    Load CASA Measurement Set file tables
+    Loads Measurement Set.
 
-    :param msname: Measurement set containing visibilities
-    :return: antenna sub-table, measurement set, pointing
-    sub-table, polarisation sub-table, and spectral window
-    sub-table.
+    :param msname: Measurement set containing visibilities.
+    :return: spectral window and pointing sub-table.
     """
     try:
-        from casacore.tables import table, taql  # pylint: disable=import-error
+        from casacore.tables import table
     except ModuleNotFoundError as exc:
         raise ModuleNotFoundError("casacore is not installed") from exc
 
-    # Select cross-correlation only
-    base_table = table(tablename=msname)
-    base_table = taql("select from $base_table where ANTENNA1 != ANTENNA2")
-
-    # spw --> spectral window, pol--> polarisation
-    spw = table(tablename=f"{msname}/SPECTRAL_WINDOW")
-    anttab = table(f"{msname}/ANTENNA")
-    pointing_tab = table(f"{msname}/POINTING")
-    pol = table(tablename=f"{msname}/POLARIZATION", ack=False)
-
-    return anttab, base_table, pointing_tab, pol, spw
+    # Get the spectral window and pointing sub-tables
+    spw_table = table(msname + "::SPECTRAL_WINDOW", ack=False)
+    pointing_table = table(msname + "::POINTING", ack=False)
+    return spw_table, pointing_table
 
 
-def read_visibilities(msname):
+def read_visibilities(
+    msname, apply_mask=False, rfi_filename=None, start_freq=None, end_freq=None
+):
     """
     Extracts parameters from a measurement set required for
     computing the pointing offsets.
 
-    :param msname: Name of Measurement set file
-    :return: visibilities, frequencies, source_offsets in RA
-        and DEC, visibility weights, type of correlation
-        products, and list of katpoint antennas.
+    :param msname: Name of Measurement set file.
+    :param apply_mask: Apply RFI mask?
+    :param rfi_filename: Name of RFI mask file
+    :param start_freq: Starting frequency for selection in MHz.
+        If no selection needed, use None
+    :param end_freq: Ending frequency for selection in MHz.
+        If no selection needed, use None
+    :return: List of Visibility, source_offsets in RA and DEC,
+        and list of katpoint Antennas.
     """
-    # The following keys match the polarisation IDs
-    # from the casa MS file
-    correlation_products = {
-        5: "RR",
-        6: "RL",
-        7: "LR",
-        8: "LL",
-        9: "XX",
-        10: "XY",
-        11: "YX",
-        12: "YY",
-    }
+    spw_table, pointing_table = _load_ms_tables(msname)
 
-    (
-        ant_table,
-        base_table,
-        pointing_tab,
-        pol_table,
-        spw_table,
-    ) = _load_ms_tables(msname)
+    # Get the frequencies and source offsets
+    source_offset = pointing_table.getcol("SOURCE_OFFSET")
+    freqs = numpy.squeeze(spw_table.getcol("CHAN_FREQ")) / 1.0e6  # Hz -> MHz
+    channels = numpy.arange(len(freqs))
 
-    # Get parameters of interest from the tables
-    dish_diam = ant_table.getcol(columnname="DISH_DIAMETER")
-    antenna_names = ant_table.getcol(columnname="NAME")
-    antenna_positions = ant_table.getcol(columnname="POSITION")
-    source_offsets = pointing_tab.getcol(columnname="SOURCE_OFFSET")
-    vis = base_table.getcol(columnname="DATA")
-    vis_weights = base_table.getcol(columnname="WEIGHT")
-    freqs = numpy.squeeze(spw_table.getcol(columnname="CHAN_FREQ"))
-    corr_type = numpy.array(
-        [
-            correlation_products[corr]
-            for corr in numpy.squeeze(pol_table.getcol(columnname="CORR_TYPE"))
+    if apply_mask:
+        # Apply RFI mask
+        freqs, channels = apply_rfi_mask(freqs, rfi_filename)
+
+    # Optionally select frequency channels
+    if start_freq is not None and end_freq is not None:
+        # Get the channel numbers matching the start and end frequencies
+        freqs, channels = select_channels(
+            freqs, channels, start_freq, end_freq
+        )
+        start_chan = channels[0]
+        end_chan = channels[-1]
+    else:
+        if apply_mask:
+            start_chan = channels[0]
+            end_chan = channels[-1]
+        else:
+            start_chan = None
+            end_chan = None
+
+    log.info("Selected channel numbers are %s to %s", start_chan, end_chan)
+    vis = create_visibility_from_ms(
+        msname=msname,
+        channum=None,
+        start_chan=start_chan,
+        end_chan=end_chan,
+        ack=False,
+        datacolumn="DATA",
+        selected_sources=None,
+        selected_dds=None,
+        average_channels=False,
+    )[0]
+
+    if apply_mask or (start_freq is not None and end_freq is not None):
+        # Update vis to ensure the right frequency range is selected
+        # when RFI mask is applied and/or frequency selection is made.
+        # This is to overcome the shortcoming of vis containing
+        # all data in the provided channel range
+        indices = [
+            numpy.where(nu == vis.frequency.data / 1.0e6) for nu in freqs
         ]
-    )
+        indices = [idx[0][0] for idx in indices if idx[0].size > 0]
+        vis = Visibility.constructor(
+            frequency=freqs * 1.0e6,  # MHz -> Hz
+            channel_bandwidth=vis.channel_bandwidth[indices],
+            phasecentre=vis.phasecentre,
+            configuration=vis.configuration,
+            uvw=vis.uvw.data,
+            time=vis.time.data,
+            vis=vis.vis.data[:, :, indices],
+            weight=vis.weight.data[:, :, indices],
+            integration_time=vis.integration_time.data,
+            flags=vis.flags.data[:, :, indices],
+            baselines=vis.baselines,
+            polarisation_frame=vis.visibility_acc.polarisation_frame,
+            source=vis.source,
+            meta=vis.meta,
+        )
 
-    # Build katpoint Antenna
+    # Build katpoint Antenna from antenna configuration
+    antenna_positions = vis.configuration.data_vars["xyz"].data
+    antenna_diameters = vis.configuration.data_vars["diameter"].data
+    antenna_names = vis.configuration.data_vars["names"].data
     ants = construct_antennas(
-        xyz=antenna_positions, diameter=dish_diam, station=antenna_names
+        xyz=antenna_positions,
+        diameter=antenna_diameters,
+        station=antenna_names,
     )
 
-    return vis, freqs, source_offsets, vis_weights, corr_type, ants
+    return vis, source_offset, ants

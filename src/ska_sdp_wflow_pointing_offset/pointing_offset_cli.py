@@ -1,11 +1,11 @@
-# pylint: disable=too-many-locals
+# pylint: disable=too-many-locals,too-many-branches
 """Program with many options using docopt for computing pointing offsets.
 
 Usage:
   pointing-offset COMMAND [--ms=FILE] [--save_offset]
-                          [--apply_mask] [--rfi_file=FILE]
-                          [--results_dir=None] [--start_freq=None]
-                          [--end_freq=None]
+                          [--apply_mask] [--fit_to_vis]
+                          [--rfi_file=FILE] [--results_dir=None]
+                          [--start_freq=None] [--end_freq=None]
                           [(--bw_factor <bw_factor>) [<bw_factor>...]]
 
 Commands:
@@ -17,32 +17,36 @@ Options:
   -q --quiet           report only file names
 
   --ms=FILE            Measurement set file
+  --fit_to_vis          Fit primary beam to visibilities instead of antenna
+                       gains (Optional) [default:False]
   --apply_mask         Apply Mask (Optional) [default:False]
   --rfi_file=FILE      RFI file (Optional)
   --save_offset        Save the Offset Results (Optional) [default:False]
   --results_dir=None   Directory where the results need to be saved (Optional)
-  --start_freq=None    Start Frequency (Optional)
-  --end_freq=None      End Frequency (Optional)
-  --bw_factor          Beam width factor [default:0.976, 1.098]
+  --start_freq=None    Start Frequency in MHz (Optional)
+  --end_freq=None      End Frequency in MHz (Optional)
+  --bw_factor          Beamwidth factor [default:0.976, 1.098]
 
 """
+import datetime
 import logging
 import os
 import sys
+import time
 from pathlib import PurePosixPath
 
 from docopt import docopt
 
-from ska_sdp_wflow_pointing_offset.beam_fitting import fit_primary_beams
+from ska_sdp_wflow_pointing_offset.beam_fitting import SolveForOffsets
 from ska_sdp_wflow_pointing_offset.export_data import (
     export_pointing_offset_data,
 )
-from ska_sdp_wflow_pointing_offset.freq_select import clean_vis_data
 from ska_sdp_wflow_pointing_offset.read_data import read_visibilities
+from ska_sdp_wflow_pointing_offset.utils import compute_gains, gt_single_plot
 
-LOG = logging.getLogger("ska-sdp-pointing-offset")
-LOG.setLevel(logging.INFO)
-LOG.addHandler(logging.StreamHandler(sys.stdout))
+log = logging.getLogger("ska-sdp-pointing-offset")
+log.setLevel(logging.INFO)
+log.addHandler(logging.StreamHandler(sys.stdout))
 
 COMMAND = "COMMAND"
 
@@ -58,10 +62,10 @@ def main():
         if args["--ms"]:
             compute_offset(args)
         else:
-            raise ValueError("MS and RDB files are required!!")
+            raise ValueError("Measurement set is required!!")
 
     else:
-        LOG.error(
+        log.error(
             "Command '%s' is not supported. "
             "Run 'pointing-offset --help' to view usage.",
             args[COMMAND],
@@ -70,44 +74,19 @@ def main():
 
 def compute_offset(args):
     """
-    Reads visibilities from a measurement set, metadata from
-    RDB file, optionally applies RFI mask and selects some
-    frequency ranges, and fits primary beams to the "RFI-free"
-    visibilities to obtain the pointing offsets.
+    Reads visibilities from a measurement set and optionally
+    applies RFI mask and selects some frequency ranges, and
+    fits primary beams to the "RFI-free" visibilities to
+    obtain the pointing offsets.
 
     :param args: required and optional arguments
     """
+    begin = time.time()
 
     def _safe_float(number):
         return float(number)
 
-    # Get visibilities
-    (
-        vis,
-        freqs,
-        source_offsets,
-        vis_weights,
-        corr_type,
-        ants,
-    ) = read_visibilities(msname=args["--ms"])
-
-    # Optionally select frequency ranges and/or apply RFI mask
-    if args["--apply_mask"]:
-        if not args["--rfi_file"]:
-            raise ValueError("RFI File is required!!")
-
-    avg_vis, selected_freqs, vis_weights, corr_type = clean_vis_data(
-        vis,
-        freqs,
-        corr_type,
-        vis_weights=vis_weights,
-        start_freq=args["--start_freq"],
-        end_freq=args["--end_freq"],
-        apply_mask=args["--apply_mask"],
-        rfi_filename=args["--rfi_file"],
-    )
-
-    # Set default beamwidth factor
+    # Set beamwidth factor
     if args["--bw_factor"]:
         beamwidth_factor = args["<bw_factor>"]
         beamwidth_factor = list(map(_safe_float, beamwidth_factor))
@@ -116,23 +95,51 @@ def compute_offset(args):
     else:
         # We would use the values for the MeerKAT as known in April 2023.
         beamwidth_factor = [0.976, 1.098]
-    LOG.info(
-        "Beam width factor: %f %f", beamwidth_factor[0], beamwidth_factor[1]
+    log.info(
+        "Beamwidth factor: %f %f", beamwidth_factor[0], beamwidth_factor[1]
     )
-    # Fit primary beams to visibilities
-    fitted_results = fit_primary_beams(
-        avg_vis=avg_vis,
-        freqs=selected_freqs,
-        corr_type=corr_type,
-        vis_weights=vis_weights,
-        ants=ants,
-        source_offsets=source_offsets,
-        beam_width_factor=beamwidth_factor,
+
+    # Get visibilities and optionally apply RFI mask and/or select
+    # frequency range of interest
+    if args["--apply_mask"]:
+        if not args["--rfi_file"]:
+            raise ValueError("RFI File is required!!")
+
+    vis, source_offset, ants = read_visibilities(
+        args["--ms"],
+        args["--apply_mask"],
+        args["--rfi_file"],
+        args["--start_freq"],
+        args["--end_freq"],
     )
+
+    if args["--fit_to_vis"]:
+        y_param = vis
+    else:
+        # Solve for the antenna gains
+        log.info("Solving for the antenna complex gains...")
+        gt_list = compute_gains(vis)
+        y_param = gt_list
+
+        # Save gain plot
+        plot_name = os.path.join(
+            PurePosixPath(args["--ms"]).parent.as_posix(),
+            "computed_gains",
+        )
+        gt_single_plot(gt_list, plot_name)
+
+    # Solve for the pointing offsets
+    init_results = SolveForOffsets(
+        source_offset, y_param, beamwidth_factor, ants
+    )
+    if args["--fit_to_vis"]:
+        fitted_results = init_results.fit_to_visibilities()
+    else:
+        fitted_results = init_results.fit_to_gains()
 
     # Save the fitted parameters and computed offsets
     if args["--save_offset"]:
-        LOG.info("Writing fitted parameters and computed offsets to file...")
+        log.info("Writing fitted parameters and computed offsets to file...")
         if args["--results_dir"] is None:
             # Save to the location of the measurement set
             results_file = os.path.join(
@@ -152,24 +159,29 @@ def compute_offset(args):
                 results_file,
                 fitted_results,
             )
-        LOG.info(
+        log.info(
             "Fitted parameters and computed offsets written to %s",
             results_file,
         )
     else:
         if fitted_results.shape[0] < 10:
-            LOG.info(
+            log.info(
                 "The fitted parameters and "
                 "computed offsets are printed on screen."
             )
             for i, line in enumerate(fitted_results):
-                LOG.info("Offset array for antenna %i is: %s", i, line)
+                log.info("Offset array for antenna %i is: %s", i, line)
         else:
-            LOG.info(
+            log.info(
                 "There are too many antennas. "
                 "Please set --save_offsets as True "
                 "to save the offsets to a file. "
             )
+
+    end = time.time()
+    log.info(
+        "\nProcess finished in %s", (datetime.timedelta(seconds=end - begin))
+    )
 
 
 if __name__ == "__main__":

@@ -1,24 +1,14 @@
-# pylint: disable-msg=too-many-locals
 """
 Unit tests for beam fitting functions
 """
 import numpy
 
 from ska_sdp_wflow_pointing_offset.beam_fitting import (
+    SolveForOffsets,
     _fwhm_to_sigma,
     _sigma_to_fwhm,
-    fit_primary_beams,
 )
-from tests.utils import (
-    ANTS,
-    BEAMWIDTH,
-    CORR_TYPE,
-    FREQS,
-    SOURCE_OFFSET_X,
-    SOURCE_OFFSET_Y,
-    VIS,
-    VIS_WEIGHTS,
-)
+from tests.utils import BEAMWIDTH_FACTOR
 
 
 def test_fwhm_to_sigma():
@@ -37,26 +27,24 @@ def test_sigma_to_fwhm():
     assert _sigma_to_fwhm(sigma) == 0.023548200450309493
 
 
-def test_fit_primary_beams():
+def test_fit_to_visibilities(vis_array, source_offset, ants):
     """
-    Unit test for fit primary beams
+    Unit test for fitting primary beams to visibility amplitudes
     """
-    fitted_results = fit_primary_beams(
-        VIS,
-        FREQS,
-        CORR_TYPE,
-        VIS_WEIGHTS,
-        ANTS,
-        numpy.array([SOURCE_OFFSET_X, SOURCE_OFFSET_Y]),
-        BEAMWIDTH,
+    initial_fit = SolveForOffsets(
+        source_offset,
+        vis_array,
+        BEAMWIDTH_FACTOR,
+        ants,
     )
+    fitted_results = initial_fit.fit_to_visibilities()
 
     # For Polarisation 1, assert the AzEl offset for each antenna
     az_offset_pol1 = fitted_results[:, 0]
     el_offset_pol1 = fitted_results[:, 1]
     numpy.testing.assert_allclose(
         numpy.column_stack((az_offset_pol1, el_offset_pol1)),
-        [[2.944959, -1.174023], [0.0, 0.0], [0.0, 0.0]],
+        [[-1.715361, -0.380931], [-1.053834, 2.103075], [0.415649, -1.845783]],
         rtol=1e-3,
     )
 
@@ -65,6 +53,37 @@ def test_fit_primary_beams():
     el_offset_pol2 = fitted_results[:, 12]
     numpy.testing.assert_allclose(
         numpy.column_stack((az_offset_pol2, el_offset_pol2)),
-        [[-2.62429, 0.773366], [0.0, 0.0], [0.0, 0.0]],
+        [[-0.380931, -1.745447], [2.103075, -0.269111], [-1.845783, 1.468595]],
+        rtol=1e-3,
+    )
+
+
+def test_fit_to_gain(gain_array, source_offset, ants):
+    """
+    Unit test for fitting primary beams to gain amplitudes
+    """
+    initial_fit = SolveForOffsets(
+        source_offset,
+        gain_array,
+        BEAMWIDTH_FACTOR,
+        ants,
+    )
+    fitted_results = initial_fit.fit_to_gains()
+
+    # For Polarisation 1, assert the AzEl offset for each antenna
+    az_offset_pol1 = fitted_results[:, 0]
+    el_offset_pol1 = fitted_results[:, 1]
+    numpy.testing.assert_allclose(
+        numpy.column_stack((az_offset_pol1, el_offset_pol1)),
+        [[0.48757, -1.377305], [0.0, 0.0], [0.0, 0.0]],
+        rtol=1e-3,
+    )
+
+    # For Polarisation 2, assert the AzEl offset for each antenna
+    az_offset_pol2 = fitted_results[:, 11]
+    el_offset_pol2 = fitted_results[:, 12]
+    numpy.testing.assert_allclose(
+        numpy.column_stack((az_offset_pol2, el_offset_pol2)),
+        [[0.0, 0.0], [2.865761, 2.939088], [0.0, 0.0]],
         rtol=1e-3,
     )
