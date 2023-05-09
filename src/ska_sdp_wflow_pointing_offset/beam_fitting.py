@@ -13,8 +13,6 @@ import numpy
 from katpoint import lightspeed, wrap_angle
 from scikits.fitting import GaussianFit, ScatterFit
 
-from ska_sdp_wflow_pointing_offset.array_data_func import interp_timestamps
-
 log = logging.getLogger("ska-sdp-pointing-offset")
 
 
@@ -198,9 +196,6 @@ class SolveForOffsets:
 
         _, ntimes, ncorr = avg_vis.shape
 
-        # Align timestamps in source_offset to ntimes
-        interpolated_offset = interp_timestamps(self.source_offset, ntimes)
-
         for vis, weight, corr in zip(avg_vis, avg_weight, corr_type):
             log.info("\nFitting primary beams to %s", corr)
             # Since the x parameter required for the fitting has shape
@@ -243,7 +238,7 @@ class SolveForOffsets:
                     "Fitting primary beam to visibilities of %s", antenna.name
                 )
                 fitted_beam.fit(
-                    x=numpy.moveaxis(interpolated_offset, 2, 0)[:, :, i],
+                    x=numpy.moveaxis(self.source_offset, 2, 0)[:, :, i],
                     y=numpy.abs(vis).astype(float)[:, i],
                     std_y=numpy.sqrt(1 / weight.astype(float)[:, i]),
                 )
@@ -332,10 +327,6 @@ class SolveForOffsets:
         receptor2 = self.y_param.receptor2.data
         corr = (receptor1[0] + receptor2[0], receptor1[1] + receptor2[1])
 
-        # Interpolate offsets
-        ntimes = gain.shape[0]
-        interpolated_offset = interp_timestamps(self.source_offset, ntimes)
-
         for i, corr in enumerate(corr):
             log.info("\nFitting primary beams to %s", corr)
             for j, antenna in enumerate(self.ants):
@@ -364,7 +355,7 @@ class SolveForOffsets:
                     antenna.name,
                 )
                 fitted_beam.fit(
-                    x=numpy.moveaxis(interpolated_offset, 2, 0)[:, :, j],
+                    x=numpy.moveaxis(self.source_offset, 2, 0)[:, :, j],
                     y=gain[:, j, i, i],
                     std_y=gain_weight[:, j, i, i],
                 )
