@@ -5,31 +5,29 @@ from CASA Measurement Tables
 from unittest.mock import patch
 
 import numpy
-import pytest
 
+from ska_sdp_wflow_pointing_offset.read_data import read_visibilities
 from tests.utils import (
-    ANTS,
     CORR_TYPE,
-    DISH_COORD_AZ,
-    DISH_COORD_EL,
     FREQS,
     VIS_ARRAY,
+    MockPointingTable,
+    MockSpectralWindowTable,
 )
 
-casacore = pytest.importorskip("casacore")
 
-
-@patch("ska_sdp_wflow_pointing_offset.read_data.read_visibilities")
-def test_read_visibilities(read_visibilities):
+@patch("ska_sdp_datamodels.visibility.create_visibility_from_ms")
+@patch("ska_sdp_wflow_pointing_offset.read_data._load_ms_tables")
+def test_read_visibilities(mock_tables, mock_ms):
     """
     Unit test for read_visibilities function
     """
-    read_visibilities.return_value = (
-        VIS_ARRAY,
-        numpy.dstack((DISH_COORD_AZ, DISH_COORD_EL)),
-        ANTS,
+    mock_tables.return_value = (
+        MockSpectralWindowTable(),
+        MockPointingTable(),
     )
-    vis, source_offset, ants = read_visibilities("test_table")
+    mock_ms.return_value = [VIS_ARRAY]
+    vis, source_offset, ants = read_visibilities("fake_ms")
 
     # Specific attributes
     assert vis.vis.data.shape == (5, 6, 5, 2)
