@@ -58,6 +58,7 @@ def interp_timestamps(origin, ntimes):
 
     :param origin: Offset array in [ntimes_origin, nants, 2]
     :param ntimes: Number of timestamps needed for output data
+                   From Visibility or gains
     :return: Offset array in [ntimes, nants, 2]
     """
 

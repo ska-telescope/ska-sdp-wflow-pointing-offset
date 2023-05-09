@@ -196,25 +196,25 @@ class SolveForOffsets:
         else:
             raise ValueError("Polarisation type not supported")
 
-        _, dumps, ncorr = avg_vis.shape
+        _, ntimes, ncorr = avg_vis.shape
 
-        # Align timestamps in source_offset to dumps
-        interpolated_offset = interp_timestamps(self.source_offset, dumps)
+        # Align timestamps in source_offset to ntimes
+        interpolated_offset = interp_timestamps(self.source_offset, ntimes)
 
         for vis, weight, corr in zip(avg_vis, avg_weight, corr_type):
             log.info("\nFitting primary beams to %s", corr)
             # Since the x parameter required for the fitting has shape
-            # (dumps, number of antennas, 2), we need to find a way to
+            # (ntimes, number of antennas, 2), we need to find a way to
             # reshape the baseline-based visibilities to antenna-based.
             # Is this the correct way to do it? To be addressed by
             # ORC-1572 ticket
             vis = vis.reshape(
-                dumps, int(ncorr / len(self.ants)), len(self.ants)
+                ntimes, int(ncorr / len(self.ants)), len(self.ants)
             )
             weight = weight.reshape(
-                dumps, int(ncorr / len(self.ants)), len(self.ants)
+                ntimes, int(ncorr / len(self.ants)), len(self.ants)
             )
-            # Keep only dumps and ants axes
+            # Keep only ntimes and ants axes
             vis = numpy.mean(vis, axis=1)
             weight = numpy.mean(weight, axis=1)
             for i, antenna in enumerate(self.ants):
@@ -323,7 +323,7 @@ class SolveForOffsets:
         :return: The fitted beam centre and uncertainty, fitted beamwidth and
         uncertainty, fitted beam height and uncertainty for each polarisation
         """
-        # The shape of the gain is dumps, ants, averaged-frequency,
+        # The shape of the gain is ntimes, ants, averaged-frequency,
         # receptor1, receptor2
         log.info("Fitting primary beams to gain amplitudes...")
         gain = numpy.abs(numpy.squeeze(self.y_param.gain.data))
@@ -333,8 +333,8 @@ class SolveForOffsets:
         corr = (receptor1[0] + receptor2[0], receptor1[1] + receptor2[1])
 
         # Interpolate offsets
-        dumps = gain.shape[0]
-        interpolated_offset = interp_timestamps(self.source_offset, dumps)
+        ntimes = gain.shape[0]
+        interpolated_offset = interp_timestamps(self.source_offset, ntimes)
 
         for i, corr in enumerate(corr):
             log.info("\nFitting primary beams to %s", corr)
