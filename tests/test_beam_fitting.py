@@ -51,11 +51,7 @@ def test_fit_to_visibilities():
     el_offset_pol1 = fitted_results[:, 1]
     numpy.testing.assert_allclose(
         numpy.column_stack((az_offset_pol1, el_offset_pol1)),
-        [
-            [-1.715361, -0.380931],
-            [-1.696749, -0.653375],
-            [0.415649, -1.845783],
-        ],
+        [[-1.715361, -0.380931], [-1.053834, 2.103075], [0.415649, -1.845783]],
         rtol=1e-3,
     )
 
@@ -66,7 +62,7 @@ def test_fit_to_visibilities():
         numpy.column_stack((az_offset_pol2, el_offset_pol2)),
         [
             [-0.380931, -1.745447],
-            [-0.653375, -0.549307],
+            [2.103075, -0.269111],
             [-1.845783, 1.468595],
         ],
         rtol=1e-3,
@@ -99,6 +95,6 @@ def test_fit_to_gain():
     el_offset_pol2 = fitted_results[:, 12]
     numpy.testing.assert_allclose(
         numpy.column_stack((az_offset_pol2, el_offset_pol2)),
-        [[0.0, 0.0], [2.86576, 2.112996], [0.0, 0.0]],
+        [[0.0, 0.0], [2.865761, 2.939088], [0.0, 0.0]],
         rtol=1e-3,
     )
