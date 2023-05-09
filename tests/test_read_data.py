@@ -11,7 +11,6 @@ from ska_sdp_wflow_pointing_offset.read_data import read_visibilities
 from tests.utils import (
     CORR_TYPE,
     FREQS,
-    VIS_ARRAY,
     MockPointingTable,
     MockSpectralWindowTable,
 )
@@ -21,7 +20,7 @@ casacore = pytest.importorskip("casacore")
 
 @patch("ska_sdp_datamodels.visibility.create_visibility_from_ms")
 @patch("ska_sdp_wflow_pointing_offset.read_data._load_ms_tables")
-def test_read_visibilities(mock_tables, mock_ms):
+def test_read_visibilities(mock_tables, mock_ms, vis_array):
     """
     Unit test for read_visibilities function
     """
@@ -29,7 +28,7 @@ def test_read_visibilities(mock_tables, mock_ms):
         MockSpectralWindowTable(),
         MockPointingTable(),
     )
-    mock_ms.return_value = [VIS_ARRAY]
+    mock_ms.return_value = [vis_array]
     vis, source_offset, ants = read_visibilities("fake_ms")
 
     # Specific attributes
