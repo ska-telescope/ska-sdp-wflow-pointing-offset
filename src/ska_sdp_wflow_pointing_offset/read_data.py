@@ -85,7 +85,7 @@ def read_visibilities(
             end_chan = None
 
     log.info("Selected channel numbers are %s to %s", start_chan, end_chan)
-    vis = create_visibility_from_ms(
+    vis_list = create_visibility_from_ms(
         msname=msname,
         channum=None,
         start_chan=start_chan,
@@ -95,7 +95,8 @@ def read_visibilities(
         selected_sources=None,
         selected_dds=None,
         average_channels=False,
-    )[0]
+    )
+    vis = vis_list[0]
 
     if apply_mask or (start_freq is not None and end_freq is not None):
         # Update vis to ensure the right frequency range is selected
