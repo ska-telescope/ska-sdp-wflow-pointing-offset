@@ -10,8 +10,9 @@ import numpy
 from ska_sdp_datamodels.visibility import create_visibility_from_ms
 from ska_sdp_datamodels.visibility.vis_model import Visibility
 
-from ska_sdp_wflow_pointing_offset.freq_select import (
+from ska_sdp_wflow_pointing_offset.array_data_func import (
     apply_rfi_mask,
+    interp_timestamps,
     select_channels,
 )
 from ska_sdp_wflow_pointing_offset.utils import construct_antennas
@@ -59,6 +60,7 @@ def read_visibilities(
 
     # Get the frequencies and source offsets
     source_offset = pointing_table.getcol("SOURCE_OFFSET")
+    offset_timestamps = pointing_table.getcol("TIME")
     freqs = numpy.squeeze(spw_table.getcol("CHAN_FREQ")) / 1.0e6  # Hz -> MHz
     channels = numpy.arange(len(freqs))
 
@@ -83,7 +85,7 @@ def read_visibilities(
             end_chan = None
 
     log.info("Selected channel numbers are %s to %s", start_chan, end_chan)
-    vis = create_visibility_from_ms(
+    vis_list = create_visibility_from_ms(
         msname=msname,
         channum=None,
         start_chan=start_chan,
@@ -93,7 +95,8 @@ def read_visibilities(
         selected_sources=None,
         selected_dds=None,
         average_channels=False,
-    )[0]
+    )
+    vis = vis_list[0]
 
     if apply_mask or (start_freq is not None and end_freq is not None):
         # Update vis to ensure the right frequency range is selected
@@ -120,6 +123,11 @@ def read_visibilities(
             source=vis.source,
             meta=vis.meta,
         )
+
+    # Align timestamps for the source_offset
+    source_offset = interp_timestamps(
+        source_offset, offset_timestamps, vis.time.data
+    )
 
     # Build katpoint Antenna from antenna configuration
     antenna_positions = vis.configuration.data_vars["xyz"].data

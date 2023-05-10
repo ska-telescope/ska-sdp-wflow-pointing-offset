@@ -38,7 +38,7 @@ STATION = [
     "SKAMID-CORE",
     "SKAMID-CORE",
 ]
-NAME = ["SKA001 ", "SKA002", "SKA003"]
+NAME = ["SKA001", "SKA002", "SKA003"]
 MOUNT = ["ALT-AZ", "ALT-AZ", "ALT-AZ"]
 OFFSET = numpy.array(
     [
@@ -675,3 +675,6 @@ class MockPointingTable:
         """
         if columnname == "SOURCE_OFFSET":
             return numpy.dstack((DISH_COORD_AZ, DISH_COORD_EL))
+
+        if columnname == "TIME":
+            return TIMESTAMPS

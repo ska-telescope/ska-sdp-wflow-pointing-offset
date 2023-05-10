@@ -53,7 +53,11 @@ def test_fit_to_visibilities(vis_array, source_offset, ants):
     el_offset_pol2 = fitted_results[:, 12]
     numpy.testing.assert_allclose(
         numpy.column_stack((az_offset_pol2, el_offset_pol2)),
-        [[-0.380931, -1.745447], [2.103075, -0.269111], [-1.845783, 1.468595]],
+        [
+            [-0.380931, -1.745447],
+            [2.103075, -0.269111],
+            [-1.845783, 1.468595],
+        ],
         rtol=1e-3,
     )
 
