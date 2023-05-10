@@ -7,13 +7,9 @@ import numpy
 import pandas
 from astropy.coordinates import EarthLocation, SkyCoord
 from astropy.units import Quantity
-from ska_sdp_datamodels.calibration.calibration_model import GainTable
-from ska_sdp_datamodels.configuration.config_model import Configuration
 from ska_sdp_datamodels.science_data_model.polarisation_model import (
     PolarisationFrame,
-    ReceptorFrame,
 )
-from ska_sdp_datamodels.visibility.vis_model import Visibility
 from ska_sdp_datamodels.visibility.vis_utils import generate_baselines
 
 from ska_sdp_wflow_pointing_offset import construct_antennas
@@ -54,18 +50,6 @@ OFFSET = numpy.array(
 ANTS = construct_antennas(XYZ, DIAMETER, STATION)
 BASELINES = pandas.MultiIndex.from_tuples(
     generate_baselines(NANTS), names=("antenna1", "antenna2")
-)
-CONFIGURATION = Configuration.constructor(
-    name="SKAMID",
-    location=LOCATION,
-    names=numpy.array(NAME),
-    xyz=XYZ,
-    mount=MOUNT,
-    frame="ITRF",
-    receptor_frame=ReceptorFrame("linear"),
-    diameter=DIAMETER,
-    offset=OFFSET,
-    stations=numpy.array(STATION),
 )
 UVW = numpy.array(
     [
@@ -520,43 +504,11 @@ GAIN_RESIDUAL = numpy.array(
 )
 
 
-GAIN_ARRAY = GainTable.constructor(
-    gain=GAIN,
-    time=TIMESTAMPS,
-    interval=INTERVAL,
-    weight=GAIN_WEIGHT,
-    residual=GAIN_RESIDUAL,
-    frequency=numpy.ravel(numpy.mean(FREQS)),
-    receptor_frame=ReceptorFrame("linear"),
-    phasecentre=PHASECENTRE,
-    configuration=CONFIGURATION,
-    jones_type="G",
-)
-
-
 # y-parameter when fitting the primary beam to the visibilities
 # Weights - used as standard deviation on the y-parameter when
 # fitting the primary beams to visibility amplitudes
 VIS_WEIGHTS = numpy.ones((5, 6, 5, 2))
 FLAGS = numpy.zeros((5, 6, 5, 2))
-
-# Build the visibility using the ska-datamodels Visibility class
-VIS_ARRAY = Visibility.constructor(
-    frequency=FREQS,
-    channel_bandwidth=CHANNEL_BANDWIDTH,
-    phasecentre=PHASECENTRE,
-    configuration=CONFIGURATION,
-    uvw=UVW,
-    time=TIMESTAMPS,
-    vis=VIS,
-    weight=VIS_WEIGHTS,
-    integration_time=INTEGRATION_TIME,
-    flags=FLAGS,
-    baselines=BASELINES,
-    polarisation_frame=POLARISATION_FRAME,
-    source=SOURCE,
-    meta={"MSV2": {"FIELD_ID": 0, "DATA_DESC_ID": 0}},
-)
 
 
 # Dish coordinates for beam_fitting- the x parameter to be used in the fitting

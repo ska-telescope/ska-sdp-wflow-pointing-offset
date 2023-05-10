@@ -1,4 +1,5 @@
 # pylint: disable=inconsistent-return-statements,too-many-arguments
+# pylint: disable=too-many-locals
 """ Regression test for the pointing offset pipeline
 
 """
@@ -11,7 +12,6 @@ import numpy
 import pytest
 
 from ska_sdp_wflow_pointing_offset.pointing_offset_cli import compute_offset
-from tests.utils import ANTS, DISH_COORD_AZ, DISH_COORD_EL, VIS_ARRAY
 
 log = logging.getLogger("pointing-offset-logger")
 log.setLevel(logging.WARNING)
@@ -46,6 +46,9 @@ def test_wflow_pointing_offset(
     mode,
     start_freq,
     end_freq,
+    vis_array,
+    ants,
+    source_offset,
 ):
     """
     Main test routine.
@@ -74,9 +77,9 @@ def test_wflow_pointing_offset(
         beamwidth_factor = [0.976, 1.098]
 
         read_visibilities.return_value = (
-            VIS_ARRAY,
-            numpy.dstack((DISH_COORD_AZ, DISH_COORD_EL)),
-            ANTS,
+            vis_array,
+            source_offset,
+            ants,
         )
 
         args = {

@@ -8,14 +8,7 @@ from ska_sdp_wflow_pointing_offset.beam_fitting import (
     _fwhm_to_sigma,
     _sigma_to_fwhm,
 )
-from tests.utils import (
-    ANTS,
-    BEAMWIDTH_FACTOR,
-    DISH_COORD_AZ,
-    DISH_COORD_EL,
-    GAIN_ARRAY,
-    VIS_ARRAY,
-)
+from tests.utils import BEAMWIDTH_FACTOR
 
 
 def test_fwhm_to_sigma():
@@ -34,15 +27,15 @@ def test_sigma_to_fwhm():
     assert _sigma_to_fwhm(sigma) == 0.023548200450309493
 
 
-def test_fit_to_visibilities():
+def test_fit_to_visibilities(vis_array, source_offset, ants):
     """
     Unit test for fitting primary beams to visibility amplitudes
     """
     initial_fit = SolveForOffsets(
-        numpy.dstack((DISH_COORD_AZ, DISH_COORD_EL)),
-        VIS_ARRAY,
+        source_offset,
+        vis_array,
         BEAMWIDTH_FACTOR,
-        ANTS,
+        ants,
     )
     fitted_results = initial_fit.fit_to_visibilities()
 
@@ -69,15 +62,15 @@ def test_fit_to_visibilities():
     )
 
 
-def test_fit_to_gain():
+def test_fit_to_gain(gain_array, source_offset, ants):
     """
     Unit test for fitting primary beams to gain amplitudes
     """
     initial_fit = SolveForOffsets(
-        numpy.dstack((DISH_COORD_AZ, DISH_COORD_EL)),
-        GAIN_ARRAY,
+        source_offset,
+        gain_array,
         BEAMWIDTH_FACTOR,
-        ANTS,
+        ants,
     )
     fitted_results = initial_fit.fit_to_gains()
 
