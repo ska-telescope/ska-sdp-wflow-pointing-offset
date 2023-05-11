@@ -1,8 +1,8 @@
 ska\_sdp\_wflow\_pointing\_offset.pointing\_offset\_cli module
 ===============================================================
 
-The command line interface to the pipeline for estimating the azimuth and elevation offsets from a
-measurement set.
+The command line interface to the pipeline for estimating the elevation and cross-elevation offsets
+from a measurement set.
 
 Usage
 -----

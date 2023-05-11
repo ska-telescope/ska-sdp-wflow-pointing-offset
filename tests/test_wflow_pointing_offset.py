@@ -47,8 +47,9 @@ def test_wflow_pointing_offset(
     start_freq,
     end_freq,
     vis_array,
-    ants,
     source_offset,
+    actual_pointing_el,
+    ants,
 ):
     """
     Main test routine.
@@ -79,6 +80,7 @@ def test_wflow_pointing_offset(
         read_visibilities.return_value = (
             vis_array,
             source_offset,
+            actual_pointing_el,
             ants,
         )
 
@@ -100,8 +102,8 @@ def test_wflow_pointing_offset(
         assert os.path.exists(outfile)
 
         read_out = numpy.loadtxt(outfile, delimiter=",")
-        # Output data shape [nants, 20]
-        assert read_out.shape == (3, 20)
+        # Output data shape [nants, 2 pols*12 fitted parameters]
+        assert read_out.shape == (3, 24)
 
         # If we need to save file to tests directory
         if PERSIST:

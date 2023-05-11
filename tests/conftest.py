@@ -10,6 +10,7 @@ from ska_sdp_datamodels.visibility.vis_model import Visibility
 
 from ska_sdp_wflow_pointing_offset import construct_antennas
 from tests.utils import (
+    ACTUAL_POINTING_EL,
     BASELINES,
     CHANNEL_BANDWIDTH,
     DIAMETER,
@@ -67,6 +68,12 @@ def ants_fixture():
 def source_offset_fixture():
     """Source offset fixture"""
     return numpy.dstack((DISH_COORD_AZ, DISH_COORD_EL))
+
+
+@pytest.fixture(name="actual_pointing_el")
+def actual_pointing_el_fixture():
+    """Actual pointing elevation"""
+    return ACTUAL_POINTING_EL
 
 
 @pytest.fixture(name="vis_array")

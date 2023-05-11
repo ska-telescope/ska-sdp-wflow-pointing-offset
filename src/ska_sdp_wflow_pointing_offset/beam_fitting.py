@@ -1,10 +1,10 @@
 # pylint: disable=too-many-instance-attributes,abstract-method
-# pylint: disable=too-many-locals
+# pylint: disable=too-many-locals,too-many-arguments
 """
 Fits primary beams modelled by a 2D Gaussian to the visibility
-or gain amplitudes and computes the azimuth and elevation offsets.
-This follows the routines used by the SARAO team for the MeerKAT
-array.
+or gain amplitudes and computes the elevation and cross-elevation
+offsets. This follows the routines used by the SARAO team for the
+MeerKAT array.
 """
 
 import logging
@@ -126,6 +126,11 @@ class SolveForOffsets:
 
     :param source_offset: Offsets from the target in Az, El coordinates
         with shape [2, number of timestamps, number of antennas]
+    :param actual_pointing_el: The interpolated actual pointing
+        elevation with shape [dumps, number of antennas] to be used
+        in calculating the cross-elevation offsets. The cross-elevation
+        offset is the product of the azimuth-offset and cosine of the
+        median actual pointing elevation.
     :param y_param: Visibility containing the observed data or
         amplitude gains of each antenna
     :param beamwidth_factor: The beamwidth factor for the two orthogonal
@@ -136,8 +141,16 @@ class SolveForOffsets:
     :param ants: List of antenna information built in katpoint.
     """
 
-    def __init__(self, source_offset, y_param, beamwidth_factor, ants):
+    def __init__(
+        self,
+        source_offset,
+        actual_pointing_el,
+        y_param,
+        beamwidth_factor,
+        ants,
+    ):
         self.source_offset = source_offset
+        self.actual_pointing_el = actual_pointing_el
         self.y_param = y_param
         self.beamwidth_factor = beamwidth_factor
         self.ants = ants
@@ -149,14 +162,18 @@ class SolveForOffsets:
                 "Wavelength cannot be infinite. Check frequency range!"
             )
 
-        # Fitted parameters of interest to be saved to file
-        self.fitted_centre_pol1 = numpy.zeros((len(self.ants), 2))
-        self.fitted_centre_std_pol1 = numpy.zeros((len(self.ants), 2))
+        # Fitted parameters of interest for each pol per antenna to be
+        # saved to file
+        self.azel_offset_pol1 = numpy.zeros((len(self.ants), 2))
+        self.azel_offset_std_pol1 = numpy.zeros((len(self.ants), 2))
+        self.cross_el_pol1 = numpy.zeros((len(self.ants), 2))
         self.fitted_width_pol1 = numpy.zeros((len(self.ants), 2))
         self.fitted_width_std_pol1 = numpy.zeros((len(self.ants), 2))
         self.fitted_height_pol1 = numpy.zeros((len(self.ants), 2))
-        self.fitted_centre_pol2 = numpy.zeros((len(self.ants), 2))
-        self.fitted_centre_std_pol2 = numpy.zeros((len(self.ants), 2))
+
+        self.azel_offset_pol2 = numpy.zeros((len(self.ants), 2))
+        self.azel_offset_std_pol2 = numpy.zeros((len(self.ants), 2))
+        self.cross_el_pol2 = numpy.zeros((len(self.ants), 2))
         self.fitted_width_pol2 = numpy.zeros((len(self.ants), 2))
         self.fitted_width_std_pol2 = numpy.zeros((len(self.ants), 2))
         self.fitted_height_pol2 = numpy.zeros((len(self.ants), 2))
@@ -284,53 +301,51 @@ class SolveForOffsets:
                     )
                 )
                 if valid_fit:
+                    # Cross-el offset = azimuth offset*cos(el)
+                    elev = numpy.radians(
+                        numpy.median(self.actual_pointing_el[:, k])
+                    )
+                    azel_offset = wrap_angle(fitted_beam.centre)
+                    azel_offset_std = wrap_angle(fitted_beam.std_centre)
+                    cross_el_offset = wrap_angle(fitted_beam.centre)[
+                        0
+                    ] * numpy.degrees(numpy.cos(elev)), azel_offset_std[
+                        0
+                    ] * numpy.degrees(
+                        numpy.cos(elev)
+                    )
+                    fitted_width = wrap_angle(fitted_beam.width)
+                    fitted_width_std = wrap_angle(fitted_beam.std_width)
+                    fitted_height = fitted_beam.height, fitted_beam.std_height
                     if corr in ("XX", "RR"):
-                        self.fitted_centre_pol1[k] = wrap_angle(
-                            fitted_beam.centre
-                        )
-                        self.fitted_centre_std_pol1[k] = wrap_angle(
-                            fitted_beam.std_centre
-                        )
-                        self.fitted_width_pol1[k] = wrap_angle(
-                            fitted_beam.width
-                        )
-                        self.fitted_width_std_pol1[k] = wrap_angle(
-                            fitted_beam.std_width
-                        )
-                        self.fitted_height_pol1[k] = (
-                            fitted_beam.height,
-                            fitted_beam.std_height,
-                        )
+                        self.azel_offset_pol1[k] = azel_offset
+                        self.azel_offset_std_pol1[k] = azel_offset_std
+                        self.cross_el_pol1[k] = cross_el_offset
+                        self.fitted_width_pol1[k] = fitted_width
+                        self.fitted_width_std_pol1[k] = fitted_width_std
+                        self.fitted_height_pol1[k] = fitted_height
                     elif corr in ("YY", "LL"):
-                        self.fitted_centre_pol2[k] = wrap_angle(
-                            fitted_beam.centre
-                        )
-                        self.fitted_centre_std_pol2[k] = wrap_angle(
-                            fitted_beam.std_centre
-                        )
-                        self.fitted_width_pol2[k] = wrap_angle(
-                            fitted_beam.width
-                        )
-                        self.fitted_width_std_pol2[k] = wrap_angle(
-                            fitted_beam.std_width
-                        )
-                        self.fitted_height_pol2[k] = (
-                            fitted_beam.height,
-                            fitted_beam.std_height,
-                        )
+                        self.azel_offset_pol2[k] = azel_offset
+                        self.azel_offset_std_pol2[k] = azel_offset_std
+                        self.cross_el_pol2[k] = cross_el_offset
+                        self.fitted_width_pol2[k] = fitted_width
+                        self.fitted_width_std_pol2[k] = fitted_width_std
+                        self.fitted_height_pol2[k] = fitted_height
                 else:
                     log.warning(
                         "No valid primary beam fit for %s", antenna.name
                     )
         return numpy.column_stack(
             (
-                self.fitted_centre_pol1,
-                self.fitted_centre_std_pol1,
+                self.azel_offset_pol1,
+                self.azel_offset_std_pol1,
+                self.cross_el_pol1,
                 self.fitted_width_pol1,
                 self.fitted_width_std_pol1,
                 self.fitted_height_pol1,
-                self.fitted_centre_pol2,
-                self.fitted_centre_std_pol2,
+                self.azel_offset_pol2,
+                self.azel_offset_std_pol2,
+                self.cross_el_pol2,
                 self.fitted_width_pol2,
                 self.fitted_width_std_pol2,
                 self.fitted_height_pol2,
@@ -399,57 +414,55 @@ class SolveForOffsets:
                     )
                 )
                 if valid_fit:
+                    elev = numpy.radians(
+                        numpy.median(self.actual_pointing_el[:, i])
+                    )
+                    azel_offset = wrap_angle(fitted_beam.centre)
+                    azel_offset_std = wrap_angle(fitted_beam.std_centre)
+                    cross_el_offset = wrap_angle(fitted_beam.centre)[
+                        0
+                    ] * numpy.degrees(numpy.cos(elev)), azel_offset_std[
+                        0
+                    ] * numpy.degrees(
+                        numpy.cos(elev)
+                    )
+                    fitted_width = wrap_angle(fitted_beam.width)
+                    fitted_width_std = wrap_angle(fitted_beam.std_width)
+                    fitted_height = fitted_beam.height, fitted_beam.std_height
                     if corr in ("XX", "RR"):
-                        self.fitted_centre_pol1[i] = wrap_angle(
-                            fitted_beam.centre
-                        )
-                        self.fitted_centre_std_pol1[i] = wrap_angle(
-                            fitted_beam.std_centre
-                        )
-                        self.fitted_width_pol1[i] = wrap_angle(
-                            fitted_beam.width
-                        )
-                        self.fitted_width_std_pol1[i] = wrap_angle(
-                            fitted_beam.std_width
-                        )
-                        self.fitted_height_pol1[i] = (
-                            fitted_beam.height,
-                            fitted_beam.std_height,
-                        )
+                        self.azel_offset_pol1[i] = azel_offset
+                        self.azel_offset_std_pol1[i] = azel_offset_std
+                        self.cross_el_pol1[i] = cross_el_offset
+                        self.fitted_width_pol1[i] = fitted_width
+                        self.fitted_width_std_pol1[i] = fitted_width_std
+                        self.fitted_height_pol1[i] = fitted_height
                     elif corr in ("YY", "LL"):
-                        self.fitted_centre_pol2[i] = wrap_angle(
-                            fitted_beam.centre
-                        )
-                        self.fitted_centre_std_pol2[i] = wrap_angle(
-                            fitted_beam.std_centre
-                        )
-                        self.fitted_width_pol2[i] = wrap_angle(
-                            fitted_beam.width
-                        )
-                        self.fitted_width_std_pol2[i] = wrap_angle(
-                            fitted_beam.std_width
-                        )
-                        self.fitted_height_pol2[i] = (
-                            fitted_beam.height,
-                            fitted_beam.std_height,
-                        )
+                        self.azel_offset_pol2[i] = azel_offset
+                        self.azel_offset_std_pol2[i] = azel_offset_std
+                        self.cross_el_pol2[i] = cross_el_offset
+                        self.fitted_width_pol2[i] = fitted_width
+                        self.fitted_width_std_pol2[i] = fitted_width_std
+                        self.fitted_height_pol2[i] = fitted_height
                 else:
                     log.warning(
                         "No valid primary beam fit for %s", antenna.name
                     )
 
-        # Proposed format for now: Fitted beam centre and uncertainty,
-        # fitted beam width and uncertainty, fitted beam height and
-        # uncertainty for each polarisation
+        # Proposed format for now: AzEl offsets and their uncertainties,
+        # Cross-elevation offset and its uncertainty, fitted beam width
+        # and its uncertainty, fitted beam height and its uncertainty
+        # for each polarisation
         return numpy.column_stack(
             (
-                self.fitted_centre_pol1,
-                self.fitted_centre_std_pol1,
+                self.azel_offset_pol1,
+                self.azel_offset_std_pol1,
+                self.cross_el_pol1,
                 self.fitted_width_pol1,
                 self.fitted_width_std_pol1,
                 self.fitted_height_pol1,
-                self.fitted_centre_pol2,
-                self.fitted_centre_std_pol2,
+                self.azel_offset_pol2,
+                self.azel_offset_std_pol2,
+                self.cross_el_pol2,
                 self.fitted_width_pol2,
                 self.fitted_width_std_pol2,
                 self.fitted_height_pol2,

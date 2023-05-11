@@ -60,6 +60,7 @@ def read_visibilities(
 
     # Get the frequencies and source offsets
     source_offset = pointing_table.getcol("SOURCE_OFFSET")
+    actual_pointing = pointing_table.getcol("DIRECTION")
     offset_timestamps = pointing_table.getcol("TIME")
     freqs = numpy.squeeze(spw_table.getcol("CHAN_FREQ")) / 1.0e6  # Hz -> MHz
     channels = numpy.arange(len(freqs))
@@ -120,10 +121,18 @@ def read_visibilities(
             meta=vis.meta,
         )
 
-    # Align timestamps for the source_offset
+    # Align source_offset and visibility timestamps
     source_offset = interp_timestamps(
         source_offset, offset_timestamps, vis.time.data
     )
+
+    # Get the interpolated elevation positions to be used
+    # for calculating the cross-elevation offset. The data
+    # has shape (dumps, nants, azel)
+    actual_pointing = interp_timestamps(
+        actual_pointing, offset_timestamps, vis.time.data
+    )
+    actual_pointing_el = actual_pointing[:, :, 1]
 
     # Build katpoint Antenna from antenna configuration
     antenna_positions = vis.configuration.data_vars["xyz"].data
@@ -135,4 +144,4 @@ def read_visibilities(
         station=antenna_names,
     )
 
-    return vis, source_offset, ants
+    return vis, source_offset, actual_pointing_el, ants

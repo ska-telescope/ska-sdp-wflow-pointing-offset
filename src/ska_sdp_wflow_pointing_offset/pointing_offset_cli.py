@@ -105,7 +105,7 @@ def compute_offset(args):
         if not args["--rfi_file"]:
             raise ValueError("RFI File is required!!")
 
-    vis, source_offset, ants = read_visibilities(
+    vis, source_offset, actual_pointing_el, ants = read_visibilities(
         args["--ms"],
         args["--apply_mask"],
         args["--rfi_file"],
@@ -130,7 +130,7 @@ def compute_offset(args):
 
     # Solve for the pointing offsets
     init_results = SolveForOffsets(
-        source_offset, y_param, beamwidth_factor, ants
+        source_offset, actual_pointing_el, y_param, beamwidth_factor, ants
     )
     if args["--fit_to_vis"]:
         fitted_results = init_results.fit_to_visibilities()
