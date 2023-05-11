@@ -71,6 +71,10 @@ def interp_timestamps(origin_data, origin_times, new_times):
 
     ntimes_new = new_times.shape[0]
 
+    sort_index = numpy.argsort(origin_times)
+    origin_times = origin_times[sort_index]
+    origin_data = origin_data[sort_index]
+
     direction_az = origin_data[:, :, 0]
     direction_el = origin_data[:, :, 1]
     output = numpy.zeros((ntimes_new, origin_data.shape[1], 2))

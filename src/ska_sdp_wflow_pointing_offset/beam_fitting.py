@@ -263,9 +263,9 @@ class SolveForOffsets:
                 )
                 fitted_beam.fit(
                     x=numpy.moveaxis(self.source_offset, 2, 0)[:, :, k],
-                    y=numpy.abs(vis).astype(float)[:, k],
+                    y=numpy.abs(vis).astype(float)[k, :],
                     std_y=numpy.sqrt(
-                        1 / numpy.abs(weight).astype(float)[:, k]
+                        1 / numpy.abs(weight).astype(float)[k, :]
                     ),
                 )
 
