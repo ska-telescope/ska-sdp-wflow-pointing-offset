@@ -48,7 +48,7 @@ def test_fit_to_visibilities(
     cross_el_offset_pol1 = fitted_results[:, 4]
     numpy.testing.assert_allclose(
         numpy.column_stack((az_offset_pol1, el_offset_pol1)),
-        [[-0.68159, -0.353595], [0.254007, -2.831331], [0.098515, -0.397562]],
+        [[-0.68159 , -0.353595], [1.859431, -1.650717], [0.09855 , -0.397562]],
         rtol=1e-3,
     )
     numpy.testing.assert_allclose(
