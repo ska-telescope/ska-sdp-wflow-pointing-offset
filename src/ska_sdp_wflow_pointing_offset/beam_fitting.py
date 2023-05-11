@@ -168,79 +168,105 @@ class SolveForOffsets:
         :return: The fitted beam centre and uncertainty, fitted beamwidth and
         uncertainty, fitted beam height and uncertainty for each polarisation
         """
-        log.info("Fitting primary beams to visibilities...")
-        # Average the parallel hand visibilities in frequency
-        avg_vis = numpy.mean(self.y_param.vis.data, axis=2)
-        avg_weight = numpy.mean(self.y_param.weight.data, axis=2)
         corr_type = self.y_param.polarisation.data
-        if len(corr_type) == 2:
-            # (XX,YY) or (RR, LL)
-            corr_type = numpy.array([corr_type[0], corr_type[1]], dtype=object)
-            avg_vis = numpy.array(
-                [avg_vis[:, :, 0], avg_vis[:, :, 1]], dtype=object
-            )
-            avg_weight = numpy.array(
-                [avg_weight[:, :, 0], avg_weight[:, :, 1]], dtype=object
-            )
-        elif len(corr_type) == 4:
-            # (XX,XY,YX,YY) or (RR,RL,LR,LL)
-            corr_type = numpy.array([corr_type[0], corr_type[3]], dtype=object)
-            avg_vis = numpy.array(
-                [avg_vis[:, :, 0], avg_vis[:, :, 3]], dtype=object
-            )
-            avg_weight = numpy.array(
-                [avg_weight[:, :, 0], avg_weight[:, :, 3]], dtype=object
-            )
-        else:
-            raise ValueError("Polarisation type not supported")
 
-        _, ntimes, ncorr = avg_vis.shape
+        # Average the parallel hand visibilities in frequency
+        avg_vis, sumwt = numpy.average(
+            self.y_param.vis.data,
+            axis=2,
+            weights=self.y_param.weight.data,
+            returned=True,
+        )
 
-        for vis, weight, corr in zip(avg_vis, avg_weight, corr_type):
-            log.info("\nFitting primary beams to %s", corr)
-            # Since the x parameter required for the fitting has shape
-            # (ntimes, number of antennas, 2), we need to find a way to
-            # reshape the baseline-based visibilities to antenna-based.
-            # Is this the correct way to do it? To be addressed by
-            # ORC-1572 ticket
-            vis = vis.reshape(
-                ntimes, int(ncorr / len(self.ants)), len(self.ants)
+        # Get the visibilities and weights for each antenna
+        # Since the x parameter required for the fitting has shape
+        # (ntimes, number of antennas, 2), we need to find a way to
+        # translate baseline-based to antenna-based visibilities.
+        # Is this a robust/correct way to do it - to be investigated
+        # with ORC-1572 ticket.
+        vis_per_antenna = []
+        weights_per_antenna = []
+        for i in range(len(self.ants)):
+            # Get the visibilities for each antenna per polarisation
+            mask = (self.y_param.antenna1.data == i) ^ (
+                self.y_param.antenna2.data == i
             )
-            weight = weight.reshape(
-                ntimes, int(ncorr / len(self.ants)), len(self.ants)
+            result = numpy.average(
+                avg_vis[:, mask, :],
+                axis=1,
+                weights=sumwt[:, mask, :],
+                returned=True,
             )
-            # Keep only ntimes and ants axes
-            vis = numpy.mean(vis, axis=1)
-            weight = numpy.mean(weight, axis=1)
-            for i, antenna in enumerate(self.ants):
+            if len(corr_type) == 2:
+                # (XX,YY) or (RR, LL)
+                corr_type = numpy.array(
+                    [corr_type[0], corr_type[1]], dtype=object
+                )
+                vis_per_antenna.append(
+                    numpy.array(
+                        [result[0][:, 0], result[0][:, 1]], dtype=object
+                    )
+                )
+                weights_per_antenna.append(
+                    numpy.array(
+                        [result[1][:, 0], result[1][:, 1]], dtype=object
+                    )
+                )
+            elif len(corr_type) == 4:
+                # (XX,XY,YX,YY) or (RR,RL,LR,LL)
+                corr_type = numpy.array(
+                    [corr_type[0], corr_type[3]], dtype=object
+                )
+                vis_per_antenna.append(
+                    numpy.array(
+                        [result[0][:, 0], result[0][:, 3]], dtype=object
+                    )
+                )
+                weights_per_antenna.append(
+                    numpy.array(
+                        [result[1][:, 0], result[1][:, 3]], dtype=object
+                    )
+                )
+            else:
+                raise ValueError("Polarisation type not supported")
+
+        vis_per_antenna = numpy.moveaxis(numpy.array(vis_per_antenna), 0, 1)
+        weights_per_antenna = numpy.moveaxis(
+            numpy.array(weights_per_antenna), 0, 1
+        )
+        for j, (vis, weight, corr) in enumerate(
+            zip(vis_per_antenna, weights_per_antenna, corr_type)
+        ):
+            log.info("Fitting primary beams to %s", corr)
+            for k, antenna in enumerate(self.ants):
                 # Convert power beamwidth (for single dish) to
                 # gain/voltage beamwidth (interferometer). Use
                 # the higher end of the frequency band to compute
                 # beam size for better pointing accuracy
-                expected_width_h = (
+                expected_width = (
                     numpy.sqrt(2)
-                    * self.beamwidth_factor[0]
+                    * self.beamwidth_factor[j]
                     * self.wavelength[-1]
-                    / antenna.diameter
-                )
-                expected_width_v = (
+                    / antenna.diameter,
                     numpy.sqrt(2)
-                    * self.beamwidth_factor[1]
+                    * self.beamwidth_factor[j]
                     * self.wavelength[-1]
-                    / antenna.diameter
+                    / antenna.diameter,
                 )
                 fitted_beam = BeamPatternFit(
                     centre=(0.0, 0.0),
-                    width=(expected_width_h, expected_width_v),
+                    width=(expected_width[j], expected_width[j]),
                     height=1.0,
                 )
                 log.info(
                     "Fitting primary beam to visibilities of %s", antenna.name
                 )
                 fitted_beam.fit(
-                    x=numpy.moveaxis(self.source_offset, 2, 0)[:, :, i],
-                    y=numpy.abs(vis).astype(float)[:, i],
-                    std_y=numpy.sqrt(1 / weight.astype(float)[:, i]),
+                    x=numpy.moveaxis(self.source_offset, 2, 0)[:, :, k],
+                    y=numpy.abs(vis).astype(float)[:, k],
+                    std_y=numpy.sqrt(
+                        1 / numpy.abs(weight).astype(float)[:, k]
+                    ),
                 )
 
                 # The fitted beam centre is the AzEl offset
@@ -259,36 +285,36 @@ class SolveForOffsets:
                 )
                 if valid_fit:
                     if corr in ("XX", "RR"):
-                        self.fitted_centre_pol1[i] = wrap_angle(
+                        self.fitted_centre_pol1[k] = wrap_angle(
                             fitted_beam.centre
                         )
-                        self.fitted_centre_std_pol1[i] = wrap_angle(
+                        self.fitted_centre_std_pol1[k] = wrap_angle(
                             fitted_beam.std_centre
                         )
-                        self.fitted_width_pol1[i] = wrap_angle(
+                        self.fitted_width_pol1[k] = wrap_angle(
                             fitted_beam.width
                         )
-                        self.fitted_width_std_pol1[i] = wrap_angle(
+                        self.fitted_width_std_pol1[k] = wrap_angle(
                             fitted_beam.std_width
                         )
-                        self.fitted_height_pol1[i] = (
+                        self.fitted_height_pol1[k] = (
                             fitted_beam.height,
                             fitted_beam.std_height,
                         )
                     elif corr in ("YY", "LL"):
-                        self.fitted_centre_pol2[i] = wrap_angle(
+                        self.fitted_centre_pol2[k] = wrap_angle(
                             fitted_beam.centre
                         )
-                        self.fitted_centre_std_pol2[i] = wrap_angle(
+                        self.fitted_centre_std_pol2[k] = wrap_angle(
                             fitted_beam.std_centre
                         )
-                        self.fitted_width_pol2[i] = wrap_angle(
+                        self.fitted_width_pol2[k] = wrap_angle(
                             fitted_beam.width
                         )
-                        self.fitted_width_std_pol2[i] = wrap_angle(
+                        self.fitted_width_std_pol2[k] = wrap_angle(
                             fitted_beam.std_width
                         )
-                        self.fitted_height_pol2[i] = (
+                        self.fitted_height_pol2[k] = (
                             fitted_beam.height,
                             fitted_beam.std_height,
                         )
@@ -332,21 +358,19 @@ class SolveForOffsets:
             for j, antenna in enumerate(self.ants):
                 # Convert power beamwidth (for single dish) to
                 # gain/voltage beamwidth (interferometer)
-                expected_width_h = (
+                expected_width = (
                     numpy.sqrt(2)
                     * self.beamwidth_factor[0]
                     * self.wavelength[0]
-                    / antenna.diameter
-                )
-                expected_width_v = (
+                    / antenna.diameter,
                     numpy.sqrt(2)
                     * self.beamwidth_factor[1]
                     * self.wavelength[0]
-                    / antenna.diameter
+                    / antenna.diameter,
                 )
                 fitted_beam = BeamPatternFit(
                     centre=(0.0, 0.0),
-                    width=(expected_width_h, expected_width_v),
+                    width=(expected_width[i], expected_width[i]),
                     height=1.0,
                 )
 

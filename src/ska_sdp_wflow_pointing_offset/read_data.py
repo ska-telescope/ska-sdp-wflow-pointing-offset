@@ -77,12 +77,8 @@ def read_visibilities(
         start_chan = channels[0]
         end_chan = channels[-1]
     else:
-        if apply_mask:
-            start_chan = channels[0]
-            end_chan = channels[-1]
-        else:
-            start_chan = None
-            end_chan = None
+        start_chan = channels[0]
+        end_chan = channels[-1]
 
     log.info("Selected channel numbers are %s to %s", start_chan, end_chan)
     vis_list = create_visibility_from_ms(
