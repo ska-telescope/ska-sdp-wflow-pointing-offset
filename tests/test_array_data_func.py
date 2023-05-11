@@ -1,4 +1,3 @@
-# pylint:disable=too-many-function-args
 """
 Unit tests for frequency selection functions
 """

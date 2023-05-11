@@ -12,6 +12,7 @@ import logging
 import numpy
 from katpoint import lightspeed, wrap_angle
 from scikits.fitting import GaussianFit, ScatterFit
+from uncertainties import unumpy
 
 log = logging.getLogger("ska-sdp-pointing-offset")
 
@@ -254,7 +255,7 @@ class SolveForOffsets:
         for j, (vis, weight, corr) in enumerate(
             zip(vis_per_antenna, weights_per_antenna, corr_type)
         ):
-            log.info("Fitting primary beams to %s", corr)
+            log.info("\nFitting primary beams to %s", corr)
             for k, antenna in enumerate(self.ants):
                 # Convert power beamwidth (for single dish) to
                 # gain/voltage beamwidth (interferometer). Use
@@ -305,29 +306,39 @@ class SolveForOffsets:
                     elev = numpy.radians(
                         numpy.median(self.actual_pointing_el[:, k])
                     )
-                    azel_offset = wrap_angle(fitted_beam.centre)
-                    azel_offset_std = wrap_angle(fitted_beam.std_centre)
-                    cross_el_offset = wrap_angle(fitted_beam.centre)[
-                        0
-                    ] * numpy.degrees(numpy.cos(elev)), azel_offset_std[
-                        0
-                    ] * numpy.degrees(
+                    azel_offset = unumpy.uarray(
+                        wrap_angle(fitted_beam.centre),
+                        numpy.abs(wrap_angle(fitted_beam.std_centre)),
+                    )
+                    cross_el_offset = azel_offset[0] * numpy.degrees(
                         numpy.cos(elev)
                     )
                     fitted_width = wrap_angle(fitted_beam.width)
                     fitted_width_std = wrap_angle(fitted_beam.std_width)
                     fitted_height = fitted_beam.height, fitted_beam.std_height
                     if corr in ("XX", "RR"):
-                        self.azel_offset_pol1[k] = azel_offset
-                        self.azel_offset_std_pol1[k] = azel_offset_std
-                        self.cross_el_pol1[k] = cross_el_offset
+                        self.azel_offset_pol1[k] = unumpy.nominal_values(
+                            azel_offset
+                        )
+                        self.azel_offset_std_pol1[k] = unumpy.std_devs(
+                            azel_offset
+                        )
+                        self.cross_el_pol1[k] = unumpy.nominal_values(
+                            cross_el_offset
+                        ), unumpy.std_devs(cross_el_offset)
                         self.fitted_width_pol1[k] = fitted_width
                         self.fitted_width_std_pol1[k] = fitted_width_std
                         self.fitted_height_pol1[k] = fitted_height
                     elif corr in ("YY", "LL"):
-                        self.azel_offset_pol2[k] = azel_offset
-                        self.azel_offset_std_pol2[k] = azel_offset_std
-                        self.cross_el_pol2[k] = cross_el_offset
+                        self.azel_offset_pol2[k] = unumpy.nominal_values(
+                            azel_offset
+                        )
+                        self.azel_offset_std_pol2[k] = unumpy.std_devs(
+                            azel_offset
+                        )
+                        self.cross_el_pol2[k] = unumpy.nominal_values(
+                            cross_el_offset
+                        ), unumpy.std_devs(cross_el_offset)
                         self.fitted_width_pol2[k] = fitted_width
                         self.fitted_width_std_pol2[k] = fitted_width_std
                         self.fitted_height_pol2[k] = fitted_height
@@ -361,15 +372,14 @@ class SolveForOffsets:
         """
         # The shape of the gain is ntimes, ants, averaged-frequency,
         # receptor1, receptor2
-        log.info("Fitting primary beams to gain amplitudes...")
+        log.info("\nFitting primary beams to gain amplitudes...")
         gain = numpy.abs(numpy.squeeze(self.y_param.gain.data))
         gain_weight = numpy.abs(numpy.squeeze(self.y_param.weight.data))
         receptor1 = self.y_param.receptor1.data
         receptor2 = self.y_param.receptor2.data
         corr = (receptor1[0] + receptor2[0], receptor1[1] + receptor2[1])
-
         for i, corr in enumerate(corr):
-            log.info("\nFitting primary beams to %s", corr)
+            log.info("Fitting primary beams to %s", corr)
             for j, antenna in enumerate(self.ants):
                 # Convert power beamwidth (for single dish) to
                 # gain/voltage beamwidth (interferometer)
@@ -414,32 +424,45 @@ class SolveForOffsets:
                     )
                 )
                 if valid_fit:
+                    # Cross-el offset = azimuth offset*cos(el)
                     elev = numpy.radians(
                         numpy.median(self.actual_pointing_el[:, i])
                     )
-                    azel_offset = wrap_angle(fitted_beam.centre)
-                    azel_offset_std = wrap_angle(fitted_beam.std_centre)
-                    cross_el_offset = wrap_angle(fitted_beam.centre)[
-                        0
-                    ] * numpy.degrees(numpy.cos(elev)), azel_offset_std[
-                        0
-                    ] * numpy.degrees(
+                    azel_offset = unumpy.uarray(
+                        wrap_angle(fitted_beam.centre),
+                        numpy.abs(wrap_angle(fitted_beam.std_centre)),
+                    )
+                    cross_el_offset = azel_offset[0] * numpy.degrees(
                         numpy.cos(elev)
                     )
                     fitted_width = wrap_angle(fitted_beam.width)
                     fitted_width_std = wrap_angle(fitted_beam.std_width)
                     fitted_height = fitted_beam.height, fitted_beam.std_height
+                    print(cross_el_offset)
+                    print("=" * 30)
                     if corr in ("XX", "RR"):
-                        self.azel_offset_pol1[i] = azel_offset
-                        self.azel_offset_std_pol1[i] = azel_offset_std
-                        self.cross_el_pol1[i] = cross_el_offset
+                        self.azel_offset_pol1[i] = unumpy.nominal_values(
+                            azel_offset
+                        )
+                        self.azel_offset_std_pol1[i] = unumpy.std_devs(
+                            azel_offset
+                        )
+                        self.cross_el_pol1[i] = unumpy.nominal_values(
+                            cross_el_offset
+                        ), unumpy.std_devs(cross_el_offset)
                         self.fitted_width_pol1[i] = fitted_width
                         self.fitted_width_std_pol1[i] = fitted_width_std
                         self.fitted_height_pol1[i] = fitted_height
                     elif corr in ("YY", "LL"):
-                        self.azel_offset_pol2[i] = azel_offset
-                        self.azel_offset_std_pol2[i] = azel_offset_std
-                        self.cross_el_pol2[i] = cross_el_offset
+                        self.azel_offset_pol2[i] = unumpy.nominal_values(
+                            azel_offset
+                        )
+                        self.azel_offset_std_pol2[i] = unumpy.std_devs(
+                            azel_offset
+                        )
+                        self.cross_el_pol2[i] = unumpy.nominal_values(
+                            cross_el_offset
+                        ), unumpy.std_devs(cross_el_offset)
                         self.fitted_width_pol2[i] = fitted_width
                         self.fitted_width_std_pol2[i] = fitted_width_std
                         self.fitted_height_pol2[i] = fitted_height
