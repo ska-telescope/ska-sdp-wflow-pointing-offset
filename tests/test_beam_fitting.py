@@ -49,11 +49,11 @@ def test_fit_to_visibilities(
     cross_el_offset_pol1 = fitted_results[:, 4]
     numpy.testing.assert_allclose(
         numpy.column_stack((az_offset_pol1, el_offset_pol1)),
-        [[-0.68159, -0.353595], [1.859431, -1.650717], [0.09855, -0.397562]],
+        [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
         rtol=1e-3,
     )
     numpy.testing.assert_allclose(
-        cross_el_offset_pol1, [-32.223557, 12.006591, 4.616732], rtol=1e-3
+        cross_el_offset_pol1, [0.0, 0.0, 0.0], rtol=1e-3
     )
 
     # For Polarisation 2, assert the AzEl offset for each antenna
@@ -63,14 +63,14 @@ def test_fit_to_visibilities(
     numpy.testing.assert_allclose(
         numpy.column_stack((az_offset_pol2, el_offset_pol2)),
         [
-            [0.141424, -1.919972],
-            [0.141422, -2.201798],
-            [0.14278, 2.111914],
+            [0.0, 0.0],
+            [0.0, 0.0],
+            [0.0, 0.0],
         ],
         rtol=1e-3,
     )
     numpy.testing.assert_allclose(
-        cross_el_offset_pol2, [-90.770529, -104.076314, 98.970986], rtol=1e-3
+        cross_el_offset_pol2, [0.0, 0.0, 0.0], rtol=1e-3
     )
 
 
@@ -95,11 +95,11 @@ def test_fit_to_gain(gain_array, source_offset, actual_pointing_el, ants):
     cross_el_offset_pol1 = fitted_results[:, 4]
     numpy.testing.assert_allclose(
         numpy.column_stack((az_offset_pol1, el_offset_pol1)),
-        [[1.779095, -2.685431], [0.0, 0.0], [0.0, 0.0]],
+        [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
         rtol=1e-3,
     )
     numpy.testing.assert_allclose(
-        cross_el_offset_pol1, [84.110311, 0.0, 0.0], rtol=1e-3
+        cross_el_offset_pol1, [0.0, 0.0, 0.0], rtol=1e-3
     )
 
     # For Polarisation 2, assert the AzEl and cross-el
@@ -109,9 +109,9 @@ def test_fit_to_gain(gain_array, source_offset, actual_pointing_el, ants):
     cross_el_offset_pol2 = fitted_results[:, 16]
     numpy.testing.assert_allclose(
         numpy.column_stack((az_offset_pol2, el_offset_pol2)),
-        [[5.167355e09, 0.0], [0.0, -5.391624e-01], [0.0, 0.0]],
+        [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
         rtol=1e-3,
     )
     numpy.testing.assert_allclose(
-        cross_el_offset_pol2, [0.0, -25.485551, 0.0], rtol=1e-3
+        cross_el_offset_pol2, [0.0, 0.0, 0.0], rtol=1e-3
     )

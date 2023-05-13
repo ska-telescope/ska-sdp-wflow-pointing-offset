@@ -90,7 +90,7 @@ class BeamPatternFit(ScatterFit):
         self.is_valid = False
         self.std_centre = self.std_width = self.std_height = None
 
-    def fit(self, x, y, std_y=1.0, thresh=1.25):
+    def fit(self, x, y, std_y=1.0, thresh=1.5):
         """
         Fit a beam pattern to data.
         The centre, width and height of the fitted beam pattern
@@ -101,7 +101,7 @@ class BeamPatternFit(ScatterFit):
         :param y: Sequence of (N, ) corresponding total power values to fit
         :param std_y: Optional measurement error or uncertainty of (N, ) `y`
             values, expressed as standard deviation in units of `y`.
-        :param thresh:
+        :param thresh: The maximum ratio of the fitted to expected beamwidth
         :return: The fitted beam parameters (centre, width, height and their
             uncertainties)
         """

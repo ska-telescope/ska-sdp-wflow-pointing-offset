@@ -28,7 +28,7 @@ Options:
   --end_freq=None      End Frequency in MHz (Optional)
   --bw_factor          Beamwidth factor [default:0.976, 1.098]
   --thresh             The maximum ratio of the fitted to expected beamwidth
-                       [default:1.25]
+                       [default:1.5]
 
 """
 import datetime
@@ -102,7 +102,7 @@ def compute_offset(args):
     if args["--thresh"]:
         thresh = args["--thresh"]
     else:
-        thresh = 1.25
+        thresh = 1.5
 
     log.info(
         "Beamwidth factor: %f %f", beamwidth_factor[0], beamwidth_factor[1]
