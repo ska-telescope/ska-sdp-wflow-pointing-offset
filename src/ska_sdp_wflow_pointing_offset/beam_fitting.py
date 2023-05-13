@@ -90,7 +90,7 @@ class BeamPatternFit(ScatterFit):
         self.is_valid = False
         self.std_centre = self.std_width = self.std_height = None
 
-    def fit(self, x, y, std_y=1.0):
+    def fit(self, x, y, std_y=1.0, thresh=1.25):
         """
         Fit a beam pattern to data.
         The centre, width and height of the fitted beam pattern
@@ -101,6 +101,7 @@ class BeamPatternFit(ScatterFit):
         :param y: Sequence of (N, ) corresponding total power values to fit
         :param std_y: Optional measurement error or uncertainty of (N, ) `y`
             values, expressed as standard deviation in units of `y`.
+        :param thresh:
         :return: The fitted beam parameters (centre, width, height and their
             uncertainties)
         """
@@ -112,10 +113,18 @@ class BeamPatternFit(ScatterFit):
         self.std_width = _sigma_to_fwhm(self._interp.std_std)
         self.std_height = self._interp.std_height
         self.is_valid = not any(numpy.isnan(self.centre)) and self.height > 0.0
-        # Set some constraints on the fitted beamwidth to ensure the width is
-        # not larger than some fraction of the expected width
+
+        # Optimisation throws out last call when fititng fails.
+        # catch it and ensure it converges for a fit to be valid
+
+        # Validation of the fitted beam using SNR and the size of the
+        # fitted width compared to the expected. The fitted beam can
+        # only be equal to the expected or greater than the expected
+        # by the user defined value
+        fit_snr = self._interp.std / self._interp.std_std
         norm_width = self.width / self.expected_width
-        self.is_valid &= all(norm_width > 0.9) and all(norm_width < 1.25)
+
+        self.is_valid &= (0.9 < norm_width < thresh) and fit_snr > 0.0
 
 
 class SolveForOffsets:
@@ -149,12 +158,14 @@ class SolveForOffsets:
         y_param,
         beamwidth_factor,
         ants,
+        thresh,
     ):
         self.source_offset = source_offset
         self.actual_pointing_el = actual_pointing_el
         self.y_param = y_param
         self.beamwidth_factor = beamwidth_factor
         self.ants = ants
+        self.thresh = thresh
         self.wavelength = numpy.degrees(
             lightspeed / self.y_param.frequency.data
         )
@@ -162,6 +173,25 @@ class SolveForOffsets:
             raise ValueError(
                 "Wavelength cannot be infinite. Check frequency range!"
             )
+
+        # Compute the expected width here
+        self.expected_width = []
+        for antenna in self.ants:
+            # Convert power beamwidth (for single dish) to gain/voltage
+            # beamwidth (interferometer)
+            expected_width_h = (
+                numpy.sqrt(2)
+                * self.beamwidth_factor[0]
+                * self.wavelength[0]
+                / antenna.diameter
+            )
+            expected_width_v = (
+                numpy.sqrt(2)
+                * self.beamwidth_factor[1]
+                * self.wavelength[0]
+                / antenna.diameter
+            )
+            self.expected_width.append((expected_width_h, expected_width_v))
 
         # Fitted parameters of interest for each pol per antenna to be
         # saved to file
@@ -196,12 +226,11 @@ class SolveForOffsets:
             returned=True,
         )
 
-        # Get the visibilities and weights for each antenna
-        # Since the x parameter required for the fitting has shape
-        # (ntimes, number of antennas, 2), we need to find a way to
-        # translate baseline-based to antenna-based visibilities.
-        # Is this a robust/correct way to do it - to be investigated
-        # with ORC-1572 ticket.
+        # Get the visibilities and weights for each antenna. Since the x
+        # parameter required for the fitting has shape (ntimes, number of
+        # antennas, 2), we need to find a way to translate baseline-based
+        # to antenna-based visibilities. Is this a robust/correct way to
+        # do it - to be investigated with ORC-1572 ticket.
         vis_per_antenna = []
         weights_per_antenna = []
         for i in range(len(self.ants)):
@@ -261,19 +290,9 @@ class SolveForOffsets:
                 # gain/voltage beamwidth (interferometer). Use
                 # the higher end of the frequency band to compute
                 # beam size for better pointing accuracy
-                expected_width = (
-                    numpy.sqrt(2)
-                    * self.beamwidth_factor[j]
-                    * self.wavelength[-1]
-                    / antenna.diameter,
-                    numpy.sqrt(2)
-                    * self.beamwidth_factor[j]
-                    * self.wavelength[-1]
-                    / antenna.diameter,
-                )
                 fitted_beam = BeamPatternFit(
                     centre=(0.0, 0.0),
-                    width=(expected_width[j], expected_width[j]),
+                    width=self.expected_width[k][j],
                     height=1.0,
                 )
                 log.info(
@@ -285,30 +304,19 @@ class SolveForOffsets:
                     std_y=numpy.sqrt(
                         1 / numpy.abs(weight).astype(float)[k, :]
                     ),
+                    thresh=self.thresh,
                 )
 
                 # The fitted beam centre is the AzEl offset
                 # Store the fitted parameters and their uncertainties
-                valid_fit = numpy.all(
-                    numpy.isfinite(
-                        numpy.r_[
-                            fitted_beam.centre,
-                            fitted_beam.std_centre,
-                            fitted_beam.width,
-                            fitted_beam.std_width,
-                            fitted_beam.height,
-                            fitted_beam.std_height,
-                        ]
-                    )
-                )
-                if valid_fit:
+                if fitted_beam.is_valid:
                     # Cross-el offset = azimuth offset*cos(el)
                     elev = numpy.radians(
                         numpy.median(self.actual_pointing_el[:, k])
                     )
                     azel_offset = unumpy.uarray(
                         wrap_angle(fitted_beam.centre),
-                        numpy.abs(wrap_angle(fitted_beam.std_centre)),
+                        wrap_angle(fitted_beam.std_centre),
                     )
                     cross_el_offset = azel_offset[0] * numpy.degrees(
                         numpy.cos(elev)
@@ -370,7 +378,7 @@ class SolveForOffsets:
         :return: The fitted beam centre and uncertainty, fitted beamwidth and
         uncertainty, fitted beam height and uncertainty for each polarisation
         """
-        # The shape of the gain is ntimes, ants, averaged-frequency,
+        # The shape of the gain is ntimes, baselines, 1 (averaged-frequency),
         # receptor1, receptor2
         log.info("\nFitting primary beams to gain amplitudes...")
         gain = numpy.abs(numpy.squeeze(self.y_param.gain.data))
@@ -379,26 +387,13 @@ class SolveForOffsets:
         receptor2 = self.y_param.receptor2.data
         corr = (receptor1[0] + receptor2[0], receptor1[1] + receptor2[1])
         for i, corr in enumerate(corr):
-            log.info("Fitting primary beams to %s", corr)
+            log.info("\nFitting primary beams to %s", corr)
             for j, antenna in enumerate(self.ants):
-                # Convert power beamwidth (for single dish) to
-                # gain/voltage beamwidth (interferometer)
-                expected_width = (
-                    numpy.sqrt(2)
-                    * self.beamwidth_factor[0]
-                    * self.wavelength[0]
-                    / antenna.diameter,
-                    numpy.sqrt(2)
-                    * self.beamwidth_factor[1]
-                    * self.wavelength[0]
-                    / antenna.diameter,
-                )
                 fitted_beam = BeamPatternFit(
                     centre=(0.0, 0.0),
-                    width=(expected_width[i], expected_width[i]),
+                    width=self.expected_width[j][i],
                     height=1.0,
                 )
-
                 log.info(
                     "Fitting primary beam to gain amplitudes of %s",
                     antenna.name,
@@ -407,30 +402,19 @@ class SolveForOffsets:
                     x=numpy.moveaxis(self.source_offset, 2, 0)[:, :, j],
                     y=gain[:, j, i, i],
                     std_y=gain_weight[:, j, i, i],
+                    thresh=self.thresh,
                 )
 
                 # The fitted beam centre is the AzEl offset
                 # Store the fitted parameters and their uncertainties
-                valid_fit = numpy.all(
-                    numpy.isfinite(
-                        numpy.r_[
-                            fitted_beam.centre,
-                            fitted_beam.std_centre,
-                            fitted_beam.width,
-                            fitted_beam.std_width,
-                            fitted_beam.height,
-                            fitted_beam.std_height,
-                        ]
-                    )
-                )
-                if valid_fit:
+                if fitted_beam.is_valid:
                     # Cross-el offset = azimuth offset*cos(el)
                     elev = numpy.radians(
                         numpy.median(self.actual_pointing_el[:, i])
                     )
                     azel_offset = unumpy.uarray(
                         wrap_angle(fitted_beam.centre),
-                        numpy.abs(wrap_angle(fitted_beam.std_centre)),
+                        wrap_angle(fitted_beam.std_centre),
                     )
                     cross_el_offset = azel_offset[0] * numpy.degrees(
                         numpy.cos(elev)
@@ -438,8 +422,6 @@ class SolveForOffsets:
                     fitted_width = wrap_angle(fitted_beam.width)
                     fitted_width_std = wrap_angle(fitted_beam.std_width)
                     fitted_height = fitted_beam.height, fitted_beam.std_height
-                    print(cross_el_offset)
-                    print("=" * 30)
                     if corr in ("XX", "RR"):
                         self.azel_offset_pol1[i] = unumpy.nominal_values(
                             azel_offset

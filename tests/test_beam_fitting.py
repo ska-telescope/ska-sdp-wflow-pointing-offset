@@ -8,7 +8,7 @@ from ska_sdp_wflow_pointing_offset.beam_fitting import (
     _fwhm_to_sigma,
     _sigma_to_fwhm,
 )
-from tests.utils import BEAMWIDTH_FACTOR
+from tests.utils import BEAMWIDTH_FACTOR, FITTING_THRESH
 
 
 def test_fwhm_to_sigma():
@@ -39,6 +39,7 @@ def test_fit_to_visibilities(
         vis_array,
         BEAMWIDTH_FACTOR,
         ants,
+        FITTING_THRESH,
     )
     fitted_results = initial_fit.fit_to_visibilities()
 
@@ -83,6 +84,7 @@ def test_fit_to_gain(gain_array, source_offset, actual_pointing_el, ants):
         gain_array,
         BEAMWIDTH_FACTOR,
         ants,
+        FITTING_THRESH,
     )
     fitted_results = initial_fit.fit_to_gains()
 

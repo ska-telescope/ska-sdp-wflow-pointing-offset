@@ -7,6 +7,7 @@ Usage:
                           [--rfi_file=FILE] [--results_dir=None]
                           [--start_freq=None] [--end_freq=None]
                           [(--bw_factor <bw_factor>) [<bw_factor>...]]
+                          [--thresh]
 
 Commands:
   compute   Runs all required routines for computing the
@@ -26,6 +27,8 @@ Options:
   --start_freq=None    Start Frequency in MHz (Optional)
   --end_freq=None      End Frequency in MHz (Optional)
   --bw_factor          Beamwidth factor [default:0.976, 1.098]
+  --thresh             The maximum ratio of the fitted to expected beamwidth
+                       [default:1.25]
 
 """
 import datetime
@@ -95,9 +98,16 @@ def compute_offset(args):
     else:
         # We would use the values for the MeerKAT as known in April 2023.
         beamwidth_factor = [0.976, 1.098]
+
+    if args["--thresh"]:
+        thresh = args["--thresh"]
+    else:
+        thresh = 1.25
+
     log.info(
         "Beamwidth factor: %f %f", beamwidth_factor[0], beamwidth_factor[1]
     )
+    log.info("Maximum fitted beamwidth to expected beamwidth: %f", thresh)
 
     # Get visibilities and optionally apply RFI mask and/or select
     # frequency range of interest
@@ -130,7 +140,12 @@ def compute_offset(args):
 
     # Solve for the pointing offsets
     init_results = SolveForOffsets(
-        source_offset, actual_pointing_el, y_param, beamwidth_factor, ants
+        source_offset,
+        actual_pointing_el,
+        y_param,
+        beamwidth_factor,
+        ants,
+        thresh,
     )
     if args["--fit_to_vis"]:
         fitted_results = init_results.fit_to_visibilities()
