@@ -90,7 +90,7 @@ class BeamPatternFit(ScatterFit):
         self.is_valid = False
         self.std_centre = self.std_width = self.std_height = None
 
-    def fit(self, x, y, std_y=1.0, thresh=1.5):
+    def fit(self, x, y, std_y=1.0, thresh_width=1.5):
         """
         Fit a beam pattern to data.
         The centre, width and height of the fitted beam pattern
@@ -101,7 +101,8 @@ class BeamPatternFit(ScatterFit):
         :param y: Sequence of (N, ) corresponding total power values to fit
         :param std_y: Optional measurement error or uncertainty of (N, ) `y`
             values, expressed as standard deviation in units of `y`.
-        :param thresh: The maximum ratio of the fitted to expected beamwidth
+        :param thresh_width: The maximum ratio of the fitted to expected
+            beamwidth
         :return: The fitted beam parameters (centre, width, height and their
             uncertainties)
         """
@@ -124,7 +125,7 @@ class BeamPatternFit(ScatterFit):
         fit_snr = self._interp.std / self._interp.std_std
         norm_width = self.width / self.expected_width
 
-        self.is_valid &= (0.9 < norm_width < thresh) and fit_snr > 0.0
+        self.is_valid &= (0.9 < norm_width < thresh_width) and fit_snr > 0.0
 
 
 class SolveForOffsets:
@@ -158,14 +159,14 @@ class SolveForOffsets:
         y_param,
         beamwidth_factor,
         ants,
-        thresh,
+        thresh_width,
     ):
         self.source_offset = source_offset
         self.actual_pointing_el = actual_pointing_el
         self.y_param = y_param
         self.beamwidth_factor = beamwidth_factor
         self.ants = ants
-        self.thresh = thresh
+        self.thresh_width = thresh_width
         self.wavelength = numpy.degrees(
             lightspeed / self.y_param.frequency.data
         )
@@ -304,7 +305,7 @@ class SolveForOffsets:
                     std_y=numpy.sqrt(
                         1 / numpy.abs(weight).astype(float)[k, :]
                     ),
-                    thresh=self.thresh,
+                    thresh_width=self.thresh_width,
                 )
 
                 # The fitted beam centre is the AzEl offset
@@ -402,7 +403,7 @@ class SolveForOffsets:
                     x=numpy.moveaxis(self.source_offset, 2, 0)[:, :, j],
                     y=gain[:, j, i, i],
                     std_y=gain_weight[:, j, i, i],
-                    thresh=self.thresh,
+                    thresh_width=self.thresh_width,
                 )
 
                 # The fitted beam centre is the AzEl offset

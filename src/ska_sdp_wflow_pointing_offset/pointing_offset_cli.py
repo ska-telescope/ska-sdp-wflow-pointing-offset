@@ -7,7 +7,7 @@ Usage:
                           [--rfi_file=FILE] [--results_dir=None]
                           [--start_freq=None] [--end_freq=None]
                           [(--bw_factor <bw_factor>) [<bw_factor>...]]
-                          [--thresh]
+                          [--thresh_width]
 
 Commands:
   compute   Runs all required routines for computing the
@@ -27,7 +27,7 @@ Options:
   --start_freq=None    Start Frequency in MHz (Optional)
   --end_freq=None      End Frequency in MHz (Optional)
   --bw_factor          Beamwidth factor [default:0.976, 1.098]
-  --thresh             The maximum ratio of the fitted to expected beamwidth
+  --thresh_width       The maximum ratio of the fitted to expected beamwidth
                        [default:1.5]
 
 """
@@ -99,15 +99,17 @@ def compute_offset(args):
         # We would use the values for the MeerKAT as known in April 2023.
         beamwidth_factor = [0.976, 1.098]
 
-    if args["--thresh"]:
-        thresh = args["--thresh"]
+    if args["--thresh_width"]:
+        thresh_width = args["--thresh_width"]
     else:
-        thresh = 1.5
+        thresh_width = 1.5
 
     log.info(
         "Beamwidth factor: %f %f", beamwidth_factor[0], beamwidth_factor[1]
     )
-    log.info("Maximum fitted beamwidth to expected beamwidth: %f", thresh)
+    log.info(
+        "Maximum fitted beamwidth to expected beamwidth: %f", thresh_width
+    )
 
     # Get visibilities and optionally apply RFI mask and/or select
     # frequency range of interest
@@ -145,7 +147,7 @@ def compute_offset(args):
         y_param,
         beamwidth_factor,
         ants,
-        thresh,
+        thresh_width,
     )
     if args["--fit_to_vis"]:
         fitted_results = init_results.fit_to_visibilities()

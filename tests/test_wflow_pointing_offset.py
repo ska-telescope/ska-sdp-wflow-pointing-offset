@@ -76,7 +76,7 @@ def test_wflow_pointing_offset(
 
         outfile = f"{tempdir}/pointing_offsets.txt"
         beamwidth_factor = [0.976, 1.098]
-        fitting_thresh = 1.25
+        thresh_width = 1.5
 
         read_visibilities.return_value = (
             vis_array,
@@ -96,7 +96,7 @@ def test_wflow_pointing_offset(
             "--ms": tempdir,
             "--bw_factor": True,
             "<bw_factor>": beamwidth_factor,
-            "--thresh": fitting_thresh,
+            "--thresh_width": thresh_width,
         }
 
         compute_offset(args)
