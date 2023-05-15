@@ -569,6 +569,18 @@ DISH_COORD_EL = numpy.array(
     ]
 )
 
+
+ACTUAL_POINTING_AZ = numpy.array(
+    [
+        [148.94151627, 148.94209042, 148.94269345],
+        [148.9416127, 148.94223792, 148.9435879],
+        [148.94151282, 148.94186983, 148.94285118],
+        [148.94127324, 148.94149587, 148.94311848],
+        [148.94128754, 148.94246971, 148.94286926],
+    ]
+)
+
+
 ACTUAL_POINTING_EL = numpy.array(
     [
         [34.39740428, 34.41229524, 35.12337574],
@@ -686,6 +698,9 @@ class MockPointingTable:
         """
         if columnname == "SOURCE_OFFSET":
             return numpy.dstack((DISH_COORD_AZ, DISH_COORD_EL))
+
+        if columnname == "DIRECTION":
+            return numpy.dstack((ACTUAL_POINTING_AZ, ACTUAL_POINTING_EL))
 
         if columnname == "TIME":
             return TIMESTAMPS
