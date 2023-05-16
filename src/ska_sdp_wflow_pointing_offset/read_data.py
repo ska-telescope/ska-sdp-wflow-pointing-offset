@@ -128,7 +128,7 @@ def read_visibilities(
 
     # Get the interpolated elevation positions to be used
     # for calculating the cross-elevation offset. The data
-    # has shape (dumps, nants, azel)
+    # has shape (ntimes, nants, azel)
     actual_pointing = interp_timestamps(
         actual_pointing, offset_timestamps, vis.time.data
     )

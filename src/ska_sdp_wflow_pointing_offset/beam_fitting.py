@@ -115,9 +115,6 @@ class BeamPatternFit(ScatterFit):
         self.std_height = self._interp.std_height
         self.is_valid = not any(numpy.isnan(self.centre)) and self.height > 0.0
 
-        # Optimisation throws out last call when fititng fails.
-        # catch it and ensure it converges for a fit to be valid
-
         # Validation of the fitted beam using SNR and the size of the
         # fitted width compared to the expected. The fitted beam can
         # only be equal to the expected or greater than the expected
@@ -138,7 +135,7 @@ class SolveForOffsets:
     :param source_offset: Offsets from the target in Az, El coordinates
         with shape [2, number of timestamps, number of antennas]
     :param actual_pointing_el: The interpolated actual pointing
-        elevation with shape [dumps, number of antennas] to be used
+        elevation with shape [ntimes, number of antennas] to be used
         in calculating the cross-elevation offsets. The cross-elevation
         offset is the product of the azimuth-offset and cosine of the
         median actual pointing elevation.
@@ -245,6 +242,7 @@ class SolveForOffsets:
                 weights=sumwt[:, mask, :],
                 returned=True,
             )
+
             if len(corr_type) == 2:
                 # (XX,YY) or (RR, LL)
                 corr_type = numpy.array(
@@ -317,7 +315,7 @@ class SolveForOffsets:
                     )
                     azel_offset = unumpy.uarray(
                         wrap_angle(fitted_beam.centre),
-                        wrap_angle(fitted_beam.std_centre),
+                        wrap_angle(numpy.abs(fitted_beam.std_centre)),
                     )
                     cross_el_offset = azel_offset[0] * numpy.degrees(
                         numpy.cos(elev)

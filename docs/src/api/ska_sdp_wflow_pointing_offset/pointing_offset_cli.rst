@@ -19,7 +19,7 @@ Usage
                           [--rfi_file=FILE] [--results_dir=None]
                           [--start_freq=None] [--end_freq=None]
                           [(--bw_factor <bw_factor>) [<bw_factor>...]]
-                          [--thresh_width]
+                          [--thresh_width=<float>]
 
     Commands:
         compute   Runs all required routines for computing the
@@ -39,8 +39,8 @@ Usage
         --start_freq=None    Start Frequency in MHz (Optional)
         --end_freq=None      End Frequency in MHz (Optional)
         --bw_factor          Beamwidth factor [default:0.976, 1.098]
-        --thresh_width       The maximum ratio of the fitted to expected beamwidth
-                             [default:1.5]
+        --thresh_width=<float> The maximum ratio of the fitted to expected beamwidth
+                               [default:1.5]
 
 
 Commands \& Options

@@ -2,14 +2,14 @@
 
 [[package]]
 name = "astroid"
-version = "2.15.4"
+version = "2.15.5"
 description = "An abstract syntax tree for Python with inference support."
 category = "dev"
 optional = false
 python-versions = ">=3.7.2"
 files = [
-    {file = "astroid-2.15.4-py3-none-any.whl", hash = "sha256:a1b8543ef9d36ea777194bc9b17f5f8678d2c56ee6a45b2c2f17eec96f242347"},
-    {file = "astroid-2.15.4.tar.gz", hash = "sha256:c81e1c7fbac615037744d067a9bb5f9aeb655edf59b63ee8b59585475d6f80d8"},
+    {file = "astroid-2.15.5-py3-none-any.whl", hash = "sha256:078e5212f9885fa85fbb0cf0101978a336190aadea6e13305409d099f71b2324"},
+    {file = "astroid-2.15.5.tar.gz", hash = "sha256:1039262575027b441137ab4a62a793a9b43defb42c32d5670f38686207cd780f"},
 ]
 
 [package.dependencies]
@@ -1621,33 +1621,33 @@ version = "0.2.1"
 description = "SKA SDP Python-Based Processing Functions"
 category = "main"
 optional = false
-python-versions = ">=3.9,<4.0"
-files = [
-    {file = "ska_sdp_func_python-0.2.1-py3-none-any.whl", hash = "sha256:30570afe712f723725d22f5d1579b2a68fa39bdcd39099cdbc4181bd3814e454"},
-    {file = "ska_sdp_func_python-0.2.1.tar.gz", hash = "sha256:774d1689af82f1808e64e4b2ac700a2cec2fd7a90327a780314683e251affa40"},
-]
+python-versions = "^3.9"
+files = []
+develop = false
 
 [package.dependencies]
-astroplan = ">=0.8,<0.9"
-astropy = ">=5.1,<6.0"
-ducc0 = ">=0.27.0,<0.28.0"
-numpy = ">=1.23,<1.24"
-photutils = ">=1.5.0,<2.0.0"
-scipy = ">=1.9.3,<2.0.0"
-ska-sdp-datamodels = ">=0.2.0,<0.3.0"
-xarray = ">=2022.11.0,<2023.0.0"
+astroplan = "^0.8"
+astropy = "^5.1"
+ducc0 = "^0.27.0"
+numpy = "^1.23, <1.24"
+photutils = "^1.5.0"
+scipy = "^1.9.3"
+ska-sdp-datamodels = "^0.2.0"
+xarray = "^2022.11.0"
 
 [package.extras]
 dp3 = ["dp3 (>=5.4.0,<6.0.0)"]
 fft-support = ["pyfftw (>=0.13.0,<0.14.0)"]
 gpu = ["cupy (>=11.3.0,<12.0.0)"]
+h5py = []
 radler = ["radler (>=0.0.1,<0.0.2)"]
 ska-sdp-func = ["ska-sdp-func @ git+https://gitlab.com/ska-telescope/sdp/ska-sdp-func.git@main"]
 
 [package.source]
-type = "legacy"
-url = "https://artefact.skao.int/repository/pypi-internal/simple"
-reference = "ska"
+type = "git"
+url = "https://gitlab.com/ska-telescope/sdp/ska-sdp-func-python.git"
+reference = "orc-1646-gain-solver-fix"
+resolved_reference = "55ae88275eba2568d0e29295d139d152f50bcd1e"
 
 [[package]]
 name = "tomli"
@@ -1838,4 +1838,4 @@ python-casacore = ["python-casacore"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "13d3f67bcb34a47c984739d7c99d6ea622decf0e3fa7f0cdd2fa9da8bcf7f802"
+content-hash = "270e78b8835b56762fc65fee6361a8fafa9e8a7279b74c794d3106475f7d4905"

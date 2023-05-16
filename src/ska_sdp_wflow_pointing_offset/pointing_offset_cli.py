@@ -7,7 +7,7 @@ Usage:
                           [--rfi_file=FILE] [--results_dir=None]
                           [--start_freq=None] [--end_freq=None]
                           [(--bw_factor <bw_factor>) [<bw_factor>...]]
-                          [--thresh_width]
+                          [--thresh_width=<float>]
 
 Commands:
   compute   Runs all required routines for computing the
@@ -17,18 +17,18 @@ Options:
   -h --help            show this help message and exit
   -q --quiet           report only file names
 
-  --ms=FILE            Measurement set file
+  --ms=FILE             Measurement set file
   --fit_to_vis          Fit primary beam to visibilities instead of antenna
-                       gains (Optional) [default:False]
-  --apply_mask         Apply Mask (Optional) [default:False]
-  --rfi_file=FILE      RFI file (Optional)
-  --save_offset        Save the Offset Results (Optional) [default:False]
-  --results_dir=None   Directory where the results need to be saved (Optional)
-  --start_freq=None    Start Frequency in MHz (Optional)
-  --end_freq=None      End Frequency in MHz (Optional)
-  --bw_factor          Beamwidth factor [default:0.976, 1.098]
-  --thresh_width       The maximum ratio of the fitted to expected beamwidth
-                       [default:1.5]
+                        gains (Optional) [default:False]
+  --apply_mask          Apply mask (Optional) [default:False]
+  --rfi_file=FILE       RFI file (Optional)
+  --save_offset         Save the offset results (Optional) [default:False]
+  --results_dir=None    Directory where the results need to be saved (Optional)
+  --start_freq=None     Start frequency in MHz (Optional)
+  --end_freq=None       End frequency in MHz (Optional)
+  --bw_factor           Beamwidth factor [default:0.976, 1.098]
+  --thresh_width=<float>  The maximum ratio of the fitted to expected beamwidth
+                          [default:1.5]
 
 """
 import datetime
@@ -100,7 +100,7 @@ def compute_offset(args):
         beamwidth_factor = [0.976, 1.098]
 
     if args["--thresh_width"]:
-        thresh_width = args["--thresh_width"]
+        thresh_width = float(args["--thresh_width"])
     else:
         thresh_width = 1.5
 
