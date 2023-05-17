@@ -1,5 +1,5 @@
 # pylint: disable=too-many-instance-attributes,abstract-method
-# pylint: disable=too-many-locals,too-many-arguments
+# pylint: disable=too-many-locals,too-many-arguments,too-many-statements
 """
 Fits primary beams modelled by a 2D Gaussian to the visibility
 or gain amplitudes and computes the elevation and cross-elevation
@@ -118,7 +118,7 @@ class BeamPatternFit(ScatterFit):
         # Validation of the fitted beam using SNR and the size of the
         # fitted width compared to the expected. The fitted beam can
         # only be equal to the expected or greater than the expected
-        # by the user defined value
+        # by less than thresh_width
         fit_snr = self._interp.std / self._interp.std_std
         norm_width = self.width / self.expected_width
 
@@ -127,10 +127,9 @@ class BeamPatternFit(ScatterFit):
 
 class SolveForOffsets:
     """
-    Fit the beam pattern to the frequency-averaged and optionally
-    polarisation-averaged visibilities and outputs the fitted
-    parameters and their uncertainties. These visibilities could
-    be for each antenna or baseline.
+    Fit the beam pattern to the frequency-averaged visibility amplitudes
+    or gain amplitudes and outputs the fitted parameters and their
+    uncertainties.
 
     :param source_offset: Offsets from the target in Az, El coordinates
         with shape [2, number of timestamps, number of antennas]
@@ -180,16 +179,16 @@ class SolveForOffsets:
             expected_width_h = (
                 numpy.sqrt(2)
                 * self.beamwidth_factor[0]
-                * self.wavelength[0]
+                * self.wavelength
                 / antenna.diameter
             )
             expected_width_v = (
                 numpy.sqrt(2)
                 * self.beamwidth_factor[1]
-                * self.wavelength[0]
+                * self.wavelength
                 / antenna.diameter
             )
-            self.expected_width.append((expected_width_h, expected_width_v))
+            self.expected_width.append([expected_width_h, expected_width_v])
 
         # Fitted parameters of interest for each pol per antenna to be
         # saved to file
@@ -209,26 +208,42 @@ class SolveForOffsets:
 
     def fit_to_visibilities(self):
         """
-        Fit primary beams to the visibility amplitude of each antenna
+        Fit primary beams to the visibility amplitude of each antenna. The
+        baseline-based visibilities are converted to antenna-based visibilities
+        before the fitting is performed.
 
         :return: The fitted beam centre and uncertainty, fitted beamwidth and
         uncertainty, fitted beam height and uncertainty for each polarisation
         """
         corr_type = self.y_param.polarisation.data
 
-        # Average the parallel hand visibilities in frequency
-        avg_vis, sumwt = numpy.average(
-            self.y_param.vis.data,
-            axis=2,
-            weights=self.y_param.weight.data,
-            returned=True,
-        )
+        # Average the parallel hand visibilities in frequency similar to
+        # that in ska-sdp-datamodels at https://gitlab.com/ska-telescope/sdp/
+        # ska-sdp-datamodels/-/blob/main/src/ska_sdp_datamodels/visibility/
+        # vis_io_ms.py#L391
+        weight = self.y_param.weight.data * (1.0 - self.y_param.flags.data)
+        flags = numpy.sum(self.y_param.flags.data, axis=2)
+        try:
+            avg_vis, sumwt = numpy.average(
+                self.y_param.vis.data,
+                axis=2,
+                weights=weight,
+                returned=True,
+            )
+        except ZeroDivisionError:
+            avg_vis = numpy.sum(weight * self.y_param.vis.data, axis=2)
+            sumwt = numpy.sum(weight, axis=2)
+        avg_vis[sumwt > 0.0] = avg_vis[sumwt > 0.0] / sumwt[sumwt > 0.0]
+        avg_vis[sumwt <= 0.0] = 0.0 + 0.0j
+        flags[flags <= 0.0] = 1.0
+        flags[flags > 0.0] = 0.0
 
         # Get the visibilities and weights for each antenna. Since the x
         # parameter required for the fitting has shape (ntimes, number of
         # antennas, 2), we need to find a way to translate baseline-based
         # to antenna-based visibilities. Is this a robust/correct way to
         # do it - to be investigated with ORC-1572 ticket.
+        sumwt = sumwt * (1.0 - flags)
         vis_per_antenna = []
         weights_per_antenna = []
         for i in range(len(self.ants)):
@@ -236,12 +251,19 @@ class SolveForOffsets:
             mask = (self.y_param.antenna1.data == i) ^ (
                 self.y_param.antenna2.data == i
             )
-            result = numpy.average(
-                avg_vis[:, mask, :],
-                axis=1,
-                weights=sumwt[:, mask, :],
-                returned=True,
-            )
+            try:
+                avg, weight = numpy.average(
+                    avg_vis[:, mask, :],
+                    axis=1,
+                    weights=sumwt[:, mask, :],
+                    returned=True,
+                )
+            except ZeroDivisionError:
+                avg, weight = numpy.sum(
+                    sumwt[:, mask, :] * avg_vis[:, mask, :], axis=1
+                ), numpy.sum(sumwt[:, mask, :], axis=1)
+            avg[weight > 0.0] = avg[weight > 0.0] / weight[weight > 0.0]
+            avg[weight <= 0.0] = 0.0 + 0.0j
 
             if len(corr_type) == 2:
                 # (XX,YY) or (RR, LL)
@@ -249,14 +271,10 @@ class SolveForOffsets:
                     [corr_type[0], corr_type[1]], dtype=object
                 )
                 vis_per_antenna.append(
-                    numpy.array(
-                        [result[0][:, 0], result[0][:, 1]], dtype=object
-                    )
+                    numpy.array([avg[:, 0], avg[:, 1]], dtype=object)
                 )
                 weights_per_antenna.append(
-                    numpy.array(
-                        [result[1][:, 0], result[1][:, 1]], dtype=object
-                    )
+                    numpy.array([weight[:, 0], weight[:, 1]], dtype=object)
                 )
             elif len(corr_type) == 4:
                 # (XX,XY,YX,YY) or (RR,RL,LR,LL)
@@ -264,14 +282,10 @@ class SolveForOffsets:
                     [corr_type[0], corr_type[3]], dtype=object
                 )
                 vis_per_antenna.append(
-                    numpy.array(
-                        [result[0][:, 0], result[0][:, 3]], dtype=object
-                    )
+                    numpy.array([avg[:, 0], avg[:, 1]], dtype=object)
                 )
                 weights_per_antenna.append(
-                    numpy.array(
-                        [result[1][:, 0], result[1][:, 3]], dtype=object
-                    )
+                    numpy.array([weight[:, 0], weight[:, 1]], dtype=object)
                 )
             else:
                 raise ValueError("Polarisation type not supported")
@@ -291,12 +305,13 @@ class SolveForOffsets:
                 # beam size for better pointing accuracy
                 fitted_beam = BeamPatternFit(
                     centre=(0.0, 0.0),
-                    width=self.expected_width[k][j],
+                    width=self.expected_width[k][j][-1],
                     height=1.0,
                 )
                 log.info(
                     "Fitting primary beam to visibilities of %s", antenna.name
                 )
+
                 fitted_beam.fit(
                     x=numpy.moveaxis(self.source_offset, 2, 0)[:, :, k],
                     y=numpy.abs(vis).astype(float)[k, :],
@@ -372,16 +387,18 @@ class SolveForOffsets:
 
     def fit_to_gains(self):
         """
-        Fit primary beams to the amplitude gains of each antenna
+        Fit the primary beams to the amplitude gains of each antenna
+        and returns the fitted parameters and their uncertainties.
 
-        :return: The fitted beam centre and uncertainty, fitted beamwidth and
-        uncertainty, fitted beam height and uncertainty for each polarisation
+        :return: The fitted beam centre and uncertainty, cross-elevation
+        offset and uncertainty, fitted beamwidth and uncertainty, fitted
+        beam height and uncertainty for each polarisation
         """
         # The shape of the gain is ntimes, baselines, 1 (averaged-frequency),
         # receptor1, receptor2
         log.info("\nFitting primary beams to gain amplitudes...")
         gain = numpy.abs(numpy.squeeze(self.y_param.gain.data))
-        gain_weight = numpy.abs(numpy.squeeze(self.y_param.weight.data))
+        gain_weight = numpy.squeeze(self.y_param.weight.data)
         receptor1 = self.y_param.receptor1.data
         receptor2 = self.y_param.receptor2.data
         corr = (receptor1[0] + receptor2[0], receptor1[1] + receptor2[1])
@@ -393,6 +410,7 @@ class SolveForOffsets:
                     width=self.expected_width[j][i],
                     height=1.0,
                 )
+
                 log.info(
                     "Fitting primary beam to gain amplitudes of %s",
                     antenna.name,
@@ -400,7 +418,7 @@ class SolveForOffsets:
                 fitted_beam.fit(
                     x=numpy.moveaxis(self.source_offset, 2, 0)[:, :, j],
                     y=gain[:, j, i, i],
-                    std_y=gain_weight[:, j, i, i],
+                    std_y=numpy.sqrt(1 / gain_weight[:, j, i, i]),
                     thresh_width=self.thresh_width,
                 )
 
