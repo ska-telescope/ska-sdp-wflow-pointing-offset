@@ -53,8 +53,8 @@ def read_visibilities(
         If no selection needed, use None
     :param end_freq: Ending frequency for selection in MHz.
         If no selection needed, use None
-    :return: List of Visibility, source_offsets in RA and DEC,
-        and list of katpoint Antennas.
+    :return: List of Visibility, source_offsets in azel, actual
+        elevation angles, and list of katpoint Antennas.
     """
     spw_table, pointing_table = _load_ms_tables(msname)
 
