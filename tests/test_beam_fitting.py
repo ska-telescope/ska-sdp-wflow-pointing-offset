@@ -65,12 +65,12 @@ def test_fit_to_visibilities(
         [
             [0.0, 0.0],
             [0.0, 0.0],
-            [0.0, 0.0],
+            [0.0, -7.105427e-15],
         ],
         rtol=1e-3,
     )
     numpy.testing.assert_allclose(
-        cross_el_offset_pol2, [0.0, 0.0, 0.0], rtol=1e-3
+        cross_el_offset_pol2, [0.0, 0.0, -5.811647e-15], rtol=1e-3
     )
 
 

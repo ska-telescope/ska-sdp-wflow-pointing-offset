@@ -1,5 +1,5 @@
 # pylint: disable=too-many-instance-attributes,abstract-method
-# pylint: disable=too-many-locals,too-many-arguments,too-many-statements
+# pylint: disable=too-many-locals,too-many-arguments
 """
 Fits primary beams modelled by a 2D Gaussian to the visibility
 or gain amplitudes and computes the elevation and cross-elevation
@@ -210,61 +210,32 @@ class SolveForOffsets:
         """
         Fit primary beams to the visibility amplitude of each antenna. The
         baseline-based visibilities are converted to antenna-based visibilities
-        before the fitting is performed.
+        before the fitting is performed. Since the x-parameter required for
+        the fitting has shape (ntimes, number of antennas, 2), we need to
+        find a way to translate baseline-based to antenna-based visibilities.
+        Is this a robust/correct way to do it - to be investigated with
+        ORC-1572 ticket.
 
         :return: The fitted beam centre and uncertainty, fitted beamwidth and
         uncertainty, fitted beam height and uncertainty for each polarisation
         """
-        corr_type = self.y_param.polarisation.data
-
-        # Average the parallel hand visibilities in frequency similar to
-        # that in ska-sdp-datamodels at https://gitlab.com/ska-telescope/sdp/
-        # ska-sdp-datamodels/-/blob/main/src/ska_sdp_datamodels/visibility/
-        # vis_io_ms.py#L391
-        weight = self.y_param.weight.data * (1.0 - self.y_param.flags.data)
-        flags = numpy.sum(self.y_param.flags.data, axis=2)
-        try:
-            avg_vis, sumwt = numpy.average(
-                self.y_param.vis.data,
-                axis=2,
-                weights=weight,
-                returned=True,
-            )
-        except ZeroDivisionError:
-            avg_vis = numpy.sum(weight * self.y_param.vis.data, axis=2)
-            sumwt = numpy.sum(weight, axis=2)
-        avg_vis[sumwt > 0.0] = avg_vis[sumwt > 0.0] / sumwt[sumwt > 0.0]
-        avg_vis[sumwt <= 0.0] = 0.0 + 0.0j
-        flags[flags <= 0.0] = 1.0
-        flags[flags > 0.0] = 0.0
-
-        # Get the visibilities and weights for each antenna. Since the x
-        # parameter required for the fitting has shape (ntimes, number of
-        # antennas, 2), we need to find a way to translate baseline-based
-        # to antenna-based visibilities. Is this a robust/correct way to
-        # do it - to be investigated with ORC-1572 ticket.
-        sumwt = sumwt * (1.0 - flags)
+        # Average the parallel hand visibilities in frequency but ignoring
+        # the use of the weights for now. The MS reader used in this
+        # pipeline reads the data in the "WEIGHT" column but the input MS
+        # may not have CORRECTED_COLUMN. Details in the CASA doc on
+        # https://casa.nrao.edu/casadocs/casa-6.1.0/global-task-list/task_plotms/about
+        # about the types of weights in the MS.
         vis_per_antenna = []
-        weights_per_antenna = []
+        corr_type = self.y_param.polarisation.data
+        avg_vis = numpy.sum(
+            self.y_param.flags.data * self.y_param.vis.data, axis=2
+        )
         for i in range(len(self.ants)):
             # Get the visibilities for each antenna per polarisation
             mask = (self.y_param.antenna1.data == i) ^ (
                 self.y_param.antenna2.data == i
             )
-            try:
-                avg, weight = numpy.average(
-                    avg_vis[:, mask, :],
-                    axis=1,
-                    weights=sumwt[:, mask, :],
-                    returned=True,
-                )
-            except ZeroDivisionError:
-                avg, weight = numpy.sum(
-                    sumwt[:, mask, :] * avg_vis[:, mask, :], axis=1
-                ), numpy.sum(sumwt[:, mask, :], axis=1)
-            avg[weight > 0.0] = avg[weight > 0.0] / weight[weight > 0.0]
-            avg[weight <= 0.0] = 0.0 + 0.0j
-
+            avg = numpy.mean(avg_vis[:, mask, :], axis=1)
             if len(corr_type) == 2:
                 # (XX,YY) or (RR, LL)
                 corr_type = numpy.array(
@@ -272,9 +243,6 @@ class SolveForOffsets:
                 )
                 vis_per_antenna.append(
                     numpy.array([avg[:, 0], avg[:, 1]], dtype=object)
-                )
-                weights_per_antenna.append(
-                    numpy.array([weight[:, 0], weight[:, 1]], dtype=object)
                 )
             elif len(corr_type) == 4:
                 # (XX,XY,YX,YY) or (RR,RL,LR,LL)
@@ -284,19 +252,11 @@ class SolveForOffsets:
                 vis_per_antenna.append(
                     numpy.array([avg[:, 0], avg[:, 1]], dtype=object)
                 )
-                weights_per_antenna.append(
-                    numpy.array([weight[:, 0], weight[:, 1]], dtype=object)
-                )
             else:
                 raise ValueError("Polarisation type not supported")
 
         vis_per_antenna = numpy.moveaxis(numpy.array(vis_per_antenna), 0, 1)
-        weights_per_antenna = numpy.moveaxis(
-            numpy.array(weights_per_antenna), 0, 1
-        )
-        for j, (vis, weight, corr) in enumerate(
-            zip(vis_per_antenna, weights_per_antenna, corr_type)
-        ):
+        for j, (vis, corr) in enumerate(zip(vis_per_antenna, corr_type)):
             log.info("\nFitting primary beams to %s", corr)
             for k, antenna in enumerate(self.ants):
                 # Convert power beamwidth (for single dish) to
@@ -309,14 +269,14 @@ class SolveForOffsets:
                     height=1.0,
                 )
                 log.info(
-                    "Fitting primary beam to visibilities of %s", antenna.name
+                    "Fitting primary beam to visibilities of %s",
+                    antenna.name,
                 )
-
                 fitted_beam.fit(
                     x=numpy.moveaxis(self.source_offset, 2, 0)[:, :, k],
                     y=numpy.abs(vis).astype(float)[k, :],
-                    std_y=numpy.sqrt(
-                        1 / numpy.abs(weight).astype(float)[k, :]
+                    std_y=numpy.ones(
+                        (numpy.abs(vis).astype(float)[k, :]).shape
                     ),
                     thresh_width=self.thresh_width,
                 )
@@ -329,15 +289,20 @@ class SolveForOffsets:
                         numpy.median(self.actual_pointing_el[:, k])
                     )
                     azel_offset = unumpy.uarray(
-                        wrap_angle(fitted_beam.centre),
-                        wrap_angle(numpy.abs(fitted_beam.std_centre)),
+                        wrap_angle(numpy.radians(fitted_beam.centre)),
+                        numpy.abs(
+                            wrap_angle(numpy.radians(fitted_beam.std_centre))
+                        ),
                     )
-                    cross_el_offset = azel_offset[0] * numpy.degrees(
-                        numpy.cos(elev)
+                    cross_el_offset = azel_offset[0] * numpy.cos(elev)
+                    fitted_width = wrap_angle(numpy.radians(fitted_beam.width))
+                    fitted_width_std = wrap_angle(
+                        numpy.radians(fitted_beam.std_width)
                     )
-                    fitted_width = wrap_angle(fitted_beam.width)
-                    fitted_width_std = wrap_angle(fitted_beam.std_width)
-                    fitted_height = fitted_beam.height, fitted_beam.std_height
+                    fitted_height = (
+                        fitted_beam.height,
+                        fitted_beam.std_height,
+                    )
                     if corr in ("XX", "RR"):
                         self.azel_offset_pol1[k] = unumpy.nominal_values(
                             azel_offset
@@ -430,14 +395,16 @@ class SolveForOffsets:
                         numpy.median(self.actual_pointing_el[:, i])
                     )
                     azel_offset = unumpy.uarray(
-                        wrap_angle(fitted_beam.centre),
-                        wrap_angle(fitted_beam.std_centre),
+                        wrap_angle(numpy.radians(fitted_beam.centre)),
+                        numpy.abs(
+                            wrap_angle(numpy.radians(fitted_beam.std_centre))
+                        ),
                     )
-                    cross_el_offset = azel_offset[0] * numpy.degrees(
-                        numpy.cos(elev)
+                    cross_el_offset = azel_offset[0] * numpy.cos(elev)
+                    fitted_width = wrap_angle(numpy.radians(fitted_beam.width))
+                    fitted_width_std = wrap_angle(
+                        numpy.radians(fitted_beam.std_width)
                     )
-                    fitted_width = wrap_angle(fitted_beam.width)
-                    fitted_width_std = wrap_angle(fitted_beam.std_width)
                     fitted_height = fitted_beam.height, fitted_beam.std_height
                     if corr in ("XX", "RR"):
                         self.azel_offset_pol1[i] = unumpy.nominal_values(
