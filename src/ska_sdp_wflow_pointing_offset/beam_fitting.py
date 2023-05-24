@@ -164,9 +164,7 @@ class SolveForOffsets:
         self.beamwidth_factor = beamwidth_factor
         self.ants = ants
         self.thresh_width = thresh_width
-        self.wavelength = numpy.degrees(
-            lightspeed / self.y_param.frequency.data
-        )
+        self.wavelength = lightspeed / self.y_param.frequency.data
         if not numpy.all(numpy.isfinite(self.wavelength)):
             raise ValueError(
                 "Wavelength cannot be infinite. Check frequency range!"
@@ -177,17 +175,11 @@ class SolveForOffsets:
         for antenna in self.ants:
             # Convert power beamwidth (for single dish) to gain/voltage
             # beamwidth (interferometer)
-            expected_width_h = (
-                numpy.sqrt(2)
-                * self.beamwidth_factor[0]
-                * self.wavelength
-                / antenna.diameter
+            expected_width_h = numpy.sqrt(2) * numpy.degrees(
+                self.beamwidth_factor[0] * self.wavelength / antenna.diameter
             )
-            expected_width_v = (
-                numpy.sqrt(2)
-                * self.beamwidth_factor[1]
-                * self.wavelength
-                / antenna.diameter
+            expected_width_v = numpy.sqrt(2) * numpy.degrees(
+                self.beamwidth_factor[1] * self.wavelength / antenna.diameter
             )
             self.expected_width.append([expected_width_h, expected_width_v])
 
@@ -360,8 +352,6 @@ class SolveForOffsets:
                     vis_per_antenna.append(
                         numpy.array([avg[:, 0], avg[:, 3]], dtype=object)
                     )
-                else:
-                    raise ValueError("Polarisation type not supported")
 
             vis_per_antenna = numpy.moveaxis(
                 numpy.array(vis_per_antenna), 0, 1
