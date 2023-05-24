@@ -8,7 +8,7 @@ Currently contains:
 import logging
 
 import numpy
-from scipy.interpolate import interp1d
+from scipy.interpolate import NearestNDInterpolator
 
 log = logging.getLogger("ska-sdp-pointing-offset")
 
@@ -78,20 +78,16 @@ def interp_timestamps(origin_data, origin_times, new_times):
     direction_az = origin_data[:, :, 0]
     direction_el = origin_data[:, :, 1]
     output = numpy.zeros((ntimes_new, origin_data.shape[1], 2))
+
+    times = numpy.array([origin_times, new_times]).T
     for i in range(origin_data.shape[1]):
         az_ant = direction_az[:, i]
         el_ant = direction_el[:, i]
 
-        spl_az = interp1d(
-            origin_times, az_ant, kind="nearest", fill_value="extrapolate"
-        )
-        new_az_ant = spl_az(new_times)
-        spl_el = interp1d(
-            origin_times, el_ant, kind="nearest", fill_value="extrapolate"
-        )
-        new_el_ant = spl_el(new_times)
+        interp_az = NearestNDInterpolator(x=times, y=az_ant)
+        interp_el = NearestNDInterpolator(x=times, y=el_ant)
 
-        output[:, i, 0] = new_az_ant
-        output[:, i, 1] = new_el_ant
+        output[:, i, 0] = interp_az.values
+        output[:, i, 1] = interp_el.values
 
     return output
