@@ -459,7 +459,7 @@ class SolveForOffsets:
         offset and uncertainty, fitted beamwidth and uncertainty, fitted
         beam height and uncertainty for each polarisation
         """
-        # The shape of the gain is ntimes, baselines, 1 (averaged-frequency),
+        # The shape of the gain is ntimes, antennas, 1 (averaged-frequency),
         # receptor1, receptor2
         log.info("\nFitting primary beams to gain amplitudes...")
         gain = numpy.abs(numpy.squeeze(self.y_param.gain.data))

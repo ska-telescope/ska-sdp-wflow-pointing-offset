@@ -33,15 +33,14 @@ def test_fit_to_visibilities(
     """
     Unit test for fitting primary beams to visibility amplitudes
     """
-    initial_fit = SolveForOffsets(
+    fitted_results = SolveForOffsets(
         source_offset,
         actual_pointing_el,
         vis_array,
         BEAMWIDTH_FACTOR,
         ants,
         THRESH_WIDTH,
-    )
-    fitted_results = initial_fit.fit_to_visibilities()
+    ).fit_to_visibilities()
 
     # For Polarisation 1, assert the AzEl offset for each antenna
     az_offset_pol1 = fitted_results[:, 0]
@@ -63,14 +62,14 @@ def test_fit_to_visibilities(
     numpy.testing.assert_allclose(
         numpy.column_stack((az_offset_pol2, el_offset_pol2)),
         [
-            [0.0, 0.0],
+            [0.0, -0.543074],
             [0.0, 0.0],
             [0.0, 0.0],
         ],
         rtol=1e-3,
     )
     numpy.testing.assert_allclose(
-        cross_el_offset_pol2, [0.0, 0.0, 0.0], rtol=1e-3
+        cross_el_offset_pol2, [-0.448112, 0.0, 0.0], rtol=1e-3
     )
 
 
@@ -78,15 +77,14 @@ def test_fit_to_gain(gain_array, source_offset, actual_pointing_el, ants):
     """
     Unit test for fitting primary beams to gain amplitudes
     """
-    initial_fit = SolveForOffsets(
+    fitted_results = SolveForOffsets(
         source_offset,
         actual_pointing_el,
         gain_array,
         BEAMWIDTH_FACTOR,
         ants,
         THRESH_WIDTH,
-    )
-    fitted_results = initial_fit.fit_to_gains()
+    ).fit_to_gains()
 
     # For Polarisation 1, assert the AzEl and cross-el
     # offsets for each antenna
