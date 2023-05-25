@@ -1,5 +1,5 @@
-# pylint: disable=too-many-return-statements, inconsistent-return-statements
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-many-return-statements,inconsistent-return-statements
+# pylint: disable=too-few-public-methods,too-many-lines
 """
 Common Variables and Mock Class Objects used for testing
 """
