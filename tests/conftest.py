@@ -31,9 +31,9 @@ from tests.utils import (
     POLARISATION_FRAME,
     SOURCE,
     STATION,
-    TIMESTAMPS,
     UVW,
     VIS,
+    VIS_TIMESTAMPS,
     VIS_WEIGHTS,
     XYZ,
 )
@@ -85,7 +85,7 @@ def vis_array_fixture(configuration):
         phasecentre=PHASECENTRE,
         configuration=configuration,
         uvw=UVW,
-        time=TIMESTAMPS,
+        time=VIS_TIMESTAMPS,
         vis=VIS,
         weight=VIS_WEIGHTS,
         integration_time=INTEGRATION_TIME,
@@ -102,7 +102,7 @@ def gain_array_fixture(configuration):
     """Antenna gains fixture"""
     return GainTable.constructor(
         gain=GAIN,
-        time=TIMESTAMPS,
+        time=VIS_TIMESTAMPS,
         interval=INTERVAL,
         weight=GAIN_WEIGHT,
         residual=GAIN_RESIDUAL,
