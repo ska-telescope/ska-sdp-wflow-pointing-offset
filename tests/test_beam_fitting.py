@@ -8,7 +8,7 @@ from ska_sdp_wflow_pointing_offset.beam_fitting import (
     _fwhm_to_sigma,
     _sigma_to_fwhm,
 )
-from tests.utils import BEAMWIDTH_FACTOR
+from tests.utils import BEAMWIDTH_FACTOR, THRESH_WIDTH
 
 
 def test_fwhm_to_sigma():
@@ -27,67 +27,89 @@ def test_sigma_to_fwhm():
     assert _sigma_to_fwhm(sigma) == 0.023548200450309493
 
 
-def test_fit_to_visibilities(vis_array, source_offset, ants):
+def test_fit_to_visibilities(
+    vis_array, source_offset, actual_pointing_el, ants
+):
     """
     Unit test for fitting primary beams to visibility amplitudes
     """
-    initial_fit = SolveForOffsets(
+    fitted_results = SolveForOffsets(
         source_offset,
+        actual_pointing_el,
         vis_array,
         BEAMWIDTH_FACTOR,
         ants,
-    )
-    fitted_results = initial_fit.fit_to_visibilities()
+        THRESH_WIDTH,
+    ).fit_to_visibilities()
 
     # For Polarisation 1, assert the AzEl offset for each antenna
     az_offset_pol1 = fitted_results[:, 0]
     el_offset_pol1 = fitted_results[:, 1]
+    cross_el_offset_pol1 = fitted_results[:, 4]
     numpy.testing.assert_allclose(
         numpy.column_stack((az_offset_pol1, el_offset_pol1)),
-        [[-1.715361, -0.380931], [-1.053834, 2.103075], [0.415649, -1.845783]],
+        [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
         rtol=1e-3,
+    )
+    numpy.testing.assert_allclose(
+        cross_el_offset_pol1, [0.0, 0.0, 0.0], rtol=1e-3
     )
 
     # For Polarisation 2, assert the AzEl offset for each antenna
     az_offset_pol2 = fitted_results[:, 11]
     el_offset_pol2 = fitted_results[:, 12]
+    cross_el_offset_pol2 = fitted_results[:, 16]
     numpy.testing.assert_allclose(
         numpy.column_stack((az_offset_pol2, el_offset_pol2)),
         [
-            [-0.380931, -1.745447],
-            [2.103075, -0.269111],
-            [-1.845783, 1.468595],
+            [0.0, -0.543074],
+            [0.0, 0.0],
+            [0.0, 0.0],
         ],
         rtol=1e-3,
     )
+    numpy.testing.assert_allclose(
+        cross_el_offset_pol2, [-0.448112, 0.0, 0.0], rtol=1e-3
+    )
 
 
-def test_fit_to_gain(gain_array, source_offset, ants):
+def test_fit_to_gain(gain_array, source_offset, actual_pointing_el, ants):
     """
     Unit test for fitting primary beams to gain amplitudes
     """
-    initial_fit = SolveForOffsets(
+    fitted_results = SolveForOffsets(
         source_offset,
+        actual_pointing_el,
         gain_array,
         BEAMWIDTH_FACTOR,
         ants,
-    )
-    fitted_results = initial_fit.fit_to_gains()
+        THRESH_WIDTH,
+    ).fit_to_gains()
 
-    # For Polarisation 1, assert the AzEl offset for each antenna
+    # For Polarisation 1, assert the AzEl and cross-el
+    # offsets for each antenna
     az_offset_pol1 = fitted_results[:, 0]
     el_offset_pol1 = fitted_results[:, 1]
+    cross_el_offset_pol1 = fitted_results[:, 4]
     numpy.testing.assert_allclose(
         numpy.column_stack((az_offset_pol1, el_offset_pol1)),
-        [[0.48757, -1.377305], [0.0, 0.0], [0.0, 0.0]],
+        [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
         rtol=1e-3,
     )
+    numpy.testing.assert_allclose(
+        cross_el_offset_pol1, [0.0, 0.0, 0.0], rtol=1e-3
+    )
 
-    # For Polarisation 2, assert the AzEl offset for each antenna
+    # For Polarisation 2, assert the AzEl and cross-el
+    # offsets for each antenna
     az_offset_pol2 = fitted_results[:, 11]
     el_offset_pol2 = fitted_results[:, 12]
+    cross_el_offset_pol2 = fitted_results[:, 16]
     numpy.testing.assert_allclose(
         numpy.column_stack((az_offset_pol2, el_offset_pol2)),
-        [[0.0, 0.0], [2.865761, 2.939088], [0.0, 0.0]],
+        [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
         rtol=1e-3,
+    )
+    numpy.testing.assert_allclose(
+        cross_el_offset_pol2, [0.0, 0.0, 0.0], rtol=1e-3
     )

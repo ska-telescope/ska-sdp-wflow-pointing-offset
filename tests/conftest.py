@@ -10,6 +10,7 @@ from ska_sdp_datamodels.visibility.vis_model import Visibility
 
 from ska_sdp_wflow_pointing_offset import construct_antennas
 from tests.utils import (
+    ACTUAL_POINTING_EL,
     BASELINES,
     CHANNEL_BANDWIDTH,
     DIAMETER,
@@ -30,9 +31,9 @@ from tests.utils import (
     POLARISATION_FRAME,
     SOURCE,
     STATION,
-    TIMESTAMPS,
     UVW,
     VIS,
+    VIS_TIMESTAMPS,
     VIS_WEIGHTS,
     XYZ,
 )
@@ -69,6 +70,12 @@ def source_offset_fixture():
     return numpy.dstack((DISH_COORD_AZ, DISH_COORD_EL))
 
 
+@pytest.fixture(name="actual_pointing_el")
+def actual_pointing_el_fixture():
+    """Actual pointing elevation"""
+    return ACTUAL_POINTING_EL
+
+
 @pytest.fixture(name="vis_array")
 def vis_array_fixture(configuration):
     """Visibility fixture"""
@@ -78,7 +85,7 @@ def vis_array_fixture(configuration):
         phasecentre=PHASECENTRE,
         configuration=configuration,
         uvw=UVW,
-        time=TIMESTAMPS,
+        time=VIS_TIMESTAMPS,
         vis=VIS,
         weight=VIS_WEIGHTS,
         integration_time=INTEGRATION_TIME,
@@ -95,7 +102,7 @@ def gain_array_fixture(configuration):
     """Antenna gains fixture"""
     return GainTable.constructor(
         gain=GAIN,
-        time=TIMESTAMPS,
+        time=VIS_TIMESTAMPS,
         interval=INTERVAL,
         weight=GAIN_WEIGHT,
         residual=GAIN_RESIDUAL,

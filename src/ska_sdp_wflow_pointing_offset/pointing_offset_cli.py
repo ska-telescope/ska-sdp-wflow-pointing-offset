@@ -7,6 +7,7 @@ Usage:
                           [--rfi_file=FILE] [--results_dir=None]
                           [--start_freq=None] [--end_freq=None]
                           [(--bw_factor <bw_factor>) [<bw_factor>...]]
+                          [--thresh_width=<float>]
 
 Commands:
   compute   Runs all required routines for computing the
@@ -16,16 +17,18 @@ Options:
   -h --help            show this help message and exit
   -q --quiet           report only file names
 
-  --ms=FILE            Measurement set file
+  --ms=FILE             Measurement set file
   --fit_to_vis          Fit primary beam to visibilities instead of antenna
-                       gains (Optional) [default:False]
-  --apply_mask         Apply Mask (Optional) [default:False]
-  --rfi_file=FILE      RFI file (Optional)
-  --save_offset        Save the Offset Results (Optional) [default:False]
-  --results_dir=None   Directory where the results need to be saved (Optional)
-  --start_freq=None    Start Frequency in MHz (Optional)
-  --end_freq=None      End Frequency in MHz (Optional)
-  --bw_factor          Beamwidth factor [default:0.976, 1.098]
+                        gains (Optional) [default:False]
+  --apply_mask          Apply mask (Optional) [default:False]
+  --rfi_file=FILE       RFI file (Optional)
+  --save_offset         Save the offset results (Optional) [default:False]
+  --results_dir=None    Directory where the results need to be saved (Optional)
+  --start_freq=None     Start frequency in MHz (Optional)
+  --end_freq=None       End frequency in MHz (Optional)
+  --bw_factor           Beamwidth factor [default:0.976, 1.098]
+  --thresh_width=<float>  The maximum ratio of the fitted to expected beamwidth
+                          [default:1.5]
 
 """
 import datetime
@@ -95,8 +98,17 @@ def compute_offset(args):
     else:
         # We would use the values for the MeerKAT as known in April 2023.
         beamwidth_factor = [0.976, 1.098]
+
+    if args["--thresh_width"]:
+        thresh_width = float(args["--thresh_width"])
+    else:
+        thresh_width = 1.5
+
     log.info(
         "Beamwidth factor: %f %f", beamwidth_factor[0], beamwidth_factor[1]
+    )
+    log.info(
+        "Maximum fitted beamwidth to expected beamwidth: %f", thresh_width
     )
 
     # Get visibilities and optionally apply RFI mask and/or select
@@ -105,7 +117,7 @@ def compute_offset(args):
         if not args["--rfi_file"]:
             raise ValueError("RFI File is required!!")
 
-    vis, source_offset, ants = read_visibilities(
+    vis, source_offset, actual_pointing_el, ants = read_visibilities(
         args["--ms"],
         args["--apply_mask"],
         args["--rfi_file"],
@@ -130,7 +142,12 @@ def compute_offset(args):
 
     # Solve for the pointing offsets
     init_results = SolveForOffsets(
-        source_offset, y_param, beamwidth_factor, ants
+        source_offset,
+        actual_pointing_el,
+        y_param,
+        beamwidth_factor,
+        ants,
+        thresh_width,
     )
     if args["--fit_to_vis"]:
         fitted_results = init_results.fit_to_visibilities()

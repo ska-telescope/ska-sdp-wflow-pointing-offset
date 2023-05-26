@@ -1,4 +1,3 @@
-# pylint:disable=too-many-function-args
 """
 Unit tests for frequency selection functions
 """
@@ -11,7 +10,12 @@ from ska_sdp_wflow_pointing_offset.array_data_func import (
     interp_timestamps,
     select_channels,
 )
-from tests.utils import DISH_COORD_AZ, DISH_COORD_EL, TIMESTAMPS
+from tests.utils import (
+    DISH_COORD_AZ,
+    DISH_COORD_EL,
+    POINTING_TIMESTAMPS,
+    VIS_TIMESTAMPS,
+)
 
 NCHAN = 5
 FREQS = numpy.linspace(1.0e8, 3.0e8, NCHAN)
@@ -61,21 +65,10 @@ def test_interp_timestamps():
     """
     Unit test for interp_timestamps
     """
-    dish_coord = numpy.dstack([DISH_COORD_AZ, DISH_COORD_EL])
-    offset = dish_coord.reshape(5, 3, 2)
+    offset = numpy.dstack([DISH_COORD_AZ, DISH_COORD_EL])
+    out = interp_timestamps(offset, POINTING_TIMESTAMPS, VIS_TIMESTAMPS)
+    assert out.shape == (5, 3, 2)
 
-    # If the interpolated ntimes is larger than original
-    long_timestamps = numpy.linspace(TIMESTAMPS[0], TIMESTAMPS[-1], 10)
-    out = interp_timestamps(offset, TIMESTAMPS, long_timestamps)
-
-    assert out.shape == (10, 3, 2)
     # The start and end should be the same
     numpy.testing.assert_array_almost_equal(out[0], offset[0])
     numpy.testing.assert_array_almost_equal(out[-1], offset[-1])
-
-    # If the interpolated ntimes is less than original
-    short_timestamps = numpy.linspace(TIMESTAMPS[1], TIMESTAMPS[-2], 4)
-    out = interp_timestamps(offset, TIMESTAMPS, short_timestamps)
-    assert out.shape == (4, 3, 2)
-    numpy.testing.assert_array_almost_equal(out[0], offset[1])
-    numpy.testing.assert_array_almost_equal(out[-1], offset[-2])

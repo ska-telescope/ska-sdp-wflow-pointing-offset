@@ -53,13 +53,14 @@ def read_visibilities(
         If no selection needed, use None
     :param end_freq: Ending frequency for selection in MHz.
         If no selection needed, use None
-    :return: List of Visibility, source_offsets in RA and DEC,
-        and list of katpoint Antennas.
+    :return: List of Visibility, source_offsets in azel, actual
+        elevation angles, and list of katpoint Antennas.
     """
     spw_table, pointing_table = _load_ms_tables(msname)
 
     # Get the frequencies and source offsets
     source_offset = pointing_table.getcol("SOURCE_OFFSET")
+    actual_pointing = pointing_table.getcol("DIRECTION")
     offset_timestamps = pointing_table.getcol("TIME")
     freqs = numpy.squeeze(spw_table.getcol("CHAN_FREQ")) / 1.0e6  # Hz -> MHz
     channels = numpy.arange(len(freqs))
@@ -77,12 +78,8 @@ def read_visibilities(
         start_chan = channels[0]
         end_chan = channels[-1]
     else:
-        if apply_mask:
-            start_chan = channels[0]
-            end_chan = channels[-1]
-        else:
-            start_chan = None
-            end_chan = None
+        start_chan = channels[0]
+        end_chan = channels[-1]
 
     log.info("Selected channel numbers are %s to %s", start_chan, end_chan)
     vis_list = create_visibility_from_ms(
@@ -124,10 +121,18 @@ def read_visibilities(
             meta=vis.meta,
         )
 
-    # Align timestamps for the source_offset
+    # Align source_offset and visibility timestamps
     source_offset = interp_timestamps(
         source_offset, offset_timestamps, vis.time.data
     )
+
+    # Get the interpolated elevation positions to be used
+    # for calculating the cross-elevation offset. The data
+    # has shape (ntimes, nants, azel)
+    actual_pointing = interp_timestamps(
+        actual_pointing, offset_timestamps, vis.time.data
+    )
+    actual_pointing_el = actual_pointing[:, :, 1]
 
     # Build katpoint Antenna from antenna configuration
     antenna_positions = vis.configuration.data_vars["xyz"].data
@@ -139,4 +144,4 @@ def read_visibilities(
         station=antenna_names,
     )
 
-    return vis, source_offset, ants
+    return vis, source_offset, actual_pointing_el, ants

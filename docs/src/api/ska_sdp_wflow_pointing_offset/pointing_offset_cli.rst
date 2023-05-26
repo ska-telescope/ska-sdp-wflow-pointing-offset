@@ -1,8 +1,8 @@
 ska\_sdp\_wflow\_pointing\_offset.pointing\_offset\_cli module
 ===============================================================
 
-The command line interface to the pipeline for estimating the azimuth and elevation offsets from a
-measurement set.
+The command line interface to the pipeline for estimating the elevation and cross-elevation offsets
+from a measurement set.
 
 Usage
 -----
@@ -19,6 +19,7 @@ Usage
                           [--rfi_file=FILE] [--results_dir=None]
                           [--start_freq=None] [--end_freq=None]
                           [(--bw_factor <bw_factor>) [<bw_factor>...]]
+                          [--thresh_width=<float>]
 
     Commands:
         compute   Runs all required routines for computing the
@@ -38,6 +39,8 @@ Usage
         --start_freq=None    Start Frequency in MHz (Optional)
         --end_freq=None      End Frequency in MHz (Optional)
         --bw_factor          Beamwidth factor [default:0.976, 1.098]
+        --thresh_width=<float> The maximum ratio of the fitted to expected beamwidth
+                               [default:1.5]
 
 
 Commands \& Options
@@ -70,5 +73,7 @@ List of commands for accessing the functionalities of the pipeline.
      - End frequency in MHz to use
    * - **bw_factor**
      - Beamwidth factors for the horizontal and vertical polarisations
+   * - **thresh_width**
+     - The maximum ratio of the fitted to expected beamwidth
 
 

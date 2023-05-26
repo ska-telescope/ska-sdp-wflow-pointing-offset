@@ -166,7 +166,7 @@ def compute_gains(vis):
         niter=200,
         tol=1e-06,
         crosspol=False,
-        normalise_gains=True,
+        normalise_gains="median",
         jones_type="G",
         timeslice="auto",
     )

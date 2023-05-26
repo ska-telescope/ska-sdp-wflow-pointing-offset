@@ -29,7 +29,7 @@ def test_read_visibilities(mock_tables, mock_ms, vis_array):
         MockPointingTable(),
     )
     mock_ms.return_value = [vis_array]
-    vis, source_offset, ants = read_visibilities("fake_ms")
+    vis, source_offset, actual_pointing_el, ants = read_visibilities("fake_ms")
 
     # Specific attributes
     assert vis.vis.data.shape == (5, 6, 5, 2)
@@ -37,6 +37,7 @@ def test_read_visibilities(mock_tables, mock_ms, vis_array):
     assert (vis.frequency.data == FREQS).all()
     assert (vis.polarisation.data == CORR_TYPE).all()
     assert source_offset.shape == (5, 3, 2)
+    assert actual_pointing_el.shape == (5, 3)
     assert numpy.array(ants).shape == (3,)
     assert ants[0].name == "SKA001"
     assert ants[0].diameter == 25.0

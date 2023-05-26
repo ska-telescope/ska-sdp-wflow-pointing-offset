@@ -8,7 +8,7 @@ Currently contains:
 import logging
 
 import numpy
-from scipy.interpolate import InterpolatedUnivariateSpline
+from scipy.interpolate import NearestNDInterpolator
 
 log = logging.getLogger("ska-sdp-pointing-offset")
 
@@ -59,7 +59,7 @@ def interp_timestamps(origin_data, origin_times, new_times):
     :param origin_data: Offset array in [ntimes_origin, nants, 2]
     :param origin_times: Original times information [ntimes_origin]
     :param new_times: New times information [ntimes_new]
-                      From Visibility or gains
+                      From Visibility
     :return: Offset array in [ntimes_new, nants, 2]
     """
 
@@ -71,19 +71,23 @@ def interp_timestamps(origin_data, origin_times, new_times):
 
     ntimes_new = new_times.shape[0]
 
+    sort_index = numpy.argsort(origin_times)
+    origin_times = origin_times[sort_index]
+    origin_data = origin_data[sort_index]
+
     direction_az = origin_data[:, :, 0]
     direction_el = origin_data[:, :, 1]
     output = numpy.zeros((ntimes_new, origin_data.shape[1], 2))
+
+    times = numpy.array([origin_times, new_times]).T
     for i in range(origin_data.shape[1]):
         az_ant = direction_az[:, i]
         el_ant = direction_el[:, i]
 
-        spl_az = InterpolatedUnivariateSpline(origin_times, az_ant)
-        new_az_ant = spl_az(new_times)
-        spl_el = InterpolatedUnivariateSpline(origin_times, el_ant)
-        new_el_ant = spl_el(new_times)
+        interp_az = NearestNDInterpolator(x=times, y=az_ant)
+        interp_el = NearestNDInterpolator(x=times, y=el_ant)
 
-        output[:, i, 0] = new_az_ant
-        output[:, i, 1] = new_el_ant
+        output[:, i, 0] = interp_az.values
+        output[:, i, 1] = interp_el.values
 
     return output
