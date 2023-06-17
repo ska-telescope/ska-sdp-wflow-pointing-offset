@@ -20,5 +20,4 @@ RUN pip install --no-cache-dir --no-compile -r requirements.txt *.whl
 
 WORKDIR /app
 
-ENV PYTHONPATH=$PYTHONPATH:/app/src
-#ENTRYPOINT ["ska-sdp-wflow-pointing-offset"]
+ENTRYPOINT ["pointing-offset"]
