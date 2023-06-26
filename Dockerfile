@@ -5,7 +5,8 @@ ENV POETRY_HOME=/opt/poetry
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
-RUN curl -sSL https://install.python-poetry.org | python -
+RUN curl --retry 5 -sSL https://install.python-poetry.org -o ${POETRY_HOME}/install-poetry.py
+RUN python3 ${POETRY_HOME}/install-poetry.py
 
 COPY . ./
 RUN ${POETRY_HOME}/bin/poetry export --without-hashes --extras python-casacore -o requirements.txt
