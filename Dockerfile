@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf 
 RUN curl -sSL https://install.python-poetry.org | python -
 
 COPY . ./
-RUN ${POETRY_HOME}/bin/poetry export --without-hashes -o requirements.txt
+RUN ${POETRY_HOME}/bin/poetry export --without-hashes --extras python-casacore -o requirements.txt
 RUN ${POETRY_HOME}/bin/poetry build
 
 FROM python:3.10-slim

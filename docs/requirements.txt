@@ -1,7 +1,7 @@
 #sphinx related packages
 docutils
-sphinx
+sphinx>=6
+sphinx-rtd-theme>=1.2.0
 sphinx-autodoc-typehints
 sphinx-automodapi
-sphinx-rtd-theme
 typing_extensions
