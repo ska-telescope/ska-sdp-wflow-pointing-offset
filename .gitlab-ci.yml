@@ -21,6 +21,7 @@ include:
   # Include documentation
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/docs.gitlab-ci.yml'
+  # Run the release
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/release.gitlab-ci.yml'
   # Run finalizer, inc. ci-metrics

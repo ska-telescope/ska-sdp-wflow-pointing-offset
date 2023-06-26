@@ -1,8 +1,7 @@
 Docker image
 ============
 
-A Docker image is also available, which contains the full
-contents of the repository, and it has all the requirements installed.
+A Docker image is also available and it has all the requirements installed.
 
 It is available from the
 `Central Artifact Repository <https://artefact.skao.int/#browse/browse:docker-all>`_::
@@ -12,7 +11,7 @@ It is available from the
 Please refer to the repository for the latest version, currently it is at 0.0.0.
 
 The image is based on `python:3.10-slim` and its entrypoint is ["pointing-offset"].
-Running the Docker image will start a python:3.10 shell.
+Running the Docker image will be just like running a command line application.
 
 In order to run the pipeline using the compute option, execute the following::
 
