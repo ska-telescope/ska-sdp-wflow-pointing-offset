@@ -10,9 +10,9 @@ It is available from the
     artefact.skao.int/ska-sdp-wflow-pointing-offset
 
 Please refer to the repository for the latest version, and other available versions.
-The first version we published is 0.1.0.
+The first version we published is 0.0.0.
 
-The image is based on `python:3.10-slim` and its entrypoint has not been updated.
+The image is based on `python:3.10-slim` and its entrypoint is ["pointing-offset"].
 Running the Docker image will start a python:3.10 shell.
 
 In order to run the pipeline using the compute option, execute the following::
