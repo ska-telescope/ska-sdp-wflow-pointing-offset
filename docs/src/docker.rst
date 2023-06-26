@@ -9,14 +9,14 @@ It is available from the
 
     artefact.skao.int/ska-sdp-wflow-pointing-offset
 
-Please refer to the repository for the latest version, and other available versions.
-The first version we published is 0.0.0.
+Please refer to the repository for the latest version, currently it is at 0.0.0.
 
 The image is based on `python:3.10-slim` and its entrypoint is ["pointing-offset"].
 Running the Docker image will start a python:3.10 shell.
 
 In order to run the pipeline using the compute option, execute the following::
 
-    docker run -it artefact.skao.int/ska-sdp-wflow-pointing-offset:0.1.0 compute --ms=test.ms
+    docker run -it -v ${PWD}:/data artefact.skao.int/ska-sdp-wflow-pointing-offset:0.0.0 compute --ms=/data/test.ms
 
-The other command line arguments follows as the example above. Make sure you use the correct tag.
+Make sure you run this from the directory where the Measurement Set is (test.ms in this case).
+The other command line arguments follows as the example above.
