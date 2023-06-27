@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ska-sdp-wflow-pointing-offset"
-version = "0.0.0"
+version = "0.1.0"
 description = "SKA SDP Pointing Offset Calibration Pipeline"
 authors = ["SKA SDP Developers"]
 license = "BSD-3 Clause"

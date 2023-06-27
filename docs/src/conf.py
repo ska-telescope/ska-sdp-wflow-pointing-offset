@@ -11,7 +11,7 @@ import sys
 project = "SDP Pointing Offset Calibration Pipeline"
 copyright = "2023, SKA Organisation"
 author = "See CONTRIBUTORS"
-release = "0.0.0"
+release = "0.1.0"
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
