@@ -42,7 +42,7 @@ the code does not pass all of them.
 
 When you are ready to make a new release (maintainers only):
 
-  - Check out the master branch
+  - Check out the main branch
   - Update the version number in `.release` with
     - `make bump-patch-release`,
     - `make bump-minor-release`, or
