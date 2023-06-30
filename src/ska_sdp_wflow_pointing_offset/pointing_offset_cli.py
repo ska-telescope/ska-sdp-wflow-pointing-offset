@@ -46,7 +46,7 @@ from ska_sdp_wflow_pointing_offset.beam_fitting import SolveForOffsets
 from ska_sdp_wflow_pointing_offset.export_data import (
     export_pointing_offset_data,
 )
-from ska_sdp_wflow_pointing_offset.read_data import read_visibilities
+from ska_sdp_wflow_pointing_offset.read_data import read_visibilities,read_batch_visibilities
 from ska_sdp_wflow_pointing_offset.utils import compute_gains, gt_single_plot
 
 log = logging.getLogger("ska-sdp-pointing-offset")
@@ -64,7 +64,7 @@ def main():
     args = docopt(__doc__)
 
     if args[COMMAND] == "compute":
-        if args["--ms"]:
+        if args["--ms"] or args["--msdir"]:
             compute_offset(args)
         else:
             raise ValueError("Measurement set is required!!")

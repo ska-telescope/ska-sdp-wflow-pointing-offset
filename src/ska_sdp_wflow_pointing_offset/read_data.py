@@ -3,12 +3,13 @@
 Functions for reading data from Measurement Set
 and constructing antenna information.
 """
-
+import glob
 import logging
 
 import numpy
 from ska_sdp_datamodels.visibility import create_visibility_from_ms
 from ska_sdp_datamodels.visibility.vis_model import Visibility
+from ska_sdp_func_python.visibility import concatenate_visibility
 
 from ska_sdp_wflow_pointing_offset.array_data_func import (
     apply_rfi_mask,
@@ -164,13 +165,25 @@ def read_batch_visibilities(
     :return: List of Visibility, source_offsets in azel, actual
         elevation angles, and list of katpoint Antennas.
     """    
-    vis = []
-    for msname in msdir:
-        _vis, _source_offset, _actual_pointing_el, _ants = read_batch_visibilities(
+    vis_list = []
+    source_offset_list = []
+    actual_pointing_el_list = []
+    for msname in glob.glob(msdir):
+        _vis, _source_offset, _actual_pointing_el, _ants = read_visibilities(
             msname,
             apply_mask,
             rfi_filename,
             start_freq,
             end_freq,
         )
-        vis =     
+        vis_list.append(_vis)
+        source_offset_list.append(_source_offset)
+        actual_pointing_el_list.append(_actual_pointing_el)
+
+    
+    combine_vis = concatenate_visibility(vis_list,dim="time")
+    combine_source_offset = numpy.concatenate(source_offset_list,axis=0)
+    combine_actual_pointing_el = numpy.concatenate(actual_pointing_el_list,axis=0)
+
+    return combine_vis, combine_source_offset, combine_actual_pointing_el, _ants
+    
