@@ -145,3 +145,32 @@ def read_visibilities(
     )
 
     return vis, source_offset, actual_pointing_el, ants
+
+
+def read_batch_visibilities(
+    msdir, apply_mask=False, rfi_filename=None, start_freq=None, end_freq=None
+):
+    """
+    Extracts parameters from multiple measurement sets required for computing the pointing offsets.
+
+    :param msdir: Name of Directory including 
+        Measurement set file.
+    :param apply_mask: Apply RFI mask?
+    :param rfi_filename: Name of RFI mask file
+    :param start_freq: Starting frequency for selection in MHz.
+        If no selection needed, use None
+    :param end_freq: Ending frequency for selection in MHz.
+        If no selection needed, use None
+    :return: List of Visibility, source_offsets in azel, actual
+        elevation angles, and list of katpoint Antennas.
+    """    
+    vis = []
+    for msname in msdir:
+        _vis, _source_offset, _actual_pointing_el, _ants = read_batch_visibilities(
+            msname,
+            apply_mask,
+            rfi_filename,
+            start_freq,
+            end_freq,
+        )
+        vis =     

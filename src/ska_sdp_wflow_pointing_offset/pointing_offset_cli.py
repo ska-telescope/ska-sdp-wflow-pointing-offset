@@ -3,8 +3,9 @@
 
 Usage:
   pointing-offset COMMAND [--ms=FILE] [--save_offset]
+                          [--msdir=DIR]
                           [--apply_mask] [--fit_to_vis]
-                          [--rfi_file=FILE] [--results_dir=None]
+                          [--rfi_file=FILE] [--results_dir=None]                          
                           [--start_freq=None] [--end_freq=None]
                           [(--bw_factor <bw_factor>) [<bw_factor>...]]
                           [--thresh_width=<float>]
@@ -18,6 +19,7 @@ Options:
   -q --quiet           report only file names
 
   --ms=FILE             Measurement set file
+  --msdir=DIR           Directory including Measurement set files
   --fit_to_vis          Fit primary beam to visibilities instead of antenna
                         gains (Optional) [default:False]
   --apply_mask          Apply mask (Optional) [default:False]
@@ -117,13 +119,23 @@ def compute_offset(args):
         if not args["--rfi_file"]:
             raise ValueError("RFI File is required!!")
 
-    vis, source_offset, actual_pointing_el, ants = read_visibilities(
-        args["--ms"],
-        args["--apply_mask"],
-        args["--rfi_file"],
-        args["--start_freq"],
-        args["--end_freq"],
-    )
+    if args["--ms"]:
+        vis, source_offset, actual_pointing_el, ants = read_visibilities(
+            args["--ms"],
+            args["--apply_mask"],
+            args["--rfi_file"],
+            args["--start_freq"],
+            args["--end_freq"],
+        )
+    elif args["--msdir"]:
+        vis, source_offset, actual_pointing_el, ants = read_batch_visibilities(
+            args["--msdir"],
+            args["--apply_mask"],
+            args["--rfi_file"],
+            args["--start_freq"],
+            args["--end_freq"],
+        )
+        
 
     if args["--fit_to_vis"]:
         y_param = vis
