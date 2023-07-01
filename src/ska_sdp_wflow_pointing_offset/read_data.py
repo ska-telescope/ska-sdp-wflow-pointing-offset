@@ -168,7 +168,7 @@ def read_batch_visibilities(
     vis_list = []
     source_offset_list = []
     actual_pointing_el_list = []
-    for msname in glob.glob(msdir):
+    for msname in sorted(glob.glob(msdir)):
         _vis, _source_offset, _actual_pointing_el, _ants = read_visibilities(
             msname,
             apply_mask,
@@ -179,7 +179,6 @@ def read_batch_visibilities(
         vis_list.append(_vis)
         source_offset_list.append(_source_offset)
         actual_pointing_el_list.append(_actual_pointing_el)
-
     
     combine_vis = concatenate_visibility(vis_list,dim="time")
     combine_source_offset = numpy.concatenate(source_offset_list,axis=0)
