@@ -5,7 +5,7 @@ Usage:
   pointing-offset COMMAND [--ms=FILE] [--save_offset]
                           [--msdir=DIR]
                           [--apply_mask] [--fit_to_vis]
-                          [--rfi_file=FILE] [--results_dir=None]                          
+                          [--rfi_file=FILE] [--results_dir=None]
                           [--start_freq=None] [--end_freq=None]
                           [(--bw_factor <bw_factor>) [<bw_factor>...]]
                           [--thresh_width=<float>]
@@ -50,7 +50,7 @@ from ska_sdp_wflow_pointing_offset.read_data import (
     read_batch_visibilities,
     read_visibilities,
 )
-from ska_sdp_wflow_pointing_offset.utils import compute_gains, gt_single_plot
+from ska_sdp_wflow_pointing_offset.utils import compute_gains
 
 log = logging.getLogger("ska-sdp-pointing-offset")
 log.setLevel(logging.INFO)

@@ -152,7 +152,8 @@ def read_batch_visibilities(
     msdir, apply_mask=False, rfi_filename=None, start_freq=None, end_freq=None
 ):
     """
-    Extracts parameters from multiple measurement sets required for computing the pointing offsets.
+    Extracts parameters from multiple measurement sets required for
+        computing the pointing offsets.
 
     :param msdir: Name of Directory including
         Measurement set file.
@@ -168,7 +169,8 @@ def read_batch_visibilities(
     vis_list = []
     source_offset_list = []
     actual_pointing_el_list = []
-    for msname in sorted(glob.glob(msdir)):
+    msdir = glob.glob(msdir)
+    for msname in sorted(msdir):
         _vis, _source_offset, _actual_pointing_el, _ants = read_visibilities(
             msname,
             apply_mask,
