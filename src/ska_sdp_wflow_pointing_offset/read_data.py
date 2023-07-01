@@ -154,7 +154,7 @@ def read_batch_visibilities(
     """
     Extracts parameters from multiple measurement sets required for computing the pointing offsets.
 
-    :param msdir: Name of Directory including 
+    :param msdir: Name of Directory including
         Measurement set file.
     :param apply_mask: Apply RFI mask?
     :param rfi_filename: Name of RFI mask file
@@ -164,7 +164,7 @@ def read_batch_visibilities(
         If no selection needed, use None
     :return: List of Visibility, source_offsets in azel, actual
         elevation angles, and list of katpoint Antennas.
-    """    
+    """
     vis_list = []
     source_offset_list = []
     actual_pointing_el_list = []
@@ -179,10 +179,16 @@ def read_batch_visibilities(
         vis_list.append(_vis)
         source_offset_list.append(_source_offset)
         actual_pointing_el_list.append(_actual_pointing_el)
-    
-    combine_vis = concatenate_visibility(vis_list,dim="time")
-    combine_source_offset = numpy.concatenate(source_offset_list,axis=0)
-    combine_actual_pointing_el = numpy.concatenate(actual_pointing_el_list,axis=0)
 
-    return combine_vis, combine_source_offset, combine_actual_pointing_el, _ants
-    
+    combine_vis = concatenate_visibility(vis_list, dim="time")
+    combine_source_offset = numpy.concatenate(source_offset_list, axis=0)
+    combine_actual_pointing_el = numpy.concatenate(
+        actual_pointing_el_list, axis=0
+    )
+
+    return (
+        combine_vis,
+        combine_source_offset,
+        combine_actual_pointing_el,
+        _ants,
+    )

@@ -46,7 +46,10 @@ from ska_sdp_wflow_pointing_offset.beam_fitting import SolveForOffsets
 from ska_sdp_wflow_pointing_offset.export_data import (
     export_pointing_offset_data,
 )
-from ska_sdp_wflow_pointing_offset.read_data import read_visibilities,read_batch_visibilities
+from ska_sdp_wflow_pointing_offset.read_data import (
+    read_batch_visibilities,
+    read_visibilities,
+)
 from ska_sdp_wflow_pointing_offset.utils import compute_gains, gt_single_plot
 
 log = logging.getLogger("ska-sdp-pointing-offset")
@@ -135,7 +138,6 @@ def compute_offset(args):
             args["--start_freq"],
             args["--end_freq"],
         )
-        
 
     if args["--fit_to_vis"]:
         y_param = vis
@@ -203,7 +205,7 @@ def compute_offset(args):
         else:
             log.info(
                 "There are too many antennas. "
-                "Please set --save_offsets as True "
+                "pwdPlease set --save_offsets as True "
                 "to save the offsets to a file. "
             )
 
