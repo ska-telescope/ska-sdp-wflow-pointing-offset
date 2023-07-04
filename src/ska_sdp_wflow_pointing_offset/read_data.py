@@ -40,7 +40,7 @@ def _load_ms_tables(msname):
     return spw_table, pointing_table
 
 
-def read_visibilities(
+def _read_visibilities(
     msname, apply_mask=False, rfi_filename=None, start_freq=None, end_freq=None
 ):
     """
@@ -171,7 +171,7 @@ def read_batch_visibilities(
     actual_pointing_el_list = []
     msdir = glob.glob(msdir)
     for msname in sorted(msdir):
-        _vis, _source_offset, _actual_pointing_el, _ants = read_visibilities(
+        _vis, _source_offset, _actual_pointing_el, _ants = _read_visibilities(
             msname,
             apply_mask,
             rfi_filename,

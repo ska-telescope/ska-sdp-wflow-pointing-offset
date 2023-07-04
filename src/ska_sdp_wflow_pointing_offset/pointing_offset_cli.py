@@ -2,7 +2,7 @@
 """Program with many options using docopt for computing pointing offsets.
 
 Usage:
-  pointing-offset COMMAND [--ms=FILE] [--save_offset]
+  pointing-offset COMMAND [--save_offset]
                           [--msdir=DIR]
                           [--apply_mask] [--fit_to_vis]
                           [--rfi_file=FILE] [--results_dir=None]
@@ -18,7 +18,6 @@ Options:
   -h --help            show this help message and exit
   -q --quiet           report only file names
 
-  --ms=FILE             Measurement set file
   --msdir=DIR           Directory including Measurement set files
   --fit_to_vis          Fit primary beam to visibilities instead of antenna
                         gains (Optional) [default:False]
@@ -46,10 +45,7 @@ from ska_sdp_wflow_pointing_offset.beam_fitting import SolveForOffsets
 from ska_sdp_wflow_pointing_offset.export_data import (
     export_pointing_offset_data,
 )
-from ska_sdp_wflow_pointing_offset.read_data import (
-    read_batch_visibilities,
-    read_visibilities,
-)
+from ska_sdp_wflow_pointing_offset.read_data import read_batch_visibilities
 from ska_sdp_wflow_pointing_offset.utils import compute_gains
 
 log = logging.getLogger("ska-sdp-pointing-offset")
@@ -67,7 +63,7 @@ def main():
     args = docopt(__doc__)
 
     if args[COMMAND] == "compute":
-        if args["--ms"] or args["--msdir"]:
+        if args["--msdir"]:
             compute_offset(args)
         else:
             raise ValueError("Measurement set is required!!")
@@ -122,15 +118,7 @@ def compute_offset(args):
         if not args["--rfi_file"]:
             raise ValueError("RFI File is required!!")
 
-    if args["--ms"]:
-        vis, source_offset, actual_pointing_el, ants = read_visibilities(
-            args["--ms"],
-            args["--apply_mask"],
-            args["--rfi_file"],
-            args["--start_freq"],
-            args["--end_freq"],
-        )
-    elif args["--msdir"]:
+    if args["--msdir"]:
         vis, source_offset, actual_pointing_el, ants = read_batch_visibilities(
             args["--msdir"],
             args["--apply_mask"],
@@ -205,7 +193,7 @@ def compute_offset(args):
         else:
             log.info(
                 "There are too many antennas. "
-                "pwdPlease set --save_offsets as True "
+                "Please set --save_offsets as True "
                 "to save the offsets to a file. "
             )
 
