@@ -20,7 +20,9 @@ DEFAULT_RUN = True
 PERSIST = False
 
 
-@patch("ska_sdp_wflow_pointing_offset.pointing_offset_cli.read_visibilities")
+@patch(
+    "ska_sdp_wflow_pointing_offset.pointing_offset_cli.read_batch_visibilities"
+)
 @pytest.mark.parametrize("fitting_method", [True, False])
 @pytest.mark.parametrize(
     "enabled, mode, start_freq, end_freq",
@@ -40,7 +42,7 @@ PERSIST = False
     ],
 )
 def test_wflow_pointing_offset(
-    read_visibilities,
+    read_batch_visibilities,
     fitting_method,
     enabled,
     mode,
@@ -78,7 +80,7 @@ def test_wflow_pointing_offset(
         beamwidth_factor = [0.976, 1.098]
         thresh_width = 1.5
 
-        read_visibilities.return_value = (
+        read_batch_visibilities.return_value = (
             vis_array,
             source_offset,
             actual_pointing_el,
@@ -93,7 +95,7 @@ def test_wflow_pointing_offset(
             "--save_offset": True,
             "--fit_to_vis": fitting_method,
             "--results_dir": tempdir,
-            "--ms": tempdir,
+            "--msdir": tempdir,
             "--bw_factor": True,
             "<bw_factor>": beamwidth_factor,
             "--thresh_width": thresh_width,
