@@ -135,13 +135,6 @@ def compute_offset(args):
         gt_list = compute_gains(vis)
         y_param = gt_list
 
-        # Save gain plot
-        # plot_name = os.path.join(
-        #     PurePosixPath(args["--ms"]).parent.as_posix(),
-        #     "computed_gains",
-        # )
-        # gt_single_plot(gt_list, plot_name)
-
     # Solve for the pointing offsets
     init_results = SolveForOffsets(
         source_offset,
