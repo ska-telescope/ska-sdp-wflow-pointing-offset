@@ -7,10 +7,7 @@ from unittest.mock import patch
 import numpy
 import pytest
 
-from ska_sdp_wflow_pointing_offset.read_data import (
-    read_batch_visibilities,
-    read_visibilities,
-)
+from ska_sdp_wflow_pointing_offset.read_data import read_batch_visibilities
 from tests.utils import (
     CORR_TYPE,
     FREQS,
