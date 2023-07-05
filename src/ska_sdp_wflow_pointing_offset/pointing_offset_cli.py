@@ -9,6 +9,7 @@ Usage:
                           [--start_freq=None] [--end_freq=None]
                           [(--bw_factor <bw_factor>) [<bw_factor>...]]
                           [--thresh_width=<float>]
+                          [--fit_on_plane]
 
 Commands:
   compute   Runs all required routines for computing the
@@ -27,6 +28,7 @@ Options:
   --results_dir=None    Directory where the results need to be saved (Optional)
   --start_freq=None     Start frequency in MHz (Optional)
   --end_freq=None       End frequency in MHz (Optional)
+  --fit_on_plane        Fitting on plane projected or sphere
   --bw_factor           Beamwidth factor [default:0.976, 1.098]
   --thresh_width=<float>  The maximum ratio of the fitted to expected beamwidth
                           [default:1.5]
@@ -125,6 +127,7 @@ def compute_offset(args):
             args["--rfi_file"],
             args["--start_freq"],
             args["--end_freq"],
+            args["--fit_on_plane"],
         )
 
     if args["--fit_to_vis"]:

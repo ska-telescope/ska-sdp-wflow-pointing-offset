@@ -6,7 +6,11 @@ and constructing antenna information.
 import glob
 import logging
 
+import katpoint
 import numpy
+from astropy import units
+from astropy.coordinates import SkyCoord
+from casacore.tables import table
 from ska_sdp_datamodels.visibility import create_visibility_from_ms
 from ska_sdp_datamodels.visibility.vis_model import Visibility
 from ska_sdp_func_python.visibility import concatenate_visibility
@@ -41,7 +45,12 @@ def _load_ms_tables(msname):
 
 
 def _read_visibilities(
-    msname, apply_mask=False, rfi_filename=None, start_freq=None, end_freq=None
+    msname,
+    apply_mask=False,
+    rfi_filename=None,
+    start_freq=None,
+    end_freq=None,
+    fit_on_plane=True,
 ):
     """
     Extracts parameters from a measurement set required for
@@ -60,8 +69,10 @@ def _read_visibilities(
     spw_table, pointing_table = _load_ms_tables(msname)
 
     # Get the frequencies and source offsets
-    source_offset = pointing_table.getcol("SOURCE_OFFSET")
+    # source_offset = pointing_table.getcol("SOURCE_OFFSET")
     actual_pointing = pointing_table.getcol("DIRECTION")
+    requested_azel = pointing_table.getcol("TARGET")
+
     offset_timestamps = pointing_table.getcol("TIME")
     freqs = numpy.squeeze(spw_table.getcol("CHAN_FREQ")) / 1.0e6  # Hz -> MHz
     channels = numpy.arange(len(freqs))
@@ -122,6 +133,45 @@ def _read_visibilities(
             meta=vis.meta,
         )
 
+    # TODO if Project
+    ra, dec = table(msname + "::SOURCE", ack=False).getcol("DIRECTION")[0]
+    target = katpoint.construct_radec_target(ra=ra, dec=dec)
+
+    source_offset = numpy.zeros((len(ants), 2))
+    for j, antenna in enumerate(ants):
+        if fit_on_plane:
+            # Project onto plane
+            xy = target.sphere_to_plane(
+                az=numpy.radians(requested_azel[j, 0]),
+                el=numpy.radians(requested_azel[j, 1]),
+                timestamp=numpy.median(offset_timestamps),
+                antenna=antenna,
+                projection_type="ARC",
+                coord_system="azel",
+            )
+            source_offset[j] = numpy.degrees(numpy.array(xy))
+        else:
+            # Compute relative azel
+            target_azel = numpy.degrees(
+                target.azel(numpy.median(offset_timestamps), antenna)
+            )
+            target_coord = SkyCoord(
+                target_azel[0] * units.deg,
+                target_azel[1] * units.deg,
+                frame="icrs",
+            )
+            requested_coord = SkyCoord(
+                requested_azel[j, 0] * units.deg,
+                requested_azel[j, 1] * units.deg,
+                frame="icrs",
+            )
+
+            dra, ddec = target_coord.spherical_offsets_to(requested_coord)
+            dra = dra.deg
+            ddec = ddec.deg
+            relative_azel = numpy.r_[dra, ddec]
+            source_offset[j] = relative_azel
+
     # Align source_offset and visibility timestamps
     source_offset = interp_timestamps(
         source_offset, offset_timestamps, vis.time.data
@@ -149,7 +199,12 @@ def _read_visibilities(
 
 
 def read_batch_visibilities(
-    msdir, apply_mask=False, rfi_filename=None, start_freq=None, end_freq=None
+    msdir,
+    apply_mask=False,
+    rfi_filename=None,
+    start_freq=None,
+    end_freq=None,
+    fit_on_plane=True,
 ):
     """
     Extracts parameters from multiple measurement sets required for
@@ -177,6 +232,7 @@ def read_batch_visibilities(
             rfi_filename,
             start_freq,
             end_freq,
+            fit_on_plane,
         )
         vis_list.append(_vis)
         source_offset_list.append(_source_offset)
