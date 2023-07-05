@@ -1,4 +1,4 @@
-# pylint: disable-msg=too-many-locals
+# pylint: disable-msg=too-many-locals，too-many-arguments
 """
 Functions for reading data from Measurement Set
 and constructing antenna information.
@@ -33,10 +33,6 @@ def _load_ms_tables(msname):
     :param msname: Measurement set containing visibilities.
     :return: spectral window and pointing sub-table.
     """
-    try:
-        from casacore.tables import table
-    except ModuleNotFoundError as exc:
-        raise ModuleNotFoundError("casacore is not installed") from exc
 
     # Get the spectral window and pointing sub-tables
     spw_table = table(msname + "::SPECTRAL_WINDOW", ack=False)
@@ -133,44 +129,57 @@ def _read_visibilities(
             meta=vis.meta,
         )
 
-    # TODO if Project
-    ra, dec = table(msname + "::SOURCE", ack=False).getcol("DIRECTION")[0]
-    target = katpoint.construct_radec_target(ra=ra, dec=dec)
+    # Build katpoint Antenna from antenna configuration
+    antenna_positions = vis.configuration.data_vars["xyz"].data
+    antenna_diameters = vis.configuration.data_vars["diameter"].data
+    antenna_names = vis.configuration.data_vars["names"].data
+    ants = construct_antennas(
+        xyz=antenna_positions,
+        diameter=antenna_diameters,
+        station=antenna_names,
+    )
 
-    source_offset = numpy.zeros((len(ants), 2))
-    for j, antenna in enumerate(ants):
+    source_ra, source_dec = table(msname + "::SOURCE", ack=False).getcol(
+        "DIRECTION"
+    )[0]
+    target = katpoint.construct_radec_target(ra=source_ra, dec=source_dec)
+
+    source_offset = numpy.zeros((requested_azel.shape[0], len(ants), 2))
+    for i, antenna in enumerate(ants):
         if fit_on_plane:
             # Project onto plane
-            xy = target.sphere_to_plane(
-                az=numpy.radians(requested_azel[j, 0]),
-                el=numpy.radians(requested_azel[j, 1]),
+            target_xy = target.sphere_to_plane(
+                az=numpy.radians(requested_azel[:, i, 0]),
+                el=numpy.radians(requested_azel[:, i, 1]),
                 timestamp=numpy.median(offset_timestamps),
                 antenna=antenna,
                 projection_type="ARC",
                 coord_system="azel",
             )
-            source_offset[j] = numpy.degrees(numpy.array(xy))
+            source_offset[:, i] = numpy.degrees(numpy.array(target_xy)).T
         else:
             # Compute relative azel
             target_azel = numpy.degrees(
                 target.azel(numpy.median(offset_timestamps), antenna)
             )
+
             target_coord = SkyCoord(
-                target_azel[0] * units.deg,
-                target_azel[1] * units.deg,
-                frame="icrs",
+                az=target_azel[0] * units.deg,
+                alt=target_azel[1] * units.deg,
+                frame="altaz",
             )
             requested_coord = SkyCoord(
-                requested_azel[j, 0] * units.deg,
-                requested_azel[j, 1] * units.deg,
-                frame="icrs",
+                az=requested_azel[:, i, 0] * units.deg,
+                alt=requested_azel[:, i, 1] * units.deg,
+                frame="altaz",
             )
 
             dra, ddec = target_coord.spherical_offsets_to(requested_coord)
             dra = dra.deg
             ddec = ddec.deg
-            relative_azel = numpy.r_[dra, ddec]
-            source_offset[j] = relative_azel
+
+            relative_azel = numpy.column_stack((dra, ddec))
+            source_offset[:, i] = relative_azel
 
     # Align source_offset and visibility timestamps
     source_offset = interp_timestamps(
@@ -184,16 +193,6 @@ def _read_visibilities(
         actual_pointing, offset_timestamps, vis.time.data
     )
     actual_pointing_el = actual_pointing[:, :, 1]
-
-    # Build katpoint Antenna from antenna configuration
-    antenna_positions = vis.configuration.data_vars["xyz"].data
-    antenna_diameters = vis.configuration.data_vars["diameter"].data
-    antenna_names = vis.configuration.data_vars["names"].data
-    ants = construct_antennas(
-        xyz=antenna_positions,
-        diameter=antenna_diameters,
-        station=antenna_names,
-    )
 
     return vis, source_offset, actual_pointing_el, ants
 
