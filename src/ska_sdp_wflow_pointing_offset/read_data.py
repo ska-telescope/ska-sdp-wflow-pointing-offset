@@ -10,7 +10,6 @@ import katpoint
 import numpy
 from astropy import units
 from astropy.coordinates import SkyCoord
-from casacore.tables import table
 from ska_sdp_datamodels.visibility import create_visibility_from_ms
 from ska_sdp_datamodels.visibility.vis_model import Visibility
 from ska_sdp_func_python.visibility import concatenate_visibility
@@ -33,11 +32,17 @@ def _load_ms_tables(msname):
     :param msname: Measurement set containing visibilities.
     :return: spectral window and pointing sub-table.
     """
+    try:
+        from casacore.tables import table  # pylint: disable=import-error
+    except ModuleNotFoundError as exc:
+        raise ModuleNotFoundError("casacore is not installed") from exc
 
     # Get the spectral window and pointing sub-tables
     spw_table = table(msname + "::SPECTRAL_WINDOW", ack=False)
     pointing_table = table(msname + "::POINTING", ack=False)
-    return spw_table, pointing_table
+    source_table = table(msname + "::SOURCE", ack=False)
+
+    return spw_table, pointing_table, source_table
 
 
 def _read_visibilities(
@@ -62,7 +67,7 @@ def _read_visibilities(
     :return: List of Visibility, source_offsets in azel, actual
         elevation angles, and list of katpoint Antennas.
     """
-    spw_table, pointing_table = _load_ms_tables(msname)
+    spw_table, pointing_table, source_table = _load_ms_tables(msname)
 
     # Get the frequencies and source offsets
     # source_offset = pointing_table.getcol("SOURCE_OFFSET")
@@ -139,9 +144,7 @@ def _read_visibilities(
         station=antenna_names,
     )
 
-    source_ra, source_dec = table(msname + "::SOURCE", ack=False).getcol(
-        "DIRECTION"
-    )[0]
+    source_ra, source_dec = source_table.getcol("DIRECTION")[0]
     target = katpoint.construct_radec_target(ra=source_ra, dec=source_dec)
 
     source_offset = numpy.zeros((requested_azel.shape[0], len(ants), 2))
