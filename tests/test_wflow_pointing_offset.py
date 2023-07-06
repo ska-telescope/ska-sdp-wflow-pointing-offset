@@ -99,6 +99,7 @@ def test_wflow_pointing_offset(
             "--bw_factor": True,
             "<bw_factor>": beamwidth_factor,
             "--thresh_width": thresh_width,
+            "--fit_on_plane": False,
         }
 
         compute_offset(args)
