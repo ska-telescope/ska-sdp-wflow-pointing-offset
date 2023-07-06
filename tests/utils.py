@@ -1024,9 +1024,6 @@ ACTUAL_POINTING_EL = numpy.array(
 
 ACTUAL_SOURCE = numpy.array([[5.14618, -1.112], [0, 0]])
 
-REQUESTED_AZEL = numpy.array([148.93667841, 35.76236201])
-
-
 class MockBaseTable:
     """
     Mock Base Table Class
