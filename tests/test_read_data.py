@@ -12,6 +12,7 @@ from tests.utils import (
     CORR_TYPE,
     FREQS,
     MockPointingTable,
+    MockSourceTable,
     MockSpectralWindowTable,
 )
 
@@ -29,6 +30,7 @@ def test_read_batch_visibilities(mock_dir, mock_tables, mock_ms, vis_array):
     mock_tables.return_value = (
         MockSpectralWindowTable(),
         MockPointingTable(),
+        MockSourceTable(),
     )
     mock_ms.return_value = [vis_array]
     vis, source_offset, actual_pointing_el, ants = read_batch_visibilities(

@@ -1022,6 +1022,10 @@ ACTUAL_POINTING_EL = numpy.array(
     ]
 )
 
+ACTUAL_SOURCE = numpy.array([[5.14618, -1.112], [0, 0]])
+
+REQUESTED_AZEL = numpy.array([148.93667841, 35.76236201])
+
 
 class MockBaseTable:
     """
@@ -1135,3 +1139,19 @@ class MockPointingTable:
 
         if columnname == "TIME":
             return POINTING_TIMESTAMPS
+
+        if columnname == "TARGET":
+            return numpy.dstack((ACTUAL_POINTING_AZ, ACTUAL_POINTING_EL))
+
+
+class MockSourceTable:
+    """
+    Mock Source Table Class
+    """
+
+    def getcol(self, columnname=None):
+        """
+        Get column name
+        """
+        if columnname == "DIRECTION":
+            return ACTUAL_SOURCE
