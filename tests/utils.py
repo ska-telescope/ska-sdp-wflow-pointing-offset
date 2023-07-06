@@ -930,12 +930,6 @@ GAIN_RESIDUAL = numpy.array(
 )
 
 
-# print(GAIN.shape)
-print(GAIN_WEIGHT.shape)
-print(GAIN_RESIDUAL.shape)
-print("=" * 30)
-
-
 # y-parameter when fitting the primary beam to the visibilities
 # Weights - used as standard deviation on the y-parameter when
 # fitting the primary beams to visibility amplitudes

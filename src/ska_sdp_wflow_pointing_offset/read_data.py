@@ -12,7 +12,6 @@ from astropy import units
 from astropy.coordinates import SkyCoord
 from ska_sdp_datamodels.visibility import create_visibility_from_ms
 from ska_sdp_datamodels.visibility.vis_model import Visibility
-from ska_sdp_func_python.visibility import concatenate_visibility
 
 from ska_sdp_wflow_pointing_offset.array_data_func import (
     apply_rfi_mask,
@@ -20,6 +19,9 @@ from ska_sdp_wflow_pointing_offset.array_data_func import (
     select_channels,
 )
 from ska_sdp_wflow_pointing_offset.utils import construct_antennas
+
+# from ska_sdp_func_python.visibility import concatenate_visibility
+
 
 log = logging.getLogger("ska-sdp-pointing-offset")
 
@@ -64,13 +66,15 @@ def _read_visibilities(
         If no selection needed, use None
     :param end_freq: Ending frequency for selection in MHz.
         If no selection needed, use None
+    :param fit_on_plane:  Perform fitting on planar xy or spherical
+        azel coordinates.
     :return: List of Visibility, source_offsets in azel, actual
-        elevation angles, and list of katpoint Antennas.
+        elevation angles, list of katpoint Antennas, and katpoint
+        target.
     """
     spw_table, pointing_table, source_table = _load_ms_tables(msname)
 
     # Get the frequencies and source offsets
-    # source_offset = pointing_table.getcol("SOURCE_OFFSET")
     actual_pointing = pointing_table.getcol("DIRECTION")
     requested_azel = pointing_table.getcol("TARGET")
 
@@ -197,7 +201,14 @@ def _read_visibilities(
     )
     actual_pointing_el = actual_pointing[:, :, 1]
 
-    return vis, source_offset, actual_pointing_el, ants
+    return (
+        vis,
+        source_offset,
+        actual_pointing_el,
+        ants,
+        target,
+        offset_timestamps,
+    )
 
 
 def read_batch_visibilities(
@@ -220,15 +231,26 @@ def read_batch_visibilities(
         If no selection needed, use None
     :param end_freq: Ending frequency for selection in MHz.
         If no selection needed, use None
+    :param fit_on_plane:  Perform fitting on planar xy or spherical
+        azel coordinates.
     :return: List of Visibility, source_offsets in azel, actual
-        elevation angles, and list of katpoint Antennas.
+        elevation angles, list of katpoint Antennas, and katpoint
+        target.
     """
     vis_list = []
     source_offset_list = []
     actual_pointing_el_list = []
-    msdir = glob.glob(msdir)
+    offset_timestamps_list = []
+    msdir = glob.glob(msdir + "*.ms")
     for msname in sorted(msdir):
-        _vis, _source_offset, _actual_pointing_el, _ants = _read_visibilities(
+        (
+            vis,
+            source_offset,
+            actual_pointing_el,
+            ants,
+            target,
+            offset_timestamps,
+        ) = _read_visibilities(
             msname,
             apply_mask,
             rfi_filename,
@@ -236,19 +258,25 @@ def read_batch_visibilities(
             end_freq,
             fit_on_plane,
         )
-        vis_list.append(_vis)
-        source_offset_list.append(_source_offset)
-        actual_pointing_el_list.append(_actual_pointing_el)
+        vis_list.append(vis)
+        source_offset_list.append(source_offset)
+        actual_pointing_el_list.append(actual_pointing_el)
+        offset_timestamps_list.append(offset_timestamps)
 
-    combine_vis = concatenate_visibility(vis_list, dim="time")
-    combine_source_offset = numpy.concatenate(source_offset_list, axis=0)
-    combine_actual_pointing_el = numpy.concatenate(
-        actual_pointing_el_list, axis=0
-    )
+    # combine_vis = concatenate_visibility(vis_list, dim="time")
+    # combine_source_offset = numpy.concatenate(source_offset_list, axis=0)
+    # combine_actual_pointing_el = numpy.concatenate(
+    #    actual_pointing_el_list, axis=0
+    # )
 
     return (
-        combine_vis,
-        combine_source_offset,
-        combine_actual_pointing_el,
-        _ants,
+        # combine_vis,
+        # combine_source_offset,
+        # combine_actual_pointing_el,
+        vis_list,
+        source_offset_list,
+        actual_pointing_el_list,
+        offset_timestamps_list,
+        ants,
+        target,
     )

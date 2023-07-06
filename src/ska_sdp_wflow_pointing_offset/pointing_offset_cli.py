@@ -3,13 +3,12 @@
 
 Usage:
   pointing-offset COMMAND [--save_offset]
-                          [--msdir=DIR]
-                          [--apply_mask] [--fit_to_vis]
+                          [--msdir=DIR] [--apply_mask]
+                          [--fit_to_vis] [--time_avg=None]
                           [--rfi_file=FILE] [--results_dir=None]
                           [--start_freq=None] [--end_freq=None]
                           [(--bw_factor <bw_factor>) [<bw_factor>...]]
-                          [--thresh_width=<float>]
-                          [--fit_on_plane]
+                          [--thresh_width=<float>] [--fit_on_plane]
 
 Commands:
   compute   Runs all required routines for computing the
@@ -22,13 +21,17 @@ Options:
   --msdir=DIR           Directory including Measurement set files
   --fit_to_vis          Fit primary beam to visibilities instead of antenna
                         gains (Optional) [default:False]
+  --time_avg=None       Perform no, median, or mean time-averaging of the
+                        gain amplitudes when fitting to gains. These options
+                        can be set with None, "median", or "mean".
   --apply_mask          Apply mask (Optional) [default:False]
   --rfi_file=FILE       RFI file (Optional)
   --save_offset         Save the offset results (Optional) [default:False]
   --results_dir=None    Directory where the results need to be saved (Optional)
   --start_freq=None     Start frequency in MHz (Optional)
   --end_freq=None       End frequency in MHz (Optional)
-  --fit_on_plane        Fitting on plane projected or sphere
+  --fit_on_plane        Perform fitting on plane or spherical azel coordinates.
+                        [default: True]
   --bw_factor           Beamwidth factor [default:0.976, 1.098]
   --thresh_width=<float>  The maximum ratio of the fitted to expected beamwidth
                           [default:1.5]
@@ -39,9 +42,10 @@ import logging
 import os
 import sys
 import time
-from pathlib import PurePosixPath
 
+import numpy
 from docopt import docopt
+from katpoint import wrap_angle
 
 from ska_sdp_wflow_pointing_offset.beam_fitting import SolveForOffsets
 from ska_sdp_wflow_pointing_offset.export_data import (
@@ -121,7 +125,14 @@ def compute_offset(args):
             raise ValueError("RFI File is required!!")
 
     if args["--msdir"]:
-        vis, source_offset, actual_pointing_el, ants = read_batch_visibilities(
+        (
+            vis_list,
+            source_offset_list,
+            actual_pointing_el_list,
+            offset_timestamps,
+            ants,
+            target,
+        ) = read_batch_visibilities(
             args["--msdir"],
             args["--apply_mask"],
             args["--rfi_file"],
@@ -130,27 +141,124 @@ def compute_offset(args):
             args["--fit_on_plane"],
         )
 
-    if args["--fit_to_vis"]:
-        y_param = vis
-    else:
-        # Solve for the antenna gains
-        log.info("Solving for the antenna complex gains...")
-        gt_list = compute_gains(vis)
-        y_param = gt_list
+    freqs = numpy.zeros((1))
+    x_per_scan = numpy.array(source_offset_list).mean(axis=1)
+    y_per_scan = numpy.zeros((len(ants), len(vis_list)))
+    offset_timestamps = numpy.concatenate(offset_timestamps)
+    for scan, vis in enumerate(vis_list):
+        if args["--fit_to_vis"]:
+            # Get autocorrelations only
+            get_autocorr = vis.antenna1.data == vis.antenna2.data
+            vis_amp = numpy.abs(vis.vis.data)
+            vis_amp = vis.vis.data[:, get_autocorr, :, :]
+
+            # Visibilities have shape(ntimes, nants, nfreqs, npols)
+            # Get the parallel hands polarisation visibilities
+            if len(vis.polarisation.data) == 2:
+                # Get (XX and YY
+                vis_amp = numpy.array(
+                    [vis_amp[:, :, :, 0], vis_amp[:, :, :, 1]]
+                )
+                vis_amp = numpy.moveaxis(vis_amp, 0, 3)
+            elif len(vis.polarisation.data) == 4:
+                vis_amp = numpy.array(
+                    [vis_amp[:, :, :, 0], vis_amp[:, :, :, 3]]
+                )
+                vis_amp = numpy.moveaxis(vis_amp, 0, 3)
+
+            # Average in frequency and polarisation
+            vis_amp = vis_amp.mean(axis=(2, 3))
+            if args["--time_avg"] is None:
+                # Select vis at first timestamp
+                vis_amp = vis_amp[0,]
+            elif args["--time_avg"] == "median":
+                # Median average along time
+                vis_amp = numpy.median(vis_amp, axis=0)
+            elif args["--time_avg"] == "mean":
+                # Mean average along time
+                vis_amp = vis_amp.mean(axis=0)
+            if scan == 0:
+                # We want to use the frequency at the higher end of the
+                # frequency for better pointing accuracy
+                freqs[scan] = numpy.squeeze(vis.frequency.data[-1])
+        else:
+            # Solve for the un-normalised G terms for each scan
+            log.info(
+                "\nSolving for the antenna complex gains for scan %d", scan + 1
+            )
+            gt_list = compute_gains(vis)
+
+            # Gains have shape (ntimes, nants, nfreqs, receptor1, receptor2)
+            gt_amp = numpy.abs(gt_list.gain.data)
+            gt_amp = numpy.dstack(
+                (gt_amp[:, :, :, 0, 0], gt_amp[:, :, :, 1, 1])
+            )
+
+            # Gains now have shape (ntimes, nants, npols)
+            # To DO: Also provide to use the option to use
+            # the weights in fitting (for sprint 3?)
+            if args["--time_avg"] is None:
+                # Select gains at first timestamp and mean average
+                # along polarisation axis
+                gt_amp = gt_amp[0,].mean(axis=1)
+            elif args["--time_avg"] == "median":
+                # Median average along time and mean average along
+                # polarisation axis
+                gt_amp = numpy.median(gt_amp, axis=0).mean(axis=1)
+            elif args["--time_avg"] == "mean":
+                # Mean average along time and polarisation axes
+                gt_amp = gt_amp.mean(axis=(0, 2))
+
+            if scan == 0:
+                freqs[scan] = numpy.squeeze(gt_list.frequency.data)
+            y_per_scan[:, scan] = gt_amp
 
     # Solve for the pointing offsets
-    init_results = SolveForOffsets(
-        source_offset,
-        actual_pointing_el,
-        y_param,
-        beamwidth_factor,
-        ants,
-        thresh_width,
+    initial_beams = SolveForOffsets(
+        x_per_scan, y_per_scan, freqs, beamwidth_factor, ants, thresh_width
     )
     if args["--fit_to_vis"]:
-        fitted_results = init_results.fit_to_visibilities()
+        log.info("Fitting primary beams to visibility amplitudes...")
+        # The use of visibility weights is ignored for now.
+        # The MS reader used in this pipeline reads the data in the "WEIGHT"
+        # column but the different weights should be used when averaging the
+        # raw or corrected data. Details are in the CASA doc on
+        # https://casa.nrao.edu/casadocs/casa-6.1.0/global-task-list/task_plotms/about
+        fitted_beams = initial_beams.fit_to_visibilities()
     else:
-        fitted_results = init_results.fit_to_gains()
+        log.info("Fitting primary beams to gain amplitudes...")
+        fitted_beams = initial_beams.fit_to_gains()
+
+    # Extract valid fits only
+    azel_offset = numpy.full((len(ants), 2), numpy.nan)
+    for i, antenna in enumerate(ants):
+        beams_freq = fitted_beams.get(antenna.name, [])
+        if beams_freq is not None and beams_freq.is_valid:
+            offsets_freq = numpy.array(beams_freq.centre)
+        else:
+            print(f"{antenna.name} had no valid primary beam fitted")
+            continue
+
+        pointing_offset = numpy.radians(offsets_freq)
+        if args["--fit_on_plane"]:
+            # Convert fitted centre to spherical (az, el) coordinates
+            beam_centre_azel = target.plane_to_sphere(
+                *pointing_offset,
+                timestamp=numpy.median(offset_timestamps),
+                antenna=antenna,
+                projection_type="ARC",
+                coord_system="azel",
+            )
+            requested_azel = target.azel(
+                timestamp=numpy.median(offset_timestamps), antenna=antenna
+            )
+            azel_offset[i] = numpy.degrees(
+                wrap_angle(
+                    numpy.array(beam_centre_azel) - numpy.array(requested_azel)
+                )
+            )
+        else:
+            azel_offset[i] = numpy.degrees(wrap_angle(pointing_offset))
 
     # Save the fitted parameters and computed offsets
     if args["--save_offset"]:
@@ -158,33 +266,27 @@ def compute_offset(args):
         if args["--results_dir"] is None:
             # Save to the location of the measurement set
             results_file = os.path.join(
-                PurePosixPath(args["--ms"]).parent.as_posix(),
-                "pointing_offsets.txt",
+                args["--msdir"], "pointing_offsets.txt"
             )
-            export_pointing_offset_data(
-                results_file,
-                fitted_results,
-            )
+            export_pointing_offset_data(results_file, azel_offset)
         else:
             # Save to the user-set directory
             results_file = os.path.join(
                 args["--results_dir"], "pointing_offsets.txt"
             )
-            export_pointing_offset_data(
-                results_file,
-                fitted_results,
-            )
+            export_pointing_offset_data(results_file, azel_offset)
+
         log.info(
             "Fitted parameters and computed offsets written to %s",
             results_file,
         )
     else:
-        if fitted_results.shape[0] < 10:
+        if azel_offset.shape[0] < 10:
             log.info(
                 "The fitted parameters and "
                 "computed offsets are printed on screen."
             )
-            for i, line in enumerate(fitted_results):
+            for i, line in enumerate(azel_offset):
                 log.info("Offset array for antenna %i is: %s", i, line)
         else:
             log.info(

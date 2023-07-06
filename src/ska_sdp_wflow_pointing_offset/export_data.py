@@ -12,7 +12,7 @@ def export_pointing_offset_data(filename, offset):
 
     :param filename: file name
     :param offset: The fitted parameters and their uncertainties
-        for each polaristion. The columns of the data are : AzEl
+        for each polarisation. The columns of the data are : AzEl
         offset and their uncertainties, cross-elevation offset and
         its uncertainty, fitted beamwidth and its uncertainty,
         fitted beam height and its uncertainty
