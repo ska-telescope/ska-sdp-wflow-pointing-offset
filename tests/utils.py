@@ -1024,6 +1024,7 @@ ACTUAL_POINTING_EL = numpy.array(
 
 ACTUAL_SOURCE = numpy.array([[5.14618, -1.112], [0, 0]])
 
+
 class MockBaseTable:
     """
     Mock Base Table Class
