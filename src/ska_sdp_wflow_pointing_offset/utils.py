@@ -1,7 +1,6 @@
-# pylint: disable=too-many-locals
 """
-Util functions for constructing katpoint antenna information,
-solving for antenna gains and plotting the solutions.
+Util functions for constructing katpoint antenna information
+and solving for antenna gains.
 """
 import katpoint
 from ska_sdp_func_python.calibration import solve_gaintable

@@ -1,4 +1,5 @@
 # pylint: disable=too-many-locals,too-many-branches
+# pylint: disable=too-many-statements
 """Program with many options using docopt for computing pointing offsets.
 
 Usage:
@@ -47,6 +48,7 @@ import numpy
 from docopt import docopt
 from katpoint import wrap_angle
 
+from ska_sdp_wflow_pointing_offset.array_data_func import time_avg_amp
 from ska_sdp_wflow_pointing_offset.beam_fitting import SolveForOffsets
 from ska_sdp_wflow_pointing_offset.export_data import (
     export_pointing_offset_data,
@@ -72,7 +74,9 @@ def main():
         if args["--msdir"]:
             compute_offset(args)
         else:
-            raise ValueError("Measurement set is required!!")
+            raise ValueError(
+                "Directory containing measurement sets is required!!"
+            )
 
     else:
         log.error(
@@ -124,22 +128,21 @@ def compute_offset(args):
         if not args["--rfi_file"]:
             raise ValueError("RFI File is required!!")
 
-    if args["--msdir"]:
-        (
-            vis_list,
-            source_offset_list,
-            actual_pointing_el_list,
-            offset_timestamps,
-            ants,
-            target,
-        ) = read_batch_visibilities(
-            args["--msdir"],
-            args["--apply_mask"],
-            args["--rfi_file"],
-            args["--start_freq"],
-            args["--end_freq"],
-            args["--fit_on_plane"],
-        )
+    (
+        vis_list,
+        source_offset_list,
+        actual_pointing_el_list,
+        offset_timestamps,
+        ants,
+        target,
+    ) = read_batch_visibilities(
+        args["--msdir"],
+        args["--apply_mask"],
+        args["--rfi_file"],
+        args["--start_freq"],
+        args["--end_freq"],
+        args["--fit_on_plane"],
+    )
 
     freqs = numpy.zeros((1))
     x_per_scan = numpy.array(source_offset_list).mean(axis=1)
@@ -168,15 +171,9 @@ def compute_offset(args):
 
             # Average in frequency and polarisation
             vis_amp = vis_amp.mean(axis=(2, 3))
-            if args["--time_avg"] is None:
-                # Select vis at first timestamp
-                vis_amp = vis_amp[0,]
-            elif args["--time_avg"] == "median":
-                # Median average along time
-                vis_amp = numpy.median(vis_amp, axis=0)
-            elif args["--time_avg"] == "mean":
-                # Mean average along time
-                vis_amp = vis_amp.mean(axis=0)
+
+            # No or time-averaging of visibility amplitudes
+            vis_amp = time_avg_amp(vis_amp, args["--time_avg"])
             if scan == 0:
                 # We want to use the frequency at the higher end of the
                 # frequency for better pointing accuracy
@@ -194,21 +191,14 @@ def compute_offset(args):
                 (gt_amp[:, :, :, 0, 0], gt_amp[:, :, :, 1, 1])
             )
 
-            # Gains now have shape (ntimes, nants, npols)
-            # To DO: Also provide to use the option to use
-            # the weights in fitting (for sprint 3?)
-            if args["--time_avg"] is None:
-                # Select gains at first timestamp and mean average
-                # along polarisation axis
-                gt_amp = gt_amp[0,].mean(axis=1)
-            elif args["--time_avg"] == "median":
-                # Median average along time and mean average along
-                # polarisation axis
-                gt_amp = numpy.median(gt_amp, axis=0).mean(axis=1)
-            elif args["--time_avg"] == "mean":
-                # Mean average along time and polarisation axes
-                gt_amp = gt_amp.mean(axis=(0, 2))
+            # Average in polarisation
+            gt_amp = gt_amp.mean(axis=2)
 
+            # Perform no or time-averaging of gain amplitudes
+            gt_amp = time_avg_amp(gt_amp, args["--time_avg"])
+
+            # To DO: Provide option to extract the gains and use them
+            # in the fitting (for sprint 3?)
             if scan == 0:
                 freqs[scan] = numpy.squeeze(gt_list.frequency.data)
             y_per_scan[:, scan] = gt_amp
@@ -218,15 +208,8 @@ def compute_offset(args):
         x_per_scan, y_per_scan, freqs, beamwidth_factor, ants, thresh_width
     )
     if args["--fit_to_vis"]:
-        log.info("Fitting primary beams to visibility amplitudes...")
-        # The use of visibility weights is ignored for now.
-        # The MS reader used in this pipeline reads the data in the "WEIGHT"
-        # column but the different weights should be used when averaging the
-        # raw or corrected data. Details are in the CASA doc on
-        # https://casa.nrao.edu/casadocs/casa-6.1.0/global-task-list/task_plotms/about
         fitted_beams = initial_beams.fit_to_visibilities()
     else:
-        log.info("Fitting primary beams to gain amplitudes...")
         fitted_beams = initial_beams.fit_to_gains()
 
     # Extract valid fits only
@@ -259,6 +242,8 @@ def compute_offset(args):
             )
         else:
             azel_offset[i] = numpy.degrees(wrap_angle(pointing_offset))
+
+    # To DO: Compute cross-elevation
 
     # Save the fitted parameters and computed offsets
     if args["--save_offset"]:

@@ -1,4 +1,4 @@
-# pylint: disable-msg=too-many-locals，too-many-arguments
+# pylint: disable-msg=too-many-locals,too-many-arguments
 """
 Functions for reading data from Measurement Set
 and constructing antenna information.
@@ -19,9 +19,6 @@ from ska_sdp_wflow_pointing_offset.array_data_func import (
     select_channels,
 )
 from ska_sdp_wflow_pointing_offset.utils import construct_antennas
-
-# from ska_sdp_func_python.visibility import concatenate_visibility
-
 
 log = logging.getLogger("ska-sdp-pointing-offset")
 
@@ -69,8 +66,8 @@ def _read_visibilities(
     :param fit_on_plane:  Perform fitting on planar xy or spherical
         azel coordinates.
     :return: List of Visibility, source_offsets in azel, actual
-        elevation angles, list of katpoint Antennas, and katpoint
-        target.
+        elevation angles, list of katpoint Antennas, katpoint
+        target, and source offset timestamps.
     """
     spw_table, pointing_table, source_table = _load_ms_tables(msname)
 
@@ -234,8 +231,8 @@ def read_batch_visibilities(
     :param fit_on_plane:  Perform fitting on planar xy or spherical
         azel coordinates.
     :return: List of Visibility, source_offsets in azel, actual
-        elevation angles, list of katpoint Antennas, and katpoint
-        target.
+        elevation angles, source offset timestamps, list of
+        katpoint Antennas, and katpoint target.
     """
     vis_list = []
     source_offset_list = []
@@ -263,16 +260,7 @@ def read_batch_visibilities(
         actual_pointing_el_list.append(actual_pointing_el)
         offset_timestamps_list.append(offset_timestamps)
 
-    # combine_vis = concatenate_visibility(vis_list, dim="time")
-    # combine_source_offset = numpy.concatenate(source_offset_list, axis=0)
-    # combine_actual_pointing_el = numpy.concatenate(
-    #    actual_pointing_el_list, axis=0
-    # )
-
     return (
-        # combine_vis,
-        # combine_source_offset,
-        # combine_actual_pointing_el,
         vis_list,
         source_offset_list,
         actual_pointing_el_list,

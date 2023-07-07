@@ -130,25 +130,25 @@ class BeamPatternFit(ScatterFit):
 
 class SolveForOffsets:
     """
-    Fit the beam pattern to the frequency-averaged visibility amplitudes
-    or gain amplitudes and outputs the fitted parameters and their
-    uncertainties.
+    Fit the beam pattern to the visibility or gain amplitudes and
+    outputs the fitted parameters and their uncertainties.
 
-    :param source_offset: Offsets from the target in Az, El coordinates
-        with shape [2, number of timestamps, number of antennas]
-    :param actual_pointing_el: The interpolated actual pointing
-        elevation with shape [ntimes, number of antennas] to be used
-        in calculating the cross-elevation offsets. The cross-elevation
-        offset is the product of the azimuth-offset and cosine of the
-        median actual pointing elevation.
-    :param y_param: Visibility containing the observed data or
-        amplitude gains of each antenna
+    :param x_per_scan: Antenna pointings in AzEl or ARC xy coordinates
+        for each discrete offset pointing scan with shape [number of
+        scans, number of antennas, 2]
+    :param y_per_scan: Visibility or gain amplitudes of each antenna
+        for each discrete pointing scan with shape [number of antennas,
+        number of scans]
+    :param freqs: List of frequencies for estimating the expected
+        beamwidth
     :param beamwidth_factor: The beamwidth factor for the two orthogonal
         directions. Two values are expected as one value for the horizontal
         direction and the other value for the vertical direction. These
         values often range between 1.03 and 1.22 depending on the illumination
         pattern of the dish
     :param ants: List of antenna information built in katpoint.
+    :param thresh_width: The maximum threshold on the allowable fitted
+        beamwidth
     """
 
     def __init__(
@@ -189,19 +189,22 @@ class SolveForOffsets:
         Fit the primary beams to the visibility amplitude of each antenna
         and returns the fitted parameters and their uncertainties.
 
-        :return: The fitted beam centre and uncertainty, fitted beamwidth and
-        uncertainty, fitted beam height and uncertainty for each polarisation
+        :return: The fitted beams (parameters and their uncertainties)
         """
         log.info("Fitting primary beams to visibility amplitudes...")
         for i, antenna in enumerate(self.ants):
             fitted_beam = BeamPatternFit(
                 centre=(0.0, 0.0),
-                width=self.expected_width[i,],
+                width=self.expected_width[
+                    i,
+                ],
                 height=1.0,
             )
             fitted_beam.fit(
                 x=self.x_per_scan[:, i].T,
-                y=self.y_per_scan[i,],
+                y=self.y_per_scan[
+                    i,
+                ],
                 std_y=1.0,
                 thresh_width=self.thresh_width,
             )
@@ -215,23 +218,25 @@ class SolveForOffsets:
 
     def fit_to_gains(self):
         """
-        Fit the primary beams to the amplitude gains of each antenna
+        Fit the primary beams to the gain amplitudes of each antenna
         and returns the fitted parameters and their uncertainties.
 
-        :return: The fitted beam centre and uncertainty, cross-elevation
-        offset and uncertainty, fitted beamwidth and uncertainty, fitted
-        beam height and uncertainty for each polarisation
+        :return: The fitted beams (parameters and their uncertainties)
         """
         log.info("Fitting primary beams to gain amplitudes...")
         for i, antenna in enumerate(self.ants):
             fitted_beam = BeamPatternFit(
                 centre=(0.0, 0.0),
-                width=self.expected_width[i,],
+                width=self.expected_width[
+                    i,
+                ],
                 height=1.0,
             )
             fitted_beam.fit(
                 x=self.x_per_scan[:, i].T,
-                y=self.y_per_scan[i,],
+                y=self.y_per_scan[
+                    i,
+                ],
                 std_y=1.0,
                 thresh_width=self.thresh_width,
             )

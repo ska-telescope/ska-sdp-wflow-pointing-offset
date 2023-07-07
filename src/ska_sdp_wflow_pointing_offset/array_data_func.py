@@ -3,6 +3,7 @@ Functions for manipulation of data that are numpy arrays.
 Currently contains:
 1. Applying RFI mask and select frequency ranges for input data
 2. Interpolate timestamps for source offset data
+3. Time-averaging of visibility or gain amplitudes
 """
 
 import logging
@@ -91,3 +92,27 @@ def interp_timestamps(origin_data, origin_times, new_times):
         output[:, i, 1] = interp_el.values
 
     return output
+
+
+def time_avg_amp(data, time_avg=None):
+    """
+    Perform no, median, or mean averaging of the visibility or
+    gain amplitudes in time.
+
+    :param data: Visibility or gain amplitudes in [ntimes, nants]
+    :param time_avg: Type of averaging [None, "median", "mean"]
+    :return: Time-average visbility or gain amplitudes [nants]
+    """
+    if time_avg is None:
+        # Select vis or gain amplitudes at first timestamp
+        data = data[
+            0,
+        ]
+    elif time_avg == "median":
+        # Median average
+        data = numpy.median(data, axis=0)
+    elif time_avg == "mean":
+        # Mean average
+        data = data.mean(axis=0)
+
+    return data
