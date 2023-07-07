@@ -48,13 +48,19 @@ import numpy
 from docopt import docopt
 from katpoint import wrap_angle
 
-from ska_sdp_wflow_pointing_offset.array_data_func import time_avg_amp
+from ska_sdp_wflow_pointing_offset.array_data_func import (
+    time_avg_amp,
+    w_average,
+)
 from ska_sdp_wflow_pointing_offset.beam_fitting import SolveForOffsets
 from ska_sdp_wflow_pointing_offset.export_data import (
     export_pointing_offset_data,
 )
 from ska_sdp_wflow_pointing_offset.read_data import read_batch_visibilities
-from ska_sdp_wflow_pointing_offset.utils import compute_gains
+from ska_sdp_wflow_pointing_offset.utils import (
+    compute_gains,
+    deproject_from_plane_to_sphere,
+)
 
 log = logging.getLogger("ska-sdp-pointing-offset")
 log.setLevel(logging.INFO)
@@ -212,38 +218,27 @@ def compute_offset(args):
     else:
         fitted_beams = initial_beams.fit_to_gains()
 
-    # Extract valid fits only
-    azel_offset = numpy.full((len(ants), 2), numpy.nan)
-    for i, antenna in enumerate(ants):
-        beams_freq = fitted_beams.get(antenna.name, [])
-        if beams_freq is not None and beams_freq.is_valid:
-            offsets_freq = numpy.array(beams_freq.centre)
-        else:
-            print(f"{antenna.name} had no valid primary beam fitted")
-            continue
+    # Compute the weighted-average of the valid fitted beam centres in radians
+    beam_centre = w_average(ants, fitted_beams)
 
-        pointing_offset = numpy.radians(offsets_freq)
-        if args["--fit_on_plane"]:
-            # Convert fitted centre to spherical (az, el) coordinates
-            beam_centre_azel = target.plane_to_sphere(
-                *pointing_offset,
-                timestamp=numpy.median(offset_timestamps),
-                antenna=antenna,
-                projection_type="ARC",
-                coord_system="azel",
-            )
-            requested_azel = target.azel(
-                timestamp=numpy.median(offset_timestamps), antenna=antenna
-            )
-            azel_offset[i] = numpy.degrees(
-                wrap_angle(
-                    numpy.array(beam_centre_azel) - numpy.array(requested_azel)
-                )
-            )
-        else:
-            azel_offset[i] = numpy.degrees(wrap_angle(pointing_offset))
+    # Compute the azimuth and elevation offsets in radians
+    if args["--fit_on_plane"]:
+        # Convert fitted centre to spherical (az, el) coordinates
+        azel_offset = deproject_from_plane_to_sphere(
+            beam_centre, offset_timestamps, ants, target
+        )
+    else:
+        azel_offset = wrap_angle(beam_centre)
 
-    # To DO: Compute cross-elevation
+    # Compute cross-elevation offset as azimuth offset * cosine (el) and
+    # output final offsets of interest in elevation and cross-el offsets in
+    # units of arcminutes
+    # TO DO: check if we are using the right formula especially the el values
+    actual_pointing_el = numpy.array(actual_pointing_el_list).mean(axis=(0, 1))
+    x_el = azel_offset[:, 0] * numpy.cos(numpy.cos(actual_pointing_el))
+    pointing_offset = numpy.column_stack(
+        (numpy.degrees(azel_offset[:, 1] * 60.0), numpy.degrees(x_el) * 60.0)
+    )
 
     # Save the fitted parameters and computed offsets
     if args["--save_offset"]:
@@ -253,13 +248,13 @@ def compute_offset(args):
             results_file = os.path.join(
                 args["--msdir"], "pointing_offsets.txt"
             )
-            export_pointing_offset_data(results_file, azel_offset)
+            export_pointing_offset_data(results_file, pointing_offset)
         else:
             # Save to the user-set directory
             results_file = os.path.join(
                 args["--results_dir"], "pointing_offsets.txt"
             )
-            export_pointing_offset_data(results_file, azel_offset)
+            export_pointing_offset_data(results_file, pointing_offset)
 
         log.info(
             "Fitted parameters and computed offsets written to %s",
@@ -271,7 +266,7 @@ def compute_offset(args):
                 "The fitted parameters and "
                 "computed offsets are printed on screen."
             )
-            for i, line in enumerate(azel_offset):
+            for i, line in enumerate(pointing_offset):
                 log.info("Offset array for antenna %i is: %s", i, line)
         else:
             log.info(

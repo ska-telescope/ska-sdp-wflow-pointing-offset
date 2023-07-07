@@ -146,7 +146,7 @@ class SolveForOffsets:
         direction and the other value for the vertical direction. These
         values often range between 1.03 and 1.22 depending on the illumination
         pattern of the dish
-    :param ants: List of antenna information built in katpoint.
+    :param ants: List of katpoint antennas.
     :param thresh_width: The maximum threshold on the allowable fitted
         beamwidth
     """

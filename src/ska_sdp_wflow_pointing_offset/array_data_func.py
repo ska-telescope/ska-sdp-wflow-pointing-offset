@@ -4,6 +4,7 @@ Currently contains:
 1. Applying RFI mask and select frequency ranges for input data
 2. Interpolate timestamps for source offset data
 3. Time-averaging of visibility or gain amplitudes
+4. Weighted-average of the fitted beam centres
 """
 
 import logging
@@ -116,3 +117,24 @@ def time_avg_amp(data, time_avg=None):
         data = data.mean(axis=0)
 
     return data
+
+
+def w_average(ants, fitted_beams):
+    """
+    Compute the weighted average of the fitted pointing offsets
+
+    :param ants: List of katpoint antennas
+    :param fitted_beams: A dictionary of the fitted beams
+    :return: The weighted average of the valid fitted offsets
+    """
+    pointing_offset = numpy.full((len(ants), 2), numpy.nan)
+    for i, antenna in enumerate(ants):
+        beams_freq = fitted_beams.get(antenna.name, [])
+        if beams_freq is not None and beams_freq.is_valid:
+            offsets_freq = numpy.array(beams_freq.centre)
+        else:
+            print(f"{antenna.name} had no valid primary beam fitted")
+            continue
+        pointing_offset[i] = numpy.radians(offsets_freq)
+
+    return pointing_offset
