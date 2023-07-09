@@ -36,7 +36,6 @@ def test_read_batch_visibilities(mock_dir, mock_tables, mock_ms, vis_array):
     (
         vis,
         source_offset,
-        actual_pointing_el,
         _,
         ants,
         _,
@@ -48,7 +47,6 @@ def test_read_batch_visibilities(mock_dir, mock_tables, mock_ms, vis_array):
     assert (vis[0].frequency.data == FREQS).all()
     assert (vis[0].polarisation.data == CORR_TYPE).all()
     assert source_offset[0].shape == (5, 3, 2)
-    assert actual_pointing_el[0].shape == (5, 3)
     assert numpy.array(ants).shape == (3,)
     assert ants[0].name == "SKA001"
     assert ants[0].diameter == 25.0

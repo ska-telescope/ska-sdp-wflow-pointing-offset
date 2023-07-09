@@ -20,7 +20,7 @@ Usage
                           [--rfi_file=FILE] [--results_dir=None]
                           [--start_freq=None] [--end_freq=None]
                           [(--bw_factor <bw_factor>) [<bw_factor>...]]
-                          [--thresh_width=<float>] [--fit_on_plane]
+                          [--thresh_width=<float>]
 
     Commands:
         compute   Runs all required routines for computing the
@@ -42,8 +42,6 @@ Usage
       --results_dir=None    Directory where the results need to be saved (Optional)
       --start_freq=None     Start frequency in MHz (Optional)
       --end_freq=None       End frequency in MHz (Optional)
-      --fit_on_plane        Perform fitting on plane or spherical azel coordinates.
-                            [default: True]
       --bw_factor           Beamwidth factor [default:0.976, 1.098]
       --thresh_width=<float>  The maximum ratio of the fitted to expected beamwidth
                               [default:1.5]
@@ -80,8 +78,6 @@ List of commands for accessing the functionalities of the pipeline.
      - Start frequency in MHz to use
    * - **end_freq**
      - End frequency in MHz to use
-   * - **fit_on_plane**
-     -  Perform fitting on planar xy or spherical azel coordinates.
    * - **bw_factor**
      - Beamwidth factors for the horizontal and vertical polarisations
    * - **thresh_width**

@@ -9,7 +9,7 @@ Usage:
                           [--rfi_file=FILE] [--results_dir=None]
                           [--start_freq=None] [--end_freq=None]
                           [(--bw_factor <bw_factor>) [<bw_factor>...]]
-                          [--thresh_width=<float>] [--fit_on_plane]
+                          [--thresh_width=<float>]
 
 Commands:
   compute   Runs all required routines for computing the
@@ -31,8 +31,6 @@ Options:
   --results_dir=None    Directory where the results need to be saved (Optional)
   --start_freq=None     Start frequency in MHz (Optional)
   --end_freq=None       End frequency in MHz (Optional)
-  --fit_on_plane        Perform fitting on plane or spherical azel coordinates.
-                        [default: True]
   --bw_factor           Beamwidth factor [default:0.976, 1.098]
   --thresh_width=<float>  The maximum ratio of the fitted to expected beamwidth
                           [default:1.5]
@@ -57,10 +55,7 @@ from ska_sdp_wflow_pointing_offset.export_data import (
     export_pointing_offset_data,
 )
 from ska_sdp_wflow_pointing_offset.read_data import read_batch_visibilities
-from ska_sdp_wflow_pointing_offset.utils import (
-    compute_gains,
-    deproject_from_plane_to_sphere,
-)
+from ska_sdp_wflow_pointing_offset.utils import compute_gains
 
 log = logging.getLogger("ska-sdp-pointing-offset")
 log.setLevel(logging.INFO)
@@ -137,7 +132,6 @@ def compute_offset(args):
     (
         vis_list,
         source_offset_list,
-        actual_pointing_el_list,
         offset_timestamps,
         ants,
         target,
@@ -147,7 +141,6 @@ def compute_offset(args):
         args["--rfi_file"],
         args["--start_freq"],
         args["--end_freq"],
-        args["--fit_on_plane"],
     )
 
     freqs = numpy.zeros((1))
@@ -218,26 +211,29 @@ def compute_offset(args):
     else:
         fitted_beams = initial_beams.fit_to_gains()
 
-    # Compute the weighted-average of the valid fitted beam centres in radians
-    beam_centre = w_average(ants, fitted_beams)
+    # Compute the weighted-average of the valid fitted offsets
+    azel_offset = numpy.degrees(wrap_angle(w_average(ants, fitted_beams)))
 
-    # Compute the azimuth and elevation offsets in radians
-    if args["--fit_on_plane"]:
-        # Convert fitted centre to spherical (az, el) coordinates
-        azel_offset = deproject_from_plane_to_sphere(
-            beam_centre, offset_timestamps, ants, target
+    # Compute cross-elevation offset as azimuth offset * cosine (el). We
+    # use the target elevation as the elevation
+    target_el = numpy.full(len(ants), numpy.nan)
+    for i, antenna in enumerate(ants):
+        target_azel = target.azel(
+            timestamp=numpy.median(offset_timestamps), antenna=antenna
         )
-    else:
-        azel_offset = wrap_angle(beam_centre)
+        target_el[i] = numpy.degrees(target_azel)[1]
+    cross_el = azel_offset[:, 0] * numpy.degrees(
+        numpy.cos(numpy.radians(target_el))
+    )
 
-    # Compute cross-elevation offset as azimuth offset * cosine (el) and
-    # output final offsets of interest in elevation and cross-el offsets in
-    # units of arcminutes
-    # TO DO: check if we are using the right formula especially the el values
-    actual_pointing_el = numpy.array(actual_pointing_el_list).mean(axis=(0, 1))
-    x_el = azel_offset[:, 0] * numpy.cos(numpy.cos(actual_pointing_el))
+    # Output final offsets of interest in azimuth , elevation and cross-el
+    # offsets in units of arcminutes
     pointing_offset = numpy.column_stack(
-        (numpy.degrees(azel_offset[:, 1] * 60.0), numpy.degrees(x_el) * 60.0)
+        (
+            numpy.degrees(azel_offset[:, 0] * 60.0),
+            numpy.degrees(azel_offset[:, 1] * 60.0),
+            numpy.degrees(cross_el) * 60.0,
+        )
     )
 
     # Save the fitted parameters and computed offsets

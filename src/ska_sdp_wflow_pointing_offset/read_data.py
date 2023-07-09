@@ -45,12 +45,7 @@ def _load_ms_tables(msname):
 
 
 def _read_visibilities(
-    msname,
-    apply_mask=False,
-    rfi_filename=None,
-    start_freq=None,
-    end_freq=None,
-    fit_on_plane=True,
+    msname, apply_mask=False, rfi_filename=None, start_freq=None, end_freq=None
 ):
     """
     Extracts parameters from a measurement set required for
@@ -63,16 +58,12 @@ def _read_visibilities(
         If no selection needed, use None
     :param end_freq: Ending frequency for selection in MHz.
         If no selection needed, use None
-    :param fit_on_plane:  Perform fitting on planar xy or spherical
-        azel coordinates.
-    :return: List of Visibility, source_offsets in azel, actual
-        elevation angles, list of katpoint Antennas, katpoint
-        target, and source offset timestamps.
+    :return: List of Visibility, source_offsets in azel, list of
+    katpoint Antennas, katpoint target, and source offset timestamps.
     """
     spw_table, pointing_table, source_table = _load_ms_tables(msname)
 
     # Get the frequencies and source offsets
-    actual_pointing = pointing_table.getcol("DIRECTION")
     requested_azel = pointing_table.getcol("TARGET")
 
     offset_timestamps = pointing_table.getcol("TIME")
@@ -150,58 +141,36 @@ def _read_visibilities(
 
     source_offset = numpy.zeros((requested_azel.shape[0], len(ants), 2))
     for i, antenna in enumerate(ants):
-        if fit_on_plane:
-            # Project onto plane
-            target_xy = target.sphere_to_plane(
-                az=numpy.radians(requested_azel[:, i, 0]),
-                el=numpy.radians(requested_azel[:, i, 1]),
-                timestamp=numpy.median(offset_timestamps),
-                antenna=antenna,
-                projection_type="ARC",
-                coord_system="azel",
-            )
-            source_offset[:, i] = numpy.degrees(numpy.array(target_xy)).T
-        else:
-            # Compute relative azel
-            target_azel = numpy.degrees(
-                target.azel(numpy.median(offset_timestamps), antenna)
-            )
+        # Compute relative azel
+        target_azel = numpy.degrees(
+            target.azel(numpy.median(offset_timestamps), antenna)
+        )
+        target_coord = SkyCoord(
+            az=target_azel[0] * units.deg,
+            alt=target_azel[1] * units.deg,
+            frame="altaz",
+        )
+        requested_coord = SkyCoord(
+            az=requested_azel[:, i, 0] * units.deg,
+            alt=requested_azel[:, i, 1] * units.deg,
+            frame="altaz",
+        )
 
-            target_coord = SkyCoord(
-                az=target_azel[0] * units.deg,
-                alt=target_azel[1] * units.deg,
-                frame="altaz",
-            )
-            requested_coord = SkyCoord(
-                az=requested_azel[:, i, 0] * units.deg,
-                alt=requested_azel[:, i, 1] * units.deg,
-                frame="altaz",
-            )
+        dra, ddec = target_coord.spherical_offsets_to(requested_coord)
+        dra = dra.deg
+        ddec = ddec.deg
 
-            dra, ddec = target_coord.spherical_offsets_to(requested_coord)
-            dra = dra.deg
-            ddec = ddec.deg
-
-            relative_azel = numpy.column_stack((dra, ddec))
-            source_offset[:, i] = relative_azel
+        relative_azel = numpy.column_stack((dra, ddec))
+        source_offset[:, i] = relative_azel
 
     # Align source_offset and visibility timestamps
     source_offset = interp_timestamps(
         source_offset, offset_timestamps, vis.time.data
     )
 
-    # Get the interpolated elevation positions to be used
-    # for calculating the cross-elevation offset. The data
-    # has shape (ntimes, nants, azel)
-    actual_pointing = interp_timestamps(
-        actual_pointing, offset_timestamps, vis.time.data
-    )
-    actual_pointing_el = actual_pointing[:, :, 1]
-
     return (
         vis,
         source_offset,
-        actual_pointing_el,
         ants,
         target,
         offset_timestamps,
@@ -214,7 +183,6 @@ def read_batch_visibilities(
     rfi_filename=None,
     start_freq=None,
     end_freq=None,
-    fit_on_plane=True,
 ):
     """
     Extracts parameters from multiple measurement sets required for
@@ -228,42 +196,31 @@ def read_batch_visibilities(
         If no selection needed, use None
     :param end_freq: Ending frequency for selection in MHz.
         If no selection needed, use None
-    :param fit_on_plane:  Perform fitting on planar xy or spherical
-        azel coordinates.
-    :return: List of Visibility, source_offsets in azel, actual
-        elevation angles, source offset timestamps, list of
-        katpoint Antennas, and katpoint target.
+    :return: List of Visibility, source_offsets in azel, source
+        offset timestamps, list of katpoint Antennas, and
+        katpoint target.
     """
     vis_list = []
     source_offset_list = []
-    actual_pointing_el_list = []
     offset_timestamps_list = []
     msdir = glob.glob(msdir + "*.ms")
     for msname in sorted(msdir):
         (
             vis,
             source_offset,
-            actual_pointing_el,
             ants,
             target,
             offset_timestamps,
         ) = _read_visibilities(
-            msname,
-            apply_mask,
-            rfi_filename,
-            start_freq,
-            end_freq,
-            fit_on_plane,
+            msname, apply_mask, rfi_filename, start_freq, end_freq
         )
         vis_list.append(vis)
         source_offset_list.append(source_offset)
-        actual_pointing_el_list.append(actual_pointing_el)
         offset_timestamps_list.append(offset_timestamps)
 
     return (
         vis_list,
         source_offset_list,
-        actual_pointing_el_list,
         offset_timestamps_list,
         ants,
         target,
