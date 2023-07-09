@@ -9,7 +9,6 @@ from ska_sdp_datamodels.visibility.vis_model import Visibility
 
 from ska_sdp_wflow_pointing_offset import construct_antennas
 from tests.utils import (
-    ACTUAL_POINTING_EL,
     BASELINES,
     CHANNEL_BANDWIDTH,
     DIAMETER,
@@ -21,11 +20,13 @@ from tests.utils import (
     NAME,
     OFFSET,
     PHASECENTRE,
+    POINTING_TIMESTAMPS,
     POLARISATION_FRAME,
     SOURCE,
     SOURCE_OFFSET_AZ,
     SOURCE_OFFSET_EL,
     STATION,
+    TARGET,
     UVW,
     VIS,
     VIS_TIMESTAMPS,
@@ -33,6 +34,7 @@ from tests.utils import (
     X_PER_SCAN,
     XYZ,
     Y_PER_SCAN_GAINS,
+    Y_PER_SCAN_VIS,
 )
 
 NANTS = 3
@@ -65,6 +67,18 @@ def ants_fixture():
 def source_offset_fixture():
     """Source offset fixture"""
     return numpy.dstack((SOURCE_OFFSET_AZ, SOURCE_OFFSET_EL))
+
+
+@pytest.fixture(name="offset_timestamps")
+def source_offset_timestamps_fixture():
+    """Source offset timestamps fixture"""
+    return POINTING_TIMESTAMPS
+
+
+@pytest.fixture(name="target")
+def katpoint_target_fixture():
+    """katpoint target fixture"""
+    return TARGET
 
 
 @pytest.fixture(name="vis_array")

@@ -11,9 +11,9 @@ from ska_sdp_wflow_pointing_offset.array_data_func import (
     select_channels,
 )
 from tests.utils import (
-    DISH_COORD_AZ,
-    DISH_COORD_EL,
     POINTING_TIMESTAMPS,
+    SOURCE_OFFSET_AZ,
+    SOURCE_OFFSET_EL,
     VIS_TIMESTAMPS,
 )
 
@@ -65,7 +65,7 @@ def test_interp_timestamps():
     """
     Unit test for interp_timestamps
     """
-    offset = numpy.dstack([DISH_COORD_AZ, DISH_COORD_EL])
+    offset = numpy.dstack([SOURCE_OFFSET_AZ, SOURCE_OFFSET_EL])
     out = interp_timestamps(offset, POINTING_TIMESTAMPS, VIS_TIMESTAMPS)
     assert out.shape == (5, 3, 2)
 

@@ -149,10 +149,11 @@ def compute_offset(args):
     offset_timestamps = numpy.concatenate(offset_timestamps)
     for scan, vis in enumerate(vis_list):
         if args["--fit_to_vis"]:
+            # To be looked at in detail in ORC-1572
             # Get autocorrelations only
             get_autocorr = vis.antenna1.data == vis.antenna2.data
             vis_amp = numpy.abs(vis.vis.data)
-            vis_amp = vis.vis.data[:, get_autocorr, :, :]
+            vis_amp = vis_amp[:, get_autocorr, :, :]
 
             # Visibilities have shape(ntimes, nants, nfreqs, npols)
             # Get the parallel hands polarisation visibilities

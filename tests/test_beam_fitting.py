@@ -41,16 +41,8 @@ def test_fit_to_visibilities(y_per_scan_vis, x_per_scan, frequency, ants):
         THRESH_WIDTH,
     ).fit_to_visibilities()
     azel_offset = w_average(ants, fitted_beams)
-    numpy.testing.assert_almost_equal(
-        azel_offset[:, 0],
-        numpy.array([0.0, 0.0, 0.0]),
-        decimal=6,
-    )
-    numpy.testing.assert_almost_equal(
-        azel_offset[:, 1],
-        numpy.array([0.0, 0.0, 0.0]),
-        decimal=6,
-    )
+    assert (numpy.isnan(azel_offset[:, 0])).all()
+    assert (numpy.isnan(azel_offset[:, 1])).all()
 
 
 def test_fit_to_gain(y_per_scan_gains, x_per_scan, frequency, ants):

@@ -3,6 +3,7 @@
 """
 Common Variables and Mock Class Objects used for testing
 """
+import katpoint
 import numpy
 import pandas
 from astropy.coordinates import EarthLocation, SkyCoord
@@ -851,6 +852,14 @@ Y_PER_SCAN_GAINS = numpy.array(
     ]
 )
 
+# y-parameter when fitting the primary beam to the visibility amplitudes
+Y_PER_SCAN_VIS = numpy.array(
+    [
+        [257.74959364, 268.96652217, 263.62241226, 267.37058841, 263.84486972],
+        [291.83644266, 308.56168876, 311.82873557, 306.63003675, 315.50306793],
+        [277.73365336, 286.87047706, 280.74303187, 280.82932103, 283.34789401],
+    ]
+)
 
 # y-parameter when fitting the primary beam to the visibilities
 # Weights - used as standard deviation on the y-parameter when
@@ -962,6 +971,9 @@ SOURCE_OFFSET_EL = numpy.array(
 
 # Pointing calibrator position
 ACTUAL_SOURCE = numpy.array([[5.14618, -1.112], [0, 0]])
+TARGET = katpoint.construct_radec_target(
+    ra=ACTUAL_SOURCE[0][0], dec=ACTUAL_SOURCE[0][1]
+)
 
 
 class MockBaseTable:
