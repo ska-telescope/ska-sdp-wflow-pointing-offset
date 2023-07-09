@@ -38,7 +38,7 @@ def test_read_batch_visibilities(mock_dir, mock_tables, mock_ms, vis_array):
         source_offset,
         _,
         ants,
-        _,
+        target,
     ) = read_batch_visibilities("test_dir")
 
     # Specific attributes
@@ -48,5 +48,6 @@ def test_read_batch_visibilities(mock_dir, mock_tables, mock_ms, vis_array):
     assert (vis[0].polarisation.data == CORR_TYPE).all()
     assert source_offset[0].shape == (5, 3, 2)
     assert numpy.array(ants).shape == (3,)
-    assert ants[0].name == "SKA001"
-    assert ants[0].diameter == 25.0
+    assert ants[0].name == "M001"
+    assert ants[0].diameter == 13.5
+    assert target.radec() == (5.14618, -1.112)
