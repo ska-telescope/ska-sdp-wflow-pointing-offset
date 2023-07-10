@@ -4,6 +4,7 @@ Init file
 
 from .array_data_func import (
     apply_rfi_mask,
+    compute_gains,
     interp_timestamps,
     select_channels,
     time_avg_amp,
@@ -11,7 +12,7 @@ from .array_data_func import (
 )
 from .export_data import export_pointing_offset_data
 from .read_data import read_batch_visibilities
-from .utils import compute_gains, construct_antennas
+from .utils import construct_antennas
 
 __all__ = [
     "export_pointing_offset_data",
@@ -21,6 +22,6 @@ __all__ = [
     "w_average",
     "interp_timestamps",
     "read_batch_visibilities",
-    "compute_gains",
     "construct_antennas",
+    "compute_gains",
 ]

@@ -47,6 +47,7 @@ from docopt import docopt
 from katpoint import wrap_angle
 
 from ska_sdp_wflow_pointing_offset.array_data_func import (
+    compute_gains,
     time_avg_amp,
     w_average,
 )
@@ -55,7 +56,6 @@ from ska_sdp_wflow_pointing_offset.export_data import (
     export_pointing_offset_data,
 )
 from ska_sdp_wflow_pointing_offset.read_data import read_batch_visibilities
-from ska_sdp_wflow_pointing_offset.utils import compute_gains
 
 log = logging.getLogger("ska-sdp-pointing-offset")
 log.setLevel(logging.INFO)
@@ -183,10 +183,12 @@ def compute_offset(args):
             log.info(
                 "\nSolving for the antenna complex gains for scan %d", scan + 1
             )
-            gt_list = compute_gains(vis)
+            gt_list = compute_gains(vis, 1)
 
             # Gains have shape (ntimes, nants, nfreqs, receptor1, receptor2)
-            gt_amp = numpy.abs(gt_list.gain.data)
+            # pylint:disable=fixme
+            # TODO: Yet to concatenate list of gain tables
+            gt_amp = numpy.abs(gt_list[0].gain.data)
             gt_amp = numpy.dstack(
                 (gt_amp[:, :, :, 0, 0], gt_amp[:, :, :, 1, 1])
             )
@@ -200,7 +202,7 @@ def compute_offset(args):
             # To DO: Provide option to extract the gains and use them
             # in the fitting (for sprint 3?)
             if scan == 0:
-                freqs[scan] = numpy.squeeze(gt_list.frequency.data)
+                freqs[scan] = numpy.squeeze(gt_list[0].frequency.data)
             y_per_scan[:, scan] = gt_amp
 
     # Solve for the pointing offsets

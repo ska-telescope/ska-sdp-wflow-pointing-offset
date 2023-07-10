@@ -7,6 +7,7 @@ import numpy
 
 from ska_sdp_wflow_pointing_offset.array_data_func import (
     apply_rfi_mask,
+    compute_gains,
     interp_timestamps,
     select_channels,
 )
@@ -72,3 +73,13 @@ def test_interp_timestamps():
     # The start and end should be the same
     numpy.testing.assert_array_almost_equal(out[0], offset[0])
     numpy.testing.assert_array_almost_equal(out[-1], offset[-1])
+
+
+def test_compute_gains(vis_array):
+    """
+    Unit test for compute_gains
+    """
+    gt_list = compute_gains(vis_array, 5)
+
+    assert len(gt_list) == 5
+    assert gt_list[0]["gain"].data.shape == (5, 3, 1, 2, 2)
