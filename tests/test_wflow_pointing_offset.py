@@ -50,8 +50,9 @@ def test_wflow_pointing_offset(
     end_freq,
     vis_array,
     source_offset,
-    actual_pointing_el,
+    offset_timestamps,
     ants,
+    target,
 ):
     """
     Main test routine.
@@ -81,10 +82,11 @@ def test_wflow_pointing_offset(
         thresh_width = 1.5
 
         read_batch_visibilities.return_value = (
-            vis_array,
-            source_offset,
-            actual_pointing_el,
+            [vis_array],
+            [source_offset],
+            [offset_timestamps],
             ants,
+            target,
         )
 
         args = {
@@ -100,6 +102,7 @@ def test_wflow_pointing_offset(
             "<bw_factor>": beamwidth_factor,
             "--thresh_width": thresh_width,
             "--fit_on_plane": False,
+            "--time_avg": None,
         }
 
         compute_offset(args)

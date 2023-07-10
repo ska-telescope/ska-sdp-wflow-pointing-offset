@@ -173,7 +173,7 @@ def compute_offset(args):
             vis_amp = vis_amp.mean(axis=(2, 3))
 
             # No or time-averaging of visibility amplitudes
-            vis_amp = time_avg_amp(vis_amp, args["--time_avg"])
+            vis_amp = time_avg_amp(vis_amp, time_avg=args["--time_avg"])
             if scan == 0:
                 # We want to use the frequency at the higher end of the
                 # frequency for better pointing accuracy
@@ -195,7 +195,7 @@ def compute_offset(args):
             gt_amp = gt_amp.mean(axis=2)
 
             # Perform no or time-averaging of gain amplitudes
-            gt_amp = time_avg_amp(gt_amp, args["--time_avg"])
+            gt_amp = time_avg_amp(gt_amp, time_avg=args["--time_avg"])
 
             # To DO: Provide option to extract the gains and use them
             # in the fitting (for sprint 3?)
