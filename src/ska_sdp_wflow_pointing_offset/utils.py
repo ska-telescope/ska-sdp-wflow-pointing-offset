@@ -1,6 +1,5 @@
 """
 Util functions for constructing katpoint antenna information
-and solving for antenna gains.
 """
 from katpoint import Antenna
 from ska_sdp_func_python.util.coordinate_support import ecef_to_lla

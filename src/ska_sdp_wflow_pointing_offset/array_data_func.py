@@ -2,9 +2,10 @@
 Functions for manipulation of data that are numpy arrays.
 Currently contains:
 1. Applying RFI mask and select frequency ranges for input data
-2. Interpolate timestamps for source offset data
+2. Aligning pointing and visibility timestamps via interpolation.
 3. Time-averaging of visibility or gain amplitudes
 4. Weighted-average of the fitted beam centres
+5. Solves for complex un-normalised antenna gains (G terms)
 """
 
 import logging
@@ -175,7 +176,6 @@ def compute_gains(vis, num_chunks):
                     source=vis.attrs["source"],
                     meta=vis.attrs["meta"],
                 )
-                print(new_vis)
                 gt_list.append(
                     solve_gaintable(
                         vis=new_vis,
