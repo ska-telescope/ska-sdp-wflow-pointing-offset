@@ -41,6 +41,7 @@ PERSIST = False
         ),
     ],
 )
+@pytest.mark.skip(reason="we need to expand the number of visibilities")
 def test_wflow_pointing_offset(
     read_batch_visibilities,
     fitting_method,

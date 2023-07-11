@@ -142,7 +142,6 @@ def compute_offset(args):
         args["--start_freq"],
         args["--end_freq"],
     )
-
     freqs = numpy.zeros((1))
     x_per_scan = numpy.array(source_offset_list).mean(axis=1)
     y_per_scan = numpy.zeros((len(ants), len(vis_list)))
@@ -178,6 +177,7 @@ def compute_offset(args):
                 # We want to use the frequency at the higher end of the
                 # frequency for better pointing accuracy
                 freqs[scan] = numpy.squeeze(vis.frequency.data[-1])
+            y_per_scan[:, scan] = vis_amp
         else:
             # Solve for the un-normalised G terms for each scan
             log.info(
