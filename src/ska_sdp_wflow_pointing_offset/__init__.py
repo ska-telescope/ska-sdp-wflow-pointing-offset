@@ -8,7 +8,7 @@ from .array_data_func import (
     interp_timestamps,
     select_channels,
     time_avg_amp,
-    w_average,
+    weighted_average,
 )
 from .export_data import export_pointing_offset_data
 from .read_data import read_batch_visibilities
@@ -19,7 +19,7 @@ __all__ = [
     "apply_rfi_mask",
     "select_channels",
     "time_avg_amp",
-    "w_average",
+    "weighted_average",
     "interp_timestamps",
     "read_batch_visibilities",
     "construct_antennas",

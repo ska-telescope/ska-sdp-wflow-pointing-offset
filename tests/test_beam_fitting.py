@@ -3,7 +3,7 @@ Unit tests for beam fitting functions
 """
 import numpy
 
-from ska_sdp_wflow_pointing_offset.array_data_func import w_average
+from ska_sdp_wflow_pointing_offset.array_data_func import weighted_average
 from ska_sdp_wflow_pointing_offset.beam_fitting import (
     SolveForOffsets,
     _fwhm_to_sigma,
@@ -40,7 +40,7 @@ def test_fit_to_visibilities(y_per_scan_vis, x_per_scan, frequency, ants):
         ants,
         THRESH_WIDTH,
     ).fit_to_visibilities()
-    azel_offset = w_average(ants, fitted_beams)
+    azel_offset = weighted_average(ants, fitted_beams)
     assert (numpy.isnan(azel_offset[:, 0])).all()
     assert (numpy.isnan(azel_offset[:, 1])).all()
 
@@ -59,7 +59,7 @@ def test_fit_to_gain(y_per_scan_gains, x_per_scan, frequency, ants):
     ).fit_to_gains()
 
     # Check the fitted AzEl offsets
-    azel_offset = w_average(ants, fitted_beams)
+    azel_offset = weighted_average(ants, fitted_beams)
     numpy.testing.assert_almost_equal(
         azel_offset[:, 0],
         numpy.array([-0.000212, -0.000427, -0.00037]),

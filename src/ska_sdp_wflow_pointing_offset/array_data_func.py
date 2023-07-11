@@ -101,11 +101,12 @@ def interp_timestamps(origin_data, origin_times, new_times):
 def time_avg_amp(data, time_avg=None):
     """
     Perform no, median, or mean averaging of the visibility or
-    gain amplitudes in time.
+    gain amplitudes in time. No averaging means select the
+    visibility or gain amplitudes at the first timestamp.
 
     :param data: Visibility or gain amplitudes in [ntimes, nants]
     :param time_avg: Type of averaging [None, "median", "mean"]
-    :return: Time-average visbility or gain amplitudes [nants]
+    :return: Time-average visibility or gain amplitudes [nants]
     """
     if time_avg is None:
         # Select vis or gain amplitudes at first timestamp
@@ -118,11 +119,17 @@ def time_avg_amp(data, time_avg=None):
     elif time_avg == "mean":
         # Mean average
         data = data.mean(axis=0)
+    else:
+        log.warning("Averaging type unknown. Using no averaging!")
+        # Select vis or gain amplitudes at first timestamp
+        data = data[
+            0,
+        ]
 
     return data
 
 
-def w_average(ants, fitted_beams):
+def weighted_average(ants, fitted_beams):
     """
     Compute the weighted average of the fitted pointing offsets
 
@@ -136,7 +143,7 @@ def w_average(ants, fitted_beams):
         if beams_freq is not None and beams_freq.is_valid:
             offsets_freq = numpy.array(beams_freq.centre)
         else:
-            print(f"{antenna.name} had no valid primary beam fitted")
+            log.warning("%s had no valid primary beam fitted", antenna.name)
             continue
         pointing_offset[i] = numpy.radians(offsets_freq)
 
@@ -147,7 +154,7 @@ def compute_gains(vis, num_chunks):
     """
     Solves for the antenna gains for the parallel hands only.
 
-    :param vis: Visibility containing the observed data_models
+    :param vis: The observed Visibility object
     :param num_chunks: Number of frequency chunks (integer)
 
     :return: GainTable containing solution
@@ -191,7 +198,7 @@ def compute_gains(vis, num_chunks):
                     )
                 )
         except ValueError:
-            log.info(
+            log.warning(
                 "Frequency channels not divisible by number of chunks. "
                 "Use num_chunks=1 instead."
             )

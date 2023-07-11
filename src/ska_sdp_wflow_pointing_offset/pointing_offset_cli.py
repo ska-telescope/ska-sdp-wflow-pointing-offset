@@ -3,13 +3,12 @@
 """Program with many options using docopt for computing pointing offsets.
 
 Usage:
-  pointing-offset COMMAND [--save_offset]
-                          [--msdir=DIR] [--apply_mask]
-                          [--fit_to_vis] [--time_avg=None]
+  pointing-offset COMMAND [--msdir=DIR] [--save_offset]
+                          [--apply_mask] [--fit_to_vis]
                           [--rfi_file=FILE] [--results_dir=None]
                           [--start_freq=None] [--end_freq=None]
                           [(--bw_factor <bw_factor>) [<bw_factor>...]]
-                          [--thresh_width=<float>]
+                          [--thresh_width=<float>][--time_avg=None]
 
 Commands:
   compute   Runs all required routines for computing the
@@ -22,9 +21,6 @@ Options:
   --msdir=DIR           Directory including Measurement set files
   --fit_to_vis          Fit primary beam to visibilities instead of antenna
                         gains (Optional) [default:False]
-  --time_avg=None       Perform no, median, or mean time-averaging of the
-                        gain amplitudes when fitting to gains. These options
-                        can be set with None, "median", or "mean".
   --apply_mask          Apply mask (Optional) [default:False]
   --rfi_file=FILE       RFI file (Optional)
   --save_offset         Save the offset results (Optional) [default:False]
@@ -34,6 +30,9 @@ Options:
   --bw_factor           Beamwidth factor [default:0.976, 1.098]
   --thresh_width=<float>  The maximum ratio of the fitted to expected beamwidth
                           [default:1.5]
+  --time_avg=None       Perform no, median, or mean time-averaging of the
+                        gain amplitudes when fitting to gains. These options
+                        can be set with None, "median", or "mean".
 
 """
 import datetime
@@ -49,7 +48,7 @@ from katpoint import wrap_angle
 from ska_sdp_wflow_pointing_offset.array_data_func import (
     compute_gains,
     time_avg_amp,
-    w_average,
+    weighted_average,
 )
 from ska_sdp_wflow_pointing_offset.beam_fitting import SolveForOffsets
 from ska_sdp_wflow_pointing_offset.export_data import (
@@ -215,7 +214,9 @@ def compute_offset(args):
         fitted_beams = initial_beams.fit_to_gains()
 
     # Compute the weighted-average of the valid fitted offsets
-    azel_offset = numpy.degrees(wrap_angle(w_average(ants, fitted_beams)))
+    azel_offset = numpy.degrees(
+        wrap_angle(weighted_average(ants, fitted_beams))
+    )
 
     # Compute cross-elevation offset as azimuth offset * cosine (el). We
     # use the target elevation as the elevation

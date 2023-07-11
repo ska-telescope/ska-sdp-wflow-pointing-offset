@@ -133,8 +133,8 @@ class SolveForOffsets:
     Fit the beam pattern to the visibility or gain amplitudes and
     outputs the fitted parameters and their uncertainties.
 
-    :param x_per_scan: Antenna pointings in AzEl or ARC xy coordinates
-        for each discrete offset pointing scan with shape [number of
+    :param x_per_scan: Antenna pointings in AzEl coordinates for
+        each discrete offset pointing scan with shape [number of
         scans, number of antennas, 2]
     :param y_per_scan: Visibility or gain amplitudes of each antenna
         for each discrete pointing scan with shape [number of antennas,
