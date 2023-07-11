@@ -7,13 +7,14 @@ import numpy
 
 from ska_sdp_wflow_pointing_offset.array_data_func import (
     apply_rfi_mask,
+    compute_gains,
     interp_timestamps,
     select_channels,
 )
 from tests.utils import (
-    DISH_COORD_AZ,
-    DISH_COORD_EL,
     POINTING_TIMESTAMPS,
+    SOURCE_OFFSET_AZ,
+    SOURCE_OFFSET_EL,
     VIS_TIMESTAMPS,
 )
 
@@ -65,10 +66,20 @@ def test_interp_timestamps():
     """
     Unit test for interp_timestamps
     """
-    offset = numpy.dstack([DISH_COORD_AZ, DISH_COORD_EL])
+    offset = numpy.dstack([SOURCE_OFFSET_AZ, SOURCE_OFFSET_EL])
     out = interp_timestamps(offset, POINTING_TIMESTAMPS, VIS_TIMESTAMPS)
     assert out.shape == (5, 3, 2)
 
     # The start and end should be the same
     numpy.testing.assert_array_almost_equal(out[0], offset[0])
     numpy.testing.assert_array_almost_equal(out[-1], offset[-1])
+
+
+def test_compute_gains(vis_array):
+    """
+    Unit test for compute_gains
+    """
+    gt_list = compute_gains(vis_array, 5)
+
+    assert len(gt_list) == 5
+    assert gt_list[0]["gain"].data.shape == (5, 3, 1, 2, 2)

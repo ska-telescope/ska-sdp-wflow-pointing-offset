@@ -51,7 +51,6 @@ Indices and tables
 
 
 .. _repository: https://gitlab.com/ska-telescope/sdp/science-pipeline-workflows/ska-sdp-wflow-pointing-offset
-.. _RASCIL: https://gitlab.com/ska-telescope/external/rascil-main
 .. _ska-sdp-datamodels: https://gitlab.com/ska-telescope/sdp/ska-sdp-datamodels
 .. _ska-sdp-func-python: https://gitlab.com/ska-telescope/sdp/ska-sdp-func-python
 .. _scikits.fitting: https://pypi.org/project/scikits.fitting/

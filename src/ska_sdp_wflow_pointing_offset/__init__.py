@@ -2,24 +2,26 @@
 Init file
 """
 
-from .array_data_func import apply_rfi_mask, interp_timestamps, select_channels
-from .export_data import export_pointing_offset_data
-from .read_data import read_visibilities
-from .utils import (
+from .array_data_func import (
+    apply_rfi_mask,
     compute_gains,
-    construct_antennas,
-    get_gain_results,
-    gt_single_plot,
+    interp_timestamps,
+    select_channels,
+    time_avg_amp,
+    weighted_average,
 )
+from .export_data import export_pointing_offset_data
+from .read_data import read_batch_visibilities
+from .utils import construct_antennas
 
 __all__ = [
     "export_pointing_offset_data",
     "apply_rfi_mask",
     "select_channels",
+    "time_avg_amp",
+    "weighted_average",
     "interp_timestamps",
-    "read_visibilities",
-    "compute_gains",
+    "read_batch_visibilities",
     "construct_antennas",
-    "get_gain_results",
-    "gt_single_plot",
+    "compute_gains",
 ]

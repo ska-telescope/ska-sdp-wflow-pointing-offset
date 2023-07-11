@@ -2,13 +2,18 @@
 Functions for manipulation of data that are numpy arrays.
 Currently contains:
 1. Applying RFI mask and select frequency ranges for input data
-2. Interpolate timestamps for source offset data
+2. Aligning pointing and visibility timestamps via interpolation.
+3. Time-averaging of visibility or gain amplitudes
+4. Weighted-average of the fitted beam centres
+5. Solves for complex un-normalised antenna gains (G terms)
 """
 
 import logging
 
 import numpy
 from scipy.interpolate import NearestNDInterpolator
+from ska_sdp_datamodels.visibility import Visibility
+from ska_sdp_func_python.calibration import solve_gaintable
 
 log = logging.getLogger("ska-sdp-pointing-offset")
 
@@ -91,3 +96,141 @@ def interp_timestamps(origin_data, origin_times, new_times):
         output[:, i, 1] = interp_el.values
 
     return output
+
+
+def time_avg_amp(data, time_avg=None):
+    """
+    Perform no, median, or mean averaging of the visibility or
+    gain amplitudes in time. No averaging means select the
+    visibility or gain amplitudes at the first timestamp.
+
+    :param data: Visibility or gain amplitudes in [ntimes, nants]
+    :param time_avg: Type of averaging [None, "median", "mean"]
+    :return: Time-average visibility or gain amplitudes [nants]
+    """
+    if time_avg is None:
+        # Select vis or gain amplitudes at first timestamp
+        data = data[
+            0,
+        ]
+    elif time_avg == "median":
+        # Median average
+        data = numpy.median(data, axis=0)
+    elif time_avg == "mean":
+        # Mean average
+        data = data.mean(axis=0)
+    else:
+        log.warning("Averaging type unknown. Using no averaging!")
+        # Select vis or gain amplitudes at first timestamp
+        data = data[
+            0,
+        ]
+
+    return data
+
+
+def weighted_average(ants, fitted_beams):
+    """
+    Compute the weighted average of the fitted pointing offsets
+
+    :param ants: List of katpoint antennas
+    :param fitted_beams: A dictionary of the fitted beams
+    :return: The weighted average of the valid fitted offsets
+    """
+    pointing_offset = numpy.full((len(ants), 2), numpy.nan)
+    for i, antenna in enumerate(ants):
+        beams_freq = fitted_beams.get(antenna.name, [])
+        if beams_freq is not None and beams_freq.is_valid:
+            offsets_freq = numpy.array(beams_freq.centre)
+        else:
+            log.warning("%s had no valid primary beam fitted", antenna.name)
+            continue
+        pointing_offset[i] = numpy.radians(offsets_freq)
+
+    return pointing_offset
+
+
+def compute_gains(vis, num_chunks):
+    """
+    Solves for the antenna gains for the parallel hands only.
+
+    :param vis: The observed Visibility object
+    :param num_chunks: Number of frequency chunks (integer)
+
+    :return: GainTable containing solution
+    """
+    freqs = vis.frequency.data
+    if num_chunks > 1:
+        try:
+            channels = numpy.arange(len(freqs)).reshape(num_chunks, -1)
+            gt_list = []
+            for chan in channels:
+                start = chan[0]
+                end = chan[-1] + 1
+                new_vis = Visibility.constructor(
+                    frequency=freqs[start:end],
+                    channel_bandwidth=vis.channel_bandwidth.data[start:end],
+                    phasecentre=vis.phasecentre,
+                    baselines=vis["baselines"],
+                    configuration=vis.attrs["configuration"],
+                    uvw=vis["uvw"].data,
+                    time=vis["time"].data,
+                    vis=vis.vis.data[:, :, start:end, :],
+                    flags=vis.flags.data[:, :, start:end, :],
+                    weight=vis.weight.data[:, :, start:end, :],
+                    integration_time=vis["integration_time"].data,
+                    polarisation_frame=vis.visibility_acc.polarisation_frame,
+                    source=vis.attrs["source"],
+                    meta=vis.attrs["meta"],
+                )
+                gt_list.append(
+                    solve_gaintable(
+                        vis=new_vis,
+                        modelvis=None,
+                        gain_table=None,
+                        phase_only=False,
+                        niter=200,
+                        tol=1e-06,
+                        crosspol=False,
+                        normalise_gains=None,
+                        jones_type="G",
+                        timeslice=None,
+                    )
+                )
+        except ValueError:
+            log.warning(
+                "Frequency channels not divisible by number of chunks. "
+                "Use num_chunks=1 instead."
+            )
+            gt_list = [
+                solve_gaintable(
+                    vis=vis,
+                    modelvis=None,
+                    gain_table=None,
+                    phase_only=False,
+                    niter=200,
+                    tol=1e-06,
+                    crosspol=False,
+                    normalise_gains=None,
+                    jones_type="G",
+                    timeslice=None,
+                )
+            ]
+
+    else:
+        gt_list = [
+            solve_gaintable(
+                vis=vis,
+                modelvis=None,
+                gain_table=None,
+                phase_only=False,
+                niter=200,
+                tol=1e-06,
+                crosspol=False,
+                normalise_gains=None,
+                jones_type="G",
+                timeslice=None,
+            )
+        ]
+
+    return gt_list

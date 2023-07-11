@@ -47,12 +47,10 @@ autodoc_mock_imports = [
     "katpoint",
     "scikits",
     "python-casacore",
-    "pyuvdata",
     "matplotlib",
     "ska-sdp-datamodels",
     "ska-sdp-func-python",
     "pandas",
-    "uncertainties",
     "scipy",
 ]
 

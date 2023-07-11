@@ -1,13 +1,14 @@
 # pylint: disable=too-many-locals,too-many-branches
+# pylint: disable=too-many-statements
 """Program with many options using docopt for computing pointing offsets.
 
 Usage:
-  pointing-offset COMMAND [--ms=FILE] [--save_offset]
+  pointing-offset COMMAND [--msdir=DIR] [--save_offset]
                           [--apply_mask] [--fit_to_vis]
                           [--rfi_file=FILE] [--results_dir=None]
                           [--start_freq=None] [--end_freq=None]
                           [(--bw_factor <bw_factor>) [<bw_factor>...]]
-                          [--thresh_width=<float>]
+                          [--thresh_width=<float>][--time_avg=None]
 
 Commands:
   compute   Runs all required routines for computing the
@@ -17,7 +18,7 @@ Options:
   -h --help            show this help message and exit
   -q --quiet           report only file names
 
-  --ms=FILE             Measurement set file
+  --msdir=DIR           Directory including Measurement set files
   --fit_to_vis          Fit primary beam to visibilities instead of antenna
                         gains (Optional) [default:False]
   --apply_mask          Apply mask (Optional) [default:False]
@@ -29,6 +30,9 @@ Options:
   --bw_factor           Beamwidth factor [default:0.976, 1.098]
   --thresh_width=<float>  The maximum ratio of the fitted to expected beamwidth
                           [default:1.5]
+  --time_avg=None       Perform no, median, or mean time-averaging of the
+                        gain amplitudes when fitting to gains. These options
+                        can be set with None, "median", or "mean".
 
 """
 import datetime
@@ -36,16 +40,21 @@ import logging
 import os
 import sys
 import time
-from pathlib import PurePosixPath
 
+import numpy
 from docopt import docopt
+from katpoint import wrap_angle
 
+from ska_sdp_wflow_pointing_offset.array_data_func import (
+    compute_gains,
+    time_avg_amp,
+    weighted_average,
+)
 from ska_sdp_wflow_pointing_offset.beam_fitting import SolveForOffsets
 from ska_sdp_wflow_pointing_offset.export_data import (
     export_pointing_offset_data,
 )
-from ska_sdp_wflow_pointing_offset.read_data import read_visibilities
-from ska_sdp_wflow_pointing_offset.utils import compute_gains, gt_single_plot
+from ska_sdp_wflow_pointing_offset.read_data import read_batch_visibilities
 
 log = logging.getLogger("ska-sdp-pointing-offset")
 log.setLevel(logging.INFO)
@@ -62,10 +71,12 @@ def main():
     args = docopt(__doc__)
 
     if args[COMMAND] == "compute":
-        if args["--ms"]:
+        if args["--msdir"]:
             compute_offset(args)
         else:
-            raise ValueError("Measurement set is required!!")
+            raise ValueError(
+                "Directory containing measurement sets is required!!"
+            )
 
     else:
         log.error(
@@ -117,42 +128,117 @@ def compute_offset(args):
         if not args["--rfi_file"]:
             raise ValueError("RFI File is required!!")
 
-    vis, source_offset, actual_pointing_el, ants = read_visibilities(
-        args["--ms"],
+    (
+        vis_list,
+        source_offset_list,
+        offset_timestamps,
+        ants,
+        target,
+    ) = read_batch_visibilities(
+        args["--msdir"],
         args["--apply_mask"],
         args["--rfi_file"],
         args["--start_freq"],
         args["--end_freq"],
     )
+    freqs = numpy.zeros((1))
+    x_per_scan = numpy.array(source_offset_list).mean(axis=1)
+    y_per_scan = numpy.zeros((len(ants), len(vis_list)))
+    offset_timestamps = numpy.concatenate(offset_timestamps)
+    for scan, vis in enumerate(vis_list):
+        if args["--fit_to_vis"]:
+            # To be looked at in detail in ORC-1572
+            # Get autocorrelations only
+            get_autocorr = vis.antenna1.data == vis.antenna2.data
+            vis_amp = numpy.abs(vis.vis.data)
+            vis_amp = vis_amp[:, get_autocorr, :, :]
 
-    if args["--fit_to_vis"]:
-        y_param = vis
-    else:
-        # Solve for the antenna gains
-        log.info("Solving for the antenna complex gains...")
-        gt_list = compute_gains(vis)
-        y_param = gt_list
+            # Visibilities have shape(ntimes, nants, nfreqs, npols)
+            # Get the parallel hands polarisation visibilities
+            if len(vis.polarisation.data) == 2:
+                # Get (XX and YY
+                vis_amp = numpy.array(
+                    [vis_amp[:, :, :, 0], vis_amp[:, :, :, 1]]
+                )
+                vis_amp = numpy.moveaxis(vis_amp, 0, 3)
+            elif len(vis.polarisation.data) == 4:
+                vis_amp = numpy.array(
+                    [vis_amp[:, :, :, 0], vis_amp[:, :, :, 3]]
+                )
+                vis_amp = numpy.moveaxis(vis_amp, 0, 3)
 
-        # Save gain plot
-        plot_name = os.path.join(
-            PurePosixPath(args["--ms"]).parent.as_posix(),
-            "computed_gains",
-        )
-        gt_single_plot(gt_list, plot_name)
+            # Average in frequency and polarisation
+            vis_amp = vis_amp.mean(axis=(2, 3))
+
+            # No or time-averaging of visibility amplitudes
+            vis_amp = time_avg_amp(vis_amp, time_avg=args["--time_avg"])
+            if scan == 0:
+                # We want to use the frequency at the higher end of the
+                # frequency for better pointing accuracy
+                freqs[scan] = numpy.squeeze(vis.frequency.data[-1])
+            y_per_scan[:, scan] = vis_amp
+        else:
+            # Solve for the un-normalised G terms for each scan
+            log.info(
+                "\nSolving for the antenna complex gains for scan %d", scan + 1
+            )
+            gt_list = compute_gains(vis, 1)
+
+            # Gains have shape (ntimes, nants, nfreqs, receptor1, receptor2)
+            # pylint:disable=fixme
+            # TODO: Yet to concatenate list of gain tables
+            gt_amp = numpy.abs(gt_list[0].gain.data)
+            gt_amp = numpy.dstack(
+                (gt_amp[:, :, :, 0, 0], gt_amp[:, :, :, 1, 1])
+            )
+
+            # Average in polarisation
+            gt_amp = gt_amp.mean(axis=2)
+
+            # Perform no or time-averaging of gain amplitudes
+            gt_amp = time_avg_amp(gt_amp, time_avg=args["--time_avg"])
+
+            # To DO: Provide option to extract the gains and use them
+            # in the fitting (for sprint 3?)
+            if scan == 0:
+                freqs[scan] = numpy.squeeze(gt_list[0].frequency.data)
+            y_per_scan[:, scan] = gt_amp
 
     # Solve for the pointing offsets
-    init_results = SolveForOffsets(
-        source_offset,
-        actual_pointing_el,
-        y_param,
-        beamwidth_factor,
-        ants,
-        thresh_width,
+    initial_beams = SolveForOffsets(
+        x_per_scan, y_per_scan, freqs, beamwidth_factor, ants, thresh_width
     )
     if args["--fit_to_vis"]:
-        fitted_results = init_results.fit_to_visibilities()
+        fitted_beams = initial_beams.fit_to_visibilities()
     else:
-        fitted_results = init_results.fit_to_gains()
+        fitted_beams = initial_beams.fit_to_gains()
+
+    # Compute the weighted-average of the valid fitted offsets
+    azel_offset = numpy.degrees(
+        wrap_angle(weighted_average(ants, fitted_beams))
+    )
+
+    # Compute cross-elevation offset as azimuth offset * cosine (el). We
+    # use the target elevation as the elevation
+    target_el = numpy.full(len(ants), numpy.nan)
+    for i, antenna in enumerate(ants):
+        target_azel = target.azel(
+            timestamp=numpy.median(offset_timestamps), antenna=antenna
+        )
+        target_el[i] = numpy.degrees(target_azel)[1]
+    cross_el = azel_offset[:, 0] * numpy.degrees(
+        numpy.cos(numpy.radians(target_el))
+    )
+
+    # Output final offsets of interest in azimuth , elevation and cross-el
+    # offsets in units of arcminutes
+    pointing_offset = numpy.column_stack(
+        (
+            numpy.degrees(azel_offset[:, 0] * 60.0),
+            numpy.degrees(azel_offset[:, 1] * 60.0),
+            numpy.degrees(cross_el) * 60.0,
+        )
+    )
 
     # Save the fitted parameters and computed offsets
     if args["--save_offset"]:
@@ -160,33 +246,27 @@ def compute_offset(args):
         if args["--results_dir"] is None:
             # Save to the location of the measurement set
             results_file = os.path.join(
-                PurePosixPath(args["--ms"]).parent.as_posix(),
-                "pointing_offsets.txt",
+                args["--msdir"], "pointing_offsets.txt"
             )
-            export_pointing_offset_data(
-                results_file,
-                fitted_results,
-            )
+            export_pointing_offset_data(results_file, pointing_offset)
         else:
             # Save to the user-set directory
             results_file = os.path.join(
                 args["--results_dir"], "pointing_offsets.txt"
             )
-            export_pointing_offset_data(
-                results_file,
-                fitted_results,
-            )
+            export_pointing_offset_data(results_file, pointing_offset)
+
         log.info(
             "Fitted parameters and computed offsets written to %s",
             results_file,
         )
     else:
-        if fitted_results.shape[0] < 10:
+        if azel_offset.shape[0] < 10:
             log.info(
                 "The fitted parameters and "
                 "computed offsets are printed on screen."
             )
-            for i, line in enumerate(fitted_results):
+            for i, line in enumerate(pointing_offset):
                 log.info("Offset array for antenna %i is: %s", i, line)
         else:
             log.info(
