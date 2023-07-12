@@ -216,14 +216,22 @@ class SolveForOffsets:
 
         return self.beams
 
-    def fit_to_gains(self):
+    def fit_to_gains(self, weights, use_weights=False):
         """
         Fit the primary beams to the gain amplitudes of each antenna
         and returns the fitted parameters and their uncertainties.
 
+        :param weights: The weights from the gain calibration.
+        :param use_weights: Use the weights to compute the standard
+            deviation on the gains in the fitting. If False,
+            1.0 is used as the standard deviation
+
         :return: The fitted beams (parameters and their uncertainties)
         """
         log.info("Fitting primary beams to gain amplitudes...")
+        if not use_weights:
+            weights = numpy.ones(numpy.shape(weights))
+
         for i, antenna in enumerate(self.ants):
             fitted_beam = BeamPatternFit(
                 centre=(0.0, 0.0),
@@ -237,7 +245,12 @@ class SolveForOffsets:
                 y=self.y_per_scan[
                     i,
                 ],
-                std_y=1.0,
+                std_y=numpy.sqrt(
+                    1.0
+                    / weights[
+                        i,
+                    ]
+                ),
                 thresh_width=self.thresh_width,
             )
 

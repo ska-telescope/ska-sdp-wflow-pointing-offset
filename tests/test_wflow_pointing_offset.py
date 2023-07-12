@@ -24,6 +24,7 @@ PERSIST = False
     "ska_sdp_wflow_pointing_offset.pointing_offset_cli.read_batch_visibilities"
 )
 @pytest.mark.parametrize("fitting_method", [True, False])
+@pytest.mark.parametrize("use_weights", [True, False])
 @pytest.mark.parametrize(
     "enabled, mode, start_freq, end_freq",
     [
@@ -45,6 +46,7 @@ PERSIST = False
 def test_wflow_pointing_offset(
     read_batch_visibilities,
     fitting_method,
+    use_weights,
     enabled,
     mode,
     start_freq,
@@ -97,12 +99,12 @@ def test_wflow_pointing_offset(
             "--rfi_file": None,
             "--save_offset": True,
             "--fit_to_vis": fitting_method,
+            "--use_weights": use_weights,
             "--results_dir": tempdir,
             "--msdir": tempdir,
             "--bw_factor": True,
             "<bw_factor>": beamwidth_factor,
             "--thresh_width": thresh_width,
-            "--fit_on_plane": False,
             "--time_avg": None,
         }
 
@@ -111,8 +113,8 @@ def test_wflow_pointing_offset(
         assert os.path.exists(outfile)
 
         read_out = numpy.loadtxt(outfile, delimiter=",")
-        # Output data shape [nants, 2 pols*12 fitted parameters]
-        assert read_out.shape == (3, 24)
+        # Output data shape [nants, antenna name, 3 fitted parameters]
+        assert read_out.shape == (3, 4)
 
         # If we need to save file to tests directory
         if PERSIST:

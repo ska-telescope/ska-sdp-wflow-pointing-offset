@@ -861,6 +861,9 @@ Y_PER_SCAN_VIS = numpy.array(
     ]
 )
 
+# Weights to be used for computing standard deviation on the gain amplitudes
+WEIGHTS_PER_SCAN = numpy.full(numpy.shape(Y_PER_SCAN_GAINS), 0.1)
+
 # y-parameter when fitting the primary beam to the visibilities
 # Weights - used as standard deviation on the y-parameter when
 # fitting the primary beams to visibility amplitudes

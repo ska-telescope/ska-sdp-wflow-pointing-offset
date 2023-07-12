@@ -31,6 +31,7 @@ from tests.utils import (
     VIS,
     VIS_TIMESTAMPS,
     VIS_WEIGHTS,
+    WEIGHTS_PER_SCAN,
     X_PER_SCAN,
     XYZ,
     Y_PER_SCAN_GAINS,
@@ -124,3 +125,9 @@ def y_per_scan_vis_fixture():
 def y_per_scan_gains_fixture():
     """The gain amplitudes of all antennas for each scan fixture"""
     return Y_PER_SCAN_GAINS
+
+
+@pytest.fixture(name="weights_per_scan")
+def weights_per_scan_fixture():
+    """The weights of all antennas for each scan fixture"""
+    return WEIGHTS_PER_SCAN

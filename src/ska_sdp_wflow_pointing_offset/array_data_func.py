@@ -101,7 +101,7 @@ def interp_timestamps(origin_data, origin_times, new_times):
 def time_avg_amp(data, time_avg=None):
     """
     Perform no, median, or mean averaging of the visibility or
-    gain amplitudes in time. No averaging means select the
+    gain amplitudes, or weights in time. No averaging means select the
     visibility or gain amplitudes at the first timestamp.
 
     :param data: Visibility or gain amplitudes in [ntimes, nants]
