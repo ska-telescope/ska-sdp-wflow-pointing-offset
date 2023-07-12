@@ -142,10 +142,14 @@ def compute_offset(args):
         args["--end_freq"],
     )
     freqs = numpy.zeros((1))
-    x_per_scan = numpy.array(source_offset_list).mean(axis=1)
+    x_per_scan = numpy.zeros((len(source_offset_list), len(ants), 2))
     y_per_scan = numpy.zeros((len(ants), len(vis_list)))
     offset_timestamps = numpy.concatenate(offset_timestamps)
-    for scan, vis in enumerate(vis_list):
+    for scan, (vis, source_offset) in enumerate(
+        zip(vis_list, source_offset_list)
+    ):
+        # Average antenna pointings in time
+        x_per_scan[scan] = source_offset.mean(axis=0)
         if args["--fit_to_vis"]:
             # To be looked at in detail in ORC-1572
             # Get autocorrelations only
@@ -180,7 +184,7 @@ def compute_offset(args):
         else:
             # Solve for the un-normalised G terms for each scan
             log.info(
-                "\nSolving for the antenna complex gains for scan %d", scan + 1
+                "Solving for the antenna complex gains for scan %d", scan + 1
             )
             gt_list = compute_gains(vis, 1)
 
@@ -221,11 +225,13 @@ def compute_offset(args):
     # Compute cross-elevation offset as azimuth offset * cosine (el). We
     # use the target elevation as the elevation
     target_el = numpy.full(len(ants), numpy.nan)
+    antenna_names = []
     for i, antenna in enumerate(ants):
         target_azel = target.azel(
             timestamp=numpy.median(offset_timestamps), antenna=antenna
         )
         target_el[i] = numpy.degrees(target_azel)[1]
+        antenna_names.append(antenna.name)
     cross_el = azel_offset[:, 0] * numpy.degrees(
         numpy.cos(numpy.radians(target_el))
     )
@@ -234,9 +240,10 @@ def compute_offset(args):
     # offsets in units of arcminutes
     pointing_offset = numpy.column_stack(
         (
-            numpy.degrees(azel_offset[:, 0] * 60.0),
-            numpy.degrees(azel_offset[:, 1] * 60.0),
-            numpy.degrees(cross_el) * 60.0,
+            antenna_names,
+            azel_offset[:, 0] * 60.0,
+            azel_offset[:, 1] * 60.0,
+            cross_el * 60.0,
         )
     )
 
@@ -271,8 +278,8 @@ def compute_offset(args):
         else:
             log.info(
                 "There are too many antennas. "
-                "Please set --save_offsets as True "
-                "to save the offsets to a file. "
+                "Please set --save_offset to save "
+                "the offsets to a file. "
             )
 
     end = time.time()

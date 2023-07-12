@@ -16,4 +16,7 @@ def export_pointing_offset_data(filename, offset):
     :return: True-Success, False-Failed
     """
 
-    numpy.savetxt(filename, offset, delimiter=",")
+    header = (
+        "Antenna Name Azimuth Offset Elevation Offset Cross-elevation Offset"
+    )
+    numpy.savetxt(filename, offset, fmt="%s", header=header, delimiter=",")
