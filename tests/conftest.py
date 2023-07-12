@@ -39,6 +39,7 @@ from tests.utils import (
 )
 
 NANTS = 3
+NSCANS = 5
 
 
 @pytest.fixture(name="configuration")
@@ -67,13 +68,21 @@ def ants_fixture():
 @pytest.fixture(name="source_offset")
 def source_offset_fixture():
     """Source offset fixture"""
-    return numpy.dstack((SOURCE_OFFSET_AZ, SOURCE_OFFSET_EL))
+    source_offset_list = []
+    for _ in range(NSCANS):
+        source_offset_list.append(
+            numpy.dstack((SOURCE_OFFSET_AZ, SOURCE_OFFSET_EL))
+        )
+    return source_offset_list
 
 
 @pytest.fixture(name="offset_timestamps")
 def source_offset_timestamps_fixture():
     """Source offset timestamps fixture"""
-    return POINTING_TIMESTAMPS
+    offset_timestamps_list = []
+    for _ in range(NSCANS):
+        offset_timestamps_list.append(POINTING_TIMESTAMPS)
+    return offset_timestamps_list
 
 
 @pytest.fixture(name="target")
@@ -85,22 +94,26 @@ def katpoint_target_fixture():
 @pytest.fixture(name="vis_array")
 def vis_array_fixture(configuration):
     """Visibility fixture"""
-    return Visibility.constructor(
-        frequency=FREQS,
-        channel_bandwidth=CHANNEL_BANDWIDTH,
-        phasecentre=PHASECENTRE,
-        configuration=configuration,
-        uvw=UVW,
-        time=VIS_TIMESTAMPS,
-        vis=VIS,
-        weight=VIS_WEIGHTS,
-        integration_time=INTEGRATION_TIME,
-        flags=FLAGS,
-        baselines=BASELINES,
-        polarisation_frame=POLARISATION_FRAME,
-        source=SOURCE,
-        meta={"MSV2": {"FIELD_ID": 0, "DATA_DESC_ID": 0}},
-    )
+    vis_list = []
+    for _ in range(NSCANS):
+        vis = Visibility.constructor(
+            frequency=FREQS,
+            channel_bandwidth=CHANNEL_BANDWIDTH,
+            phasecentre=PHASECENTRE,
+            configuration=configuration,
+            uvw=UVW,
+            time=VIS_TIMESTAMPS,
+            vis=VIS,
+            weight=VIS_WEIGHTS,
+            integration_time=INTEGRATION_TIME,
+            flags=FLAGS,
+            baselines=BASELINES,
+            polarisation_frame=POLARISATION_FRAME,
+            source=SOURCE,
+            meta={"MSV2": {"FIELD_ID": 0, "DATA_DESC_ID": 0}},
+        )
+        vis_list.append(vis)
+    return vis_list
 
 
 @pytest.fixture(name="frequency")

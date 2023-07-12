@@ -156,11 +156,11 @@ def _read_visibilities(
             frame="altaz",
         )
 
-        dra, ddec = target_coord.spherical_offsets_to(requested_coord)
-        dra = dra.deg
-        ddec = ddec.deg
+        dazim, delev = target_coord.spherical_offsets_to(requested_coord)
+        dazim = dazim.deg
+        delev = delev.deg
 
-        relative_azel = numpy.column_stack((dra, ddec))
+        relative_azel = numpy.column_stack((dazim, delev))
         source_offset[:, i] = relative_azel
 
     # Align source_offset and visibility timestamps

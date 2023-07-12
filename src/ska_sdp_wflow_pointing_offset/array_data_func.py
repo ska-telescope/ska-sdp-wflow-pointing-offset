@@ -163,6 +163,26 @@ def compute_gains(vis, num_chunks):
     if num_chunks > 1:
         try:
             channels = numpy.arange(len(freqs)).reshape(num_chunks, -1)
+        except ValueError:
+            log.warning(
+                "Frequency channels not divisible by number of chunks. "
+                "Use num_chunks=1 instead."
+            )
+            gt_list = [
+                solve_gaintable(
+                    vis=vis,
+                    modelvis=None,
+                    gain_table=None,
+                    phase_only=False,
+                    niter=200,
+                    tol=1e-06,
+                    crosspol=False,
+                    normalise_gains=None,
+                    jones_type="G",
+                    timeslice=None,
+                )
+            ]
+        else:
             gt_list = []
             for chan in channels:
                 start = chan[0]
@@ -197,26 +217,6 @@ def compute_gains(vis, num_chunks):
                         timeslice=None,
                     )
                 )
-        except ValueError:
-            log.warning(
-                "Frequency channels not divisible by number of chunks. "
-                "Use num_chunks=1 instead."
-            )
-            gt_list = [
-                solve_gaintable(
-                    vis=vis,
-                    modelvis=None,
-                    gain_table=None,
-                    phase_only=False,
-                    niter=200,
-                    tol=1e-06,
-                    crosspol=False,
-                    normalise_gains=None,
-                    jones_type="G",
-                    timeslice=None,
-                )
-            ]
-
     else:
         gt_list = [
             solve_gaintable(

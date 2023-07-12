@@ -32,7 +32,7 @@ def test_read_batch_visibilities(mock_dir, mock_tables, mock_ms, vis_array):
         MockPointingTable(),
         MockSourceTable(),
     )
-    mock_ms.return_value = [vis_array]
+    mock_ms.return_value = vis_array
     (
         vis,
         source_offset,

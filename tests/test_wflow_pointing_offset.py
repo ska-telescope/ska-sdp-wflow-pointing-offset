@@ -42,7 +42,6 @@ PERSIST = False
         ),
     ],
 )
-@pytest.mark.skip(reason="we need to expand the number of visibilities")
 def test_wflow_pointing_offset(
     read_batch_visibilities,
     fitting_method,
@@ -85,9 +84,9 @@ def test_wflow_pointing_offset(
         thresh_width = 1.5
 
         read_batch_visibilities.return_value = (
-            [vis_array],
-            [source_offset],
-            [offset_timestamps],
+            vis_array,
+            source_offset,
+            offset_timestamps,
             ants,
             target,
         )
@@ -112,7 +111,8 @@ def test_wflow_pointing_offset(
 
         assert os.path.exists(outfile)
 
-        read_out = numpy.loadtxt(outfile, delimiter=",")
+        read_out = numpy.loadtxt(outfile, delimiter=",", dtype=object)
+
         # Output data shape [nants, antenna name, 3 fitted parameters]
         assert read_out.shape == (3, 4)
 
