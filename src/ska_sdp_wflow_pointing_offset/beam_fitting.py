@@ -222,9 +222,6 @@ class SolveForOffsets:
         and returns the fitted parameters and their uncertainties.
 
         :param weights: The weights from the gain calibration.
-        :param use_weights: Use the weights to compute the standard
-            deviation on the gains in the fitting. If False,
-            1.0 is used as the standard deviation
 
         :return: The fitted beams (parameters and their uncertainties)
         """
@@ -253,7 +250,6 @@ class SolveForOffsets:
             )
 
             # Collect the fitted beams
-            beams_freq = self.beams.get(antenna.name, [None])
             beams_freq = fitted_beam
             self.beams[antenna.name] = beams_freq
 

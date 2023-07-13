@@ -113,8 +113,11 @@ def test_wflow_pointing_offset(
 
         read_out = numpy.loadtxt(outfile, delimiter=",", dtype=object)
 
-        # Output data shape [nants, antenna name, 3 fitted parameters]
+        # Output data shape [nants, 3 fitted parameters]
         assert read_out.shape == (3, 4)
+        # First column is antenna names
+        assert read_out[0, 0] == "M001"
+        # Assert fitted parameters (to-do)
 
         # If we need to save file to tests directory
         if PERSIST:
