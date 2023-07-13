@@ -216,7 +216,7 @@ class SolveForOffsets:
 
         return self.beams
 
-    def fit_to_gains(self, weights, use_weights=False):
+    def fit_to_gains(self, weights):
         """
         Fit the primary beams to the gain amplitudes of each antenna
         and returns the fitted parameters and their uncertainties.
@@ -229,8 +229,6 @@ class SolveForOffsets:
         :return: The fitted beams (parameters and their uncertainties)
         """
         log.info("Fitting primary beams to gain amplitudes...")
-        if not use_weights:
-            weights = numpy.ones(numpy.shape(weights))
 
         for i, antenna in enumerate(self.ants):
             fitted_beam = BeamPatternFit(

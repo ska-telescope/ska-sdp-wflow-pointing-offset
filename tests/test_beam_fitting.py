@@ -58,7 +58,7 @@ def test_fit_to_gain(
         BEAMWIDTH_FACTOR,
         ants,
         THRESH_WIDTH,
-    ).fit_to_gains(weights_per_scan, use_weights=True)
+    ).fit_to_gains(weights_per_scan)
 
     # Check the fitted AzEl offsets
     azel_offset = weighted_average(ants, fitted_beams)

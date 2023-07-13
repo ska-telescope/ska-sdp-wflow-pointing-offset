@@ -224,9 +224,9 @@ def compute_offset(args):
     if args["--fit_to_vis"]:
         fitted_beams = initial_beams.fit_to_visibilities()
     else:
-        fitted_beams = initial_beams.fit_to_gains(
-            weights_per_scan, args["--use_weights"]
-        )
+        if not args["--use_weights"]:
+            weights_per_scan = numpy.ones(numpy.shape(weights_per_scan))
+        fitted_beams = initial_beams.fit_to_gains(weights_per_scan)
 
     # Compute the weighted-average of the valid fitted offsets
     azel_offset = numpy.degrees(
