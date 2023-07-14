@@ -144,7 +144,7 @@ def compute_offset(args):
         args["--start_freq"],
         args["--end_freq"],
     )
-    freqs = numpy.zeros((1))
+    freqs = 0.0
     x_per_scan = numpy.zeros((len(source_offset_list), len(ants), 2))
     y_per_scan = numpy.zeros((len(ants), len(vis_list)))
     weights_per_scan = numpy.zeros((len(ants), len(vis_list)))
@@ -164,16 +164,20 @@ def compute_offset(args):
             # Visibilities have shape(ntimes, nants, nfreqs, npols)
             # Get the parallel hands polarisation visibilities
             if len(vis.polarisation.data) == 2:
-                # Get (XX and YY
-                vis_amp = numpy.array(
-                    [vis_amp[:, :, :, 0], vis_amp[:, :, :, 1]]
-                )
-                vis_amp = numpy.moveaxis(vis_amp, 0, 3)
+                # Either (XX,YY) or (RR, LL)
+                log.info("Two polarisations found...")
             elif len(vis.polarisation.data) == 4:
+                # Either (XX, XY, YX, YY) or (RR, RL, LR, LL)
+                log.info(
+                    "Found four polarisations. Extracting the "
+                    "parallel hand polarisations..."
+                )
                 vis_amp = numpy.array(
                     [vis_amp[:, :, :, 0], vis_amp[:, :, :, 3]]
                 )
                 vis_amp = numpy.moveaxis(vis_amp, 0, 3)
+            else:
+                raise ValueError("Polarisation type not supported!")
 
             # Average in frequency and polarisation
             vis_amp = vis_amp.mean(axis=(2, 3))
@@ -183,7 +187,7 @@ def compute_offset(args):
             if scan == 0:
                 # We want to use the frequency at the higher end of the
                 # frequency for better pointing accuracy
-                freqs[scan] = numpy.squeeze(vis.frequency.data[-1])
+                freqs = numpy.squeeze(vis.frequency.data[-1])
             y_per_scan[:, scan] = vis_amp
         else:
             # Solve for the un-normalised G terms for each scan
@@ -213,7 +217,7 @@ def compute_offset(args):
             gt_weights = time_avg_amp(gt_weights, time_avg=args["--time_avg"])
 
             if scan == 0:
-                freqs[scan] = numpy.squeeze(gt_list[0].frequency.data)
+                freqs = numpy.squeeze(gt_list[0].frequency.data)
             y_per_scan[:, scan] = gt_amp
             weights_per_scan[:, scan] = gt_weights
 
