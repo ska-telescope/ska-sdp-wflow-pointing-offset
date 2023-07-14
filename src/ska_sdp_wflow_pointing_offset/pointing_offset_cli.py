@@ -4,9 +4,10 @@
 
 Usage:
   pointing-offset COMMAND [--msdir=DIR] [--save_offset]
-                          [--apply_mask] [--fit_to_vis]
-                          [--rfi_file=FILE] [--results_dir=None]
-                          [--start_freq=None] [--end_freq=None]
+                          [--apply_mask] [--use_weights]
+                          [--fit_to_vis] [--rfi_file=FILE]
+                          [--results_dir=None] [--start_freq=None]
+                          [--end_freq=None]
                           [(--bw_factor <bw_factor>) [<bw_factor>...]]
                           [--thresh_width=<float>][--time_avg=None]
 
@@ -22,6 +23,8 @@ Options:
   --fit_to_vis          Fit primary beam to visibilities instead of antenna
                         gains (Optional) [default:False]
   --apply_mask          Apply mask (Optional) [default:False]
+  --use_weights         Use weights when fitting the primary beams to the
+                        gain amplitudes (Optional) [default:False]
   --rfi_file=FILE       RFI file (Optional)
   --save_offset         Save the offset results (Optional) [default:False]
   --results_dir=None    Directory where the results need to be saved (Optional)
@@ -141,9 +144,10 @@ def compute_offset(args):
         args["--start_freq"],
         args["--end_freq"],
     )
-    freqs = numpy.zeros((1))
+    freqs = 0.0
     x_per_scan = numpy.zeros((len(source_offset_list), len(ants), 2))
     y_per_scan = numpy.zeros((len(ants), len(vis_list)))
+    weights_per_scan = numpy.zeros((len(ants), len(vis_list)))
     offset_timestamps = numpy.concatenate(offset_timestamps)
     for scan, (vis, source_offset) in enumerate(
         zip(vis_list, source_offset_list)
@@ -160,16 +164,20 @@ def compute_offset(args):
             # Visibilities have shape(ntimes, nants, nfreqs, npols)
             # Get the parallel hands polarisation visibilities
             if len(vis.polarisation.data) == 2:
-                # Get (XX and YY
-                vis_amp = numpy.array(
-                    [vis_amp[:, :, :, 0], vis_amp[:, :, :, 1]]
-                )
-                vis_amp = numpy.moveaxis(vis_amp, 0, 3)
+                # Either (XX,YY) or (RR, LL)
+                log.info("Two polarisations found...")
             elif len(vis.polarisation.data) == 4:
+                # Either (XX, XY, YX, YY) or (RR, RL, LR, LL)
+                log.info(
+                    "Found four polarisations. Extracting the "
+                    "parallel hand polarisations..."
+                )
                 vis_amp = numpy.array(
                     [vis_amp[:, :, :, 0], vis_amp[:, :, :, 3]]
                 )
                 vis_amp = numpy.moveaxis(vis_amp, 0, 3)
+            else:
+                raise ValueError("Polarisation type not supported!")
 
             # Average in frequency and polarisation
             vis_amp = vis_amp.mean(axis=(2, 3))
@@ -179,7 +187,7 @@ def compute_offset(args):
             if scan == 0:
                 # We want to use the frequency at the higher end of the
                 # frequency for better pointing accuracy
-                freqs[scan] = numpy.squeeze(vis.frequency.data[-1])
+                freqs = numpy.squeeze(vis.frequency.data[-1])
             y_per_scan[:, scan] = vis_amp
         else:
             # Solve for the un-normalised G terms for each scan
@@ -195,18 +203,23 @@ def compute_offset(args):
             gt_amp = numpy.dstack(
                 (gt_amp[:, :, :, 0, 0], gt_amp[:, :, :, 1, 1])
             )
+            gt_weights = gt_list[0].weight.data
+            gt_weights = numpy.dstack(
+                (gt_weights[:, :, :, 0, 0], gt_weights[:, :, :, 1, 1])
+            )
 
             # Average in polarisation
             gt_amp = gt_amp.mean(axis=2)
+            gt_weights = gt_weights.mean(axis=2)
 
-            # Perform no or time-averaging of gain amplitudes
+            # Perform no or time-averaging of gain amplitudes and weights
             gt_amp = time_avg_amp(gt_amp, time_avg=args["--time_avg"])
+            gt_weights = time_avg_amp(gt_weights, time_avg=args["--time_avg"])
 
-            # To DO: Provide option to extract the gains and use them
-            # in the fitting (for sprint 3?)
             if scan == 0:
-                freqs[scan] = numpy.squeeze(gt_list[0].frequency.data)
+                freqs = numpy.squeeze(gt_list[0].frequency.data)
             y_per_scan[:, scan] = gt_amp
+            weights_per_scan[:, scan] = gt_weights
 
     # Solve for the pointing offsets
     initial_beams = SolveForOffsets(
@@ -215,7 +228,9 @@ def compute_offset(args):
     if args["--fit_to_vis"]:
         fitted_beams = initial_beams.fit_to_visibilities()
     else:
-        fitted_beams = initial_beams.fit_to_gains()
+        if not args["--use_weights"]:
+            weights_per_scan = numpy.ones(numpy.shape(weights_per_scan))
+        fitted_beams = initial_beams.fit_to_gains(weights_per_scan)
 
     # Compute the weighted-average of the valid fitted offsets
     azel_offset = numpy.degrees(

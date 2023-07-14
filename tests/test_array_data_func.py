@@ -79,7 +79,9 @@ def test_compute_gains(vis_array):
     """
     Unit test for compute_gains
     """
-    gt_list = compute_gains(vis_array, 5)
+    gt_list = []
+    for vis in vis_array:
+        gt_list.append(compute_gains(vis, 1))
 
     assert len(gt_list) == 5
-    assert gt_list[0]["gain"].data.shape == (5, 3, 1, 2, 2)
+    assert gt_list[0][0]["gain"].data.shape == (5, 3, 1, 2, 2)

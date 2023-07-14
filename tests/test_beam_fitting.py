@@ -45,7 +45,9 @@ def test_fit_to_visibilities(y_per_scan_vis, x_per_scan, frequency, ants):
     assert (numpy.isnan(azel_offset[:, 1])).all()
 
 
-def test_fit_to_gain(y_per_scan_gains, x_per_scan, frequency, ants):
+def test_fit_to_gain(
+    y_per_scan_gains, x_per_scan, frequency, ants, weights_per_scan
+):
     """
     Unit test for fitting primary beams to gain amplitudes
     """
@@ -56,7 +58,7 @@ def test_fit_to_gain(y_per_scan_gains, x_per_scan, frequency, ants):
         BEAMWIDTH_FACTOR,
         ants,
         THRESH_WIDTH,
-    ).fit_to_gains()
+    ).fit_to_gains(weights_per_scan)
 
     # Check the fitted AzEl offsets
     azel_offset = weighted_average(ants, fitted_beams)
