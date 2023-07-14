@@ -30,7 +30,7 @@ def test_sigma_to_fwhm():
 
 
 def test_fit_to_visibilities(
-    y_per_scan_vis, x_per_scan, frequency, ants, target, offset_timestamps
+    y_per_scan_vis, x_per_scan, frequency, ants, target, pointing_timestamps
 ):
     """
     Unit test for fitting primary beams to visibility amplitudes
@@ -44,7 +44,7 @@ def test_fit_to_visibilities(
         THRESH_WIDTH,
     ).fit_to_visibilities()
     pointing_offset = weighted_average(
-        ants, fitted_beams, target, offset_timestamps, 1
+        ants, fitted_beams, target, pointing_timestamps, 1
     )
 
     # Check the antenna names, AzEl and Cross-El offset
@@ -63,7 +63,7 @@ def test_fit_to_gain(
     ants,
     weights_per_scan,
     target,
-    offset_timestamps,
+    pointing_timestamps,
 ):
     """
     Unit test for fitting primary beams to gain amplitudes
@@ -79,7 +79,7 @@ def test_fit_to_gain(
 
     # Check the fitted AzEl offsets
     pointing_offset = weighted_average(
-        ants, fitted_beams, target, offset_timestamps, 16
+        ants, fitted_beams, target, pointing_timestamps, 16
     )
 
     # Check the antenna names, Az offset, El offset and Cross-El offset

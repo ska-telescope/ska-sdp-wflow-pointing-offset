@@ -77,7 +77,7 @@ def source_offset_fixture():
     return source_offset_list
 
 
-@pytest.fixture(name="offset_timestamps")
+@pytest.fixture(name="pointing_timestamps")
 def source_offset_timestamps_fixture():
     """Source offset timestamps fixture"""
     offset_timestamps_list = []

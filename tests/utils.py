@@ -126,7 +126,7 @@ CHANNEL_BANDWIDTH = numpy.full(FREQS.shape, 372281.909)
 SOURCE = "J1939-6342"
 PHASECENTRE = SkyCoord(294.85429167, -63.71266667, unit="deg")
 
-# Complex visibilities
+# Complex visibilities, weights, and flags
 VIS = numpy.full(
     (NTIMES, len(BASELINES), NCHAN, NPOL), numpy.complex128(1.0 + 0.01j)
 )
