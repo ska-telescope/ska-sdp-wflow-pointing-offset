@@ -118,6 +118,11 @@ class BeamPatternFit(ScatterFit):
         # fitted width compared to the expected. The fitted beam can
         # only be equal to the expected or greater than the expected
         # by less than thresh_width
+        print(self.centre)
+        print(self.width)
+        print(self.expected_width)
+        print("=" * 30)
+
         fit_snr = self._interp.std / self._interp.std_std
         norm_width = self.width / self.expected_width
 
@@ -167,20 +172,6 @@ class SolveForOffsets:
         self.ants = ants
         self.thresh_width = thresh_width
 
-        # Calculate the theoretical or expected beamwidth
-        self.expected_width = numpy.zeros((len(ants), 2))
-        wavelength = lightspeed / self.freqs
-        if not numpy.all(numpy.isfinite(wavelength)):
-            raise ValueError(
-                "Wavelength cannot be infinite. Check frequency range!"
-            )
-        for i, antenna in enumerate(self.ants):
-            # Convert power beamwidth (for single dish) to gain/voltage
-            # beamwidth (interferometer)
-            self.expected_width[i] = numpy.sqrt(2) * numpy.degrees(
-                numpy.array(beamwidth_factor) * wavelength / antenna.diameter
-            )
-
         # Collect the fitted beams
         self.beams = {}
 
@@ -191,14 +182,23 @@ class SolveForOffsets:
 
         :return: The fitted beams (parameters and their uncertainties)
         """
+        # Calculate the theoretical or expected beamwidth
+        # Convert power beamwidth (for single dish) to gain/voltage
+        # beamwidth (interferometer)
         log.info("Fitting primary beams to visibility amplitudes...")
         for i, antenna in enumerate(self.ants):
+            wavelength = lightspeed / self.freqs
+            if not numpy.all(numpy.isfinite(wavelength)):
+                raise ValueError(
+                    "Wavelength cannot be infinite. Check frequency range!"
+                )
+            expected_width = numpy.sqrt(2) * numpy.degrees(
+                numpy.array(self.beamwidth_factor)
+                * wavelength
+                / antenna.diameter
+            )
             fitted_beam = BeamPatternFit(
-                centre=(0.0, 0.0),
-                width=self.expected_width[
-                    i,
-                ],
-                height=1.0,
+                centre=(0.0, 0.0), width=expected_width, height=1.0
             )
             fitted_beam.fit(
                 x=self.x_per_scan[:, i].T,
@@ -216,34 +216,101 @@ class SolveForOffsets:
 
         return self.beams
 
-    def fit_to_gains(self):
+    def fit_to_gains(self, weights, num_chunks=16):
         """
         Fit the primary beams to the gain amplitudes of each antenna
         and returns the fitted parameters and their uncertainties.
 
+        :param weights: The weights from the gain calibration
+        :param num_chunks: Number of chunks used in the gain calibration
         :return: The fitted beams (parameters and their uncertainties)
         """
-        log.info("Fitting primary beams to gain amplitudes...")
-        for i, antenna in enumerate(self.ants):
-            fitted_beam = BeamPatternFit(
-                centre=(0.0, 0.0),
-                width=self.expected_width[
-                    i,
-                ],
-                height=1.0,
-            )
-            fitted_beam.fit(
-                x=self.x_per_scan[:, i].T,
-                y=self.y_per_scan[
-                    i,
-                ],
-                std_y=1.0,
-                thresh_width=self.thresh_width,
-            )
+        print(self.x_per_scan.shape)
+        print(self.y_per_scan.shape)
+        print(weights.shape)
+        print(num_chunks)
+        print("=" * 30)
 
-            # Collect the fitted beams
-            beams_freq = self.beams.get(antenna.name, [None])
-            beams_freq = fitted_beam
-            self.beams[antenna.name] = beams_freq
+        # Compute the expected or theoretical beamwidth
+        if num_chunks > 1:
+            # Exclude the band edges gains, weights, and frequencies
+            # solutions by discarding the bottom and top part of the
+            # band solutions
+            self.y_per_scan = self.y_per_scan[:, 1 : num_chunks - 1]
+            weights = weights[:, 1 : num_chunks - 1]
+            self.freqs = self.freqs[1 : num_chunks - 1]
+        for i, antenna in enumerate(self.ants):
+            # Convert power beamwidth (for single dish) to gain/voltage
+            # beamwidth (interferometer)
+            if num_chunks > 1:
+                for chunk in range(num_chunks - 2):
+                    wavelength = lightspeed / self.freqs[chunk]
+                    if not numpy.all(numpy.isfinite(wavelength)):
+                        raise ValueError(
+                            "Wavelength cannot be infinite. Check "
+                            "frequency range!"
+                        )
+                    expected_width = numpy.sqrt(2) * numpy.degrees(
+                        numpy.array(self.beamwidth_factor)
+                        * wavelength
+                        / antenna.diameter
+                    )
+                    log.info(
+                        "Fitting primary beams to Band %d gain amplitudes...",
+                        chunk + 1,
+                    )
+                    fitted_beam = BeamPatternFit(
+                        centre=(0.0, 0.0), width=expected_width, height=1.0
+                    )
+                    fitted_beam.fit(
+                        x=self.x_per_scan[:, i].T,
+                        y=self.y_per_scan[i, chunk],
+                        std_y=numpy.sqrt(1.0 / weights[i, chunk]),
+                        thresh_width=self.thresh_width,
+                    )
+
+                    # Collect the fitted beams
+                    beams_freq = self.beams.get(
+                        antenna.name, [None] * (num_chunks - 2)
+                    )
+                    beams_freq[chunk] = fitted_beam
+                    self.beams[antenna.name] = beams_freq
+            else:
+                wavelength = lightspeed / self.freqs
+                if not numpy.all(numpy.isfinite(wavelength)):
+                    raise ValueError(
+                        "Wavelength cannot be infinite. Check frequency range!"
+                    )
+                expected_width = numpy.sqrt(2) * numpy.degrees(
+                    numpy.array(self.beamwidth_factor)
+                    * wavelength
+                    / antenna.diameter
+                )
+                log.info("Fitting primary beams to gain amplitudes...")
+                fitted_beam = BeamPatternFit(
+                    centre=(0.0, 0.0),
+                    width=expected_width[
+                        i,
+                    ],
+                    height=1.0,
+                )
+                fitted_beam.fit(
+                    x=self.x_per_scan[:, i].T,
+                    y=self.y_per_scan[
+                        i,
+                    ],
+                    std_y=numpy.sqrt(
+                        1.0
+                        / weights[
+                            i,
+                        ]
+                    ),
+                    thresh_width=self.thresh_width,
+                )
+
+                # Collect the fitted beams
+                beams_freq = self.beams.get(antenna.name, [None])
+                beams_freq = fitted_beam
+                self.beams[antenna.name] = beams_freq
 
         return self.beams

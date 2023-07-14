@@ -24,6 +24,7 @@ PERSIST = False
     "ska_sdp_wflow_pointing_offset.pointing_offset_cli.read_batch_visibilities"
 )
 @pytest.mark.parametrize("fitting_method", [True, False])
+@pytest.mark.parametrize("use_weights", [True, False])
 @pytest.mark.parametrize(
     "enabled, mode, start_freq, end_freq",
     [
@@ -41,10 +42,10 @@ PERSIST = False
         ),
     ],
 )
-@pytest.mark.skip(reason="we need to expand the number of visibilities")
 def test_wflow_pointing_offset(
     read_batch_visibilities,
     fitting_method,
+    use_weights,
     enabled,
     mode,
     start_freq,
@@ -81,11 +82,12 @@ def test_wflow_pointing_offset(
         outfile = f"{tempdir}/pointing_offsets.txt"
         beamwidth_factor = [0.976, 1.098]
         thresh_width = 1.5
+        num_chunks = 1
 
         read_batch_visibilities.return_value = (
-            [vis_array],
-            [source_offset],
-            [offset_timestamps],
+            vis_array,
+            source_offset,
+            offset_timestamps,
             ants,
             target,
         )
@@ -97,22 +99,24 @@ def test_wflow_pointing_offset(
             "--rfi_file": None,
             "--save_offset": True,
             "--fit_to_vis": fitting_method,
+            "--use_weights": use_weights,
             "--results_dir": tempdir,
             "--msdir": tempdir,
             "--bw_factor": True,
             "<bw_factor>": beamwidth_factor,
             "--thresh_width": thresh_width,
-            "--fit_on_plane": False,
             "--time_avg": None,
+            "--num_chunks": num_chunks,
         }
 
         compute_offset(args)
 
         assert os.path.exists(outfile)
 
-        read_out = numpy.loadtxt(outfile, delimiter=",")
-        # Output data shape [nants, 2 pols*12 fitted parameters]
-        assert read_out.shape == (3, 24)
+        read_out = numpy.loadtxt(outfile, delimiter=",", dtype=object)
+
+        # Output data: Antenna name, Az offset, El offset, Cross-el offset
+        assert read_out.shape == (3, 4)
 
         # If we need to save file to tests directory
         if PERSIST:
