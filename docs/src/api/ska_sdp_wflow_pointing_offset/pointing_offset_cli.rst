@@ -14,17 +14,17 @@ Usage
     Program with many options using docopt for computing pointing offsets.
 
     Usage:
-         pointing-offset COMMAND [--msdir=DIR] [--save_offset]
+        pointing-offset COMMAND [--msdir=DIR] [--save_offset]
                           [--apply_mask] [--use_weights]
                           [--fit_to_vis] [--rfi_file=FILE]
                           [--results_dir=None] [--start_freq=None]
-                          [--end_freq=None]
+                          [--end_freq=None] [--num_chunks=<int>]
                           [(--bw_factor <bw_factor>) [<bw_factor>...]]
                           [--thresh_width=<float>][--time_avg=None]
 
     Commands:
-        compute   Runs all required routines for computing the
-        pointing offsets.
+      compute   Runs all required routines for computing the
+      pointing offsets.
 
     Options:
       -h --help            show this help message and exit
@@ -34,13 +34,16 @@ Usage
       --fit_to_vis          Fit primary beam to visibilities instead of antenna
                             gains (Optional) [default:False]
       --apply_mask          Apply mask (Optional) [default:False]
-      --use_weights         Use gain calibration weights when fitting for the
-                            pointing offsets (Optional) [default:False]
+      --use_weights         Use weights when fitting the primary beams to the
+                            gain amplitudes (Optional) [default:False]
       --rfi_file=FILE       RFI file (Optional)
       --save_offset         Save the offset results (Optional) [default:False]
       --results_dir=None    Directory where the results need to be saved (Optional)
       --start_freq=None     Start frequency in MHz (Optional)
       --end_freq=None       End frequency in MHz (Optional)
+      --num_chunks=<int>    Number of frequency chunks for gain calibration
+                            if fitting primary beams to gain amplitudes
+                            [default:16]
       --bw_factor           Beamwidth factor [default:0.976, 1.098]
       --thresh_width=<float>  The maximum ratio of the fitted to expected beamwidth
                               [default:1.5]
@@ -79,10 +82,12 @@ List of commands for accessing the functionalities of the pipeline.
      - Start frequency in MHz to use
    * - **end_freq**
      - End frequency in MHz to use
+   * - **num_chunks**
+     - Number of frequency chunks for gain calibration if fitting the primary beams to gain amplitudes
    * - **bw_factor**
      - Beamwidth factors for the horizontal and vertical polarisations
    * - **thresh_width**
      - The maximum ratio of the fitted to expected beamwidth
    * - **time_avg**
      - Perform no, median, or mean time-averaging of the gain amplitudes when fitting to gains.
-       These options can be set with None, ``median``, or ``mean``.
+       These options can be set with ``None``, ``median``, or ``mean``.

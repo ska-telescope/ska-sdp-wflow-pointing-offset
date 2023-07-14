@@ -222,16 +222,18 @@ def _time_avg_amp(data, time_avg=None):
 
 def _get_autocorrelations(vis):
     """
-    Extracts the autocorrelation visibilities from visibilities
-    containing both auto and cross-correlations. Translates the
-    visibilities from (ntimes, nbaselines, nfreqs, npols)
-    to (ntimes, nants, nfreqs, npols)
+    Extracts the autocorrelation visibilities and their weights
+    from visibilities containing both auto and cross-correlations.
+    Translates the visibilities and weights from (ntimes, nbaselines,
+    nfreqs, npols) to (ntimes, nants, nfreqs, npols)
 
     :param vis: Visibility object
-    :return: visibility amplitude
+    :return: visibility amplitude and its weights
     """
     get_autocorr = vis.antenna1.data == vis.antenna2.data
+    vis_weights = vis.weight.data[:, get_autocorr, :, :]
     vis = vis.vis.data[:, get_autocorr, :, :]
+
     if vis.shape[3] == 2:
         log.info("Found two polarisations...")
     elif vis.shape[3] == 4:
@@ -243,10 +245,15 @@ def _get_autocorrelations(vis):
         vis = numpy.moveaxis(
             numpy.array((vis[:, :, :, 0], vis[:, :, :, 3])), 0, 3
         )
+        vis_weights = numpy.moveaxis(
+            numpy.array((vis_weights[:, :, :, 0], vis_weights[:, :, :, 3])),
+            0,
+            3,
+        )
     else:
         raise ValueError("Polarisation type not supported!")
 
-    return numpy.abs(vis)
+    return numpy.abs(vis), vis_weights
 
 
 class ExtractPerScan:
@@ -286,20 +293,25 @@ class ExtractPerScan:
         """
         freqs = 0.0
         y_per_scan = numpy.zeros((len(self.ants), len(self.vis_list)))
+        weights_per_scan = numpy.zeros((len(self.ants), len(self.vis_list)))
         for scan, vis in enumerate(self.vis_list):
             # Get autocorrelations visibility amplitudes
-            vis_amp = _get_autocorrelations(vis)
+            vis_amp, vis_weights = _get_autocorrelations(vis)
 
             # No or time-averaging of visibility amplitudes after
             # averaging in frequency and polarisation
             vis_amp = _time_avg_amp(vis_amp.mean(axis=(2, 3)), self.time_avg)
+            vis_weights = _time_avg_amp(
+                vis_weights.mean(axis=(2, 3)), self.time_avg
+            )
             if scan == 0:
                 # We want to use the frequency at the higher end of the
                 # frequency for better pointing accuracy
                 freqs = numpy.squeeze(vis.frequency.data[-1])
             y_per_scan[:, scan] = vis_amp
+            weights_per_scan[:, scan] = vis_weights
 
-        return self.x_per_scan, y_per_scan, freqs
+        return self.x_per_scan, y_per_scan, weights_per_scan, freqs
 
     def from_gains(self, num_chunks):
         """
@@ -438,18 +450,7 @@ def weighted_average(
             pointing_offset = results[0]
         else:
             if beams_freq is not None and beams_freq.is_valid:
-                offsets = numpy.array(beams_freq.centre)
-                offsets_std = numpy.array(beams_freq.std_centre)
-                weights = 1.0 / offsets_std**2
-                results = numpy.average(
-                    offsets, weights=weights, returned=True
-                )
-                pointing_offset = results[0]
-
-                print(offsets)
-                print(weights)
-                print(pointing_offset)
-                print("=" * 30)
+                pointing_offset = numpy.array(beams_freq.centre)
             else:
                 log.warning(
                     "%s had no valid primary beam fitted", antenna.name

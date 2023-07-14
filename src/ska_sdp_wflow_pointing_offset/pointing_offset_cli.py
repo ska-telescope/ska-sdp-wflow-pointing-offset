@@ -1,4 +1,5 @@
 # pylint: disable=too-many-locals,too-many-branches
+# pylint: disable=too-many-statements
 """Program with many options using docopt for computing pointing offsets.
 
 Usage:
@@ -145,7 +146,7 @@ def compute_offset(args):
     (
         vis_list,
         source_offset_list,
-        offset_timestamps_list,
+        pointing_timestamps_list,
         ants,
         target,
     ) = read_batch_visibilities(
@@ -158,17 +159,18 @@ def compute_offset(args):
 
     # Get the datasets required for the fitting and fit for the
     # pointing offsets
+    params = ExtractPerScan(
+        vis_list, source_offset_list, ants, args["--time_avg"]
+    )
     if args["--fit_to_vis"]:
-        x_per_scan, y_per_scan, freqs = ExtractPerScan(
-            vis_list, source_offset_list, ants, args["--time_avg"]
-        ).from_vis()
+        x_per_scan, y_per_scan, _, freqs = params.from_vis()
         fitted_beams = SolveForOffsets(
             x_per_scan, y_per_scan, freqs, beamwidth_factor, ants, thresh_width
         ).fit_to_visibilities()
     else:
-        x_per_scan, y_per_scan, weights_per_scan, freqs = ExtractPerScan(
-            vis_list, source_offset_list, ants, args["--time_avg"]
-        ).from_gains(num_chunks)
+        x_per_scan, y_per_scan, weights_per_scan, freqs = params.from_gains(
+            num_chunks
+        )
         if not args["--use_weights"]:
             weights_per_scan = numpy.ones(numpy.shape(weights_per_scan))
         fitted_beams = SolveForOffsets(
@@ -180,7 +182,7 @@ def compute_offset(args):
         ants,
         fitted_beams,
         target,
-        numpy.concatenate(offset_timestamps_list),
+        numpy.concatenate(pointing_timestamps_list),
         num_chunks,
     )
 

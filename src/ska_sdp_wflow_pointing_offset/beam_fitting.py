@@ -118,11 +118,6 @@ class BeamPatternFit(ScatterFit):
         # fitted width compared to the expected. The fitted beam can
         # only be equal to the expected or greater than the expected
         # by less than thresh_width
-        print(self.centre)
-        print(self.width)
-        print(self.expected_width)
-        print("=" * 30)
-
         fit_snr = self._interp.std / self._interp.std_std
         norm_width = self.width / self.expected_width
 
@@ -225,12 +220,6 @@ class SolveForOffsets:
         :param num_chunks: Number of chunks used in the gain calibration
         :return: The fitted beams (parameters and their uncertainties)
         """
-        print(self.x_per_scan.shape)
-        print(self.y_per_scan.shape)
-        print(weights.shape)
-        print(num_chunks)
-        print("=" * 30)
-
         # Compute the expected or theoretical beamwidth
         if num_chunks > 1:
             # Exclude the band edges gains, weights, and frequencies
@@ -286,14 +275,14 @@ class SolveForOffsets:
                     * wavelength
                     / antenna.diameter
                 )
+
                 log.info("Fitting primary beams to gain amplitudes...")
                 fitted_beam = BeamPatternFit(
                     centre=(0.0, 0.0),
-                    width=expected_width[
-                        i,
-                    ],
+                    width=expected_width,
                     height=1.0,
                 )
+
                 fitted_beam.fit(
                     x=self.x_per_scan[:, i].T,
                     y=self.y_per_scan[
