@@ -116,7 +116,53 @@ def test_wflow_pointing_offset(
         read_out = numpy.loadtxt(outfile, delimiter=",", dtype=object)
 
         # Output data: Antenna name, Az offset, El offset, Cross-el offset
+        # The Az and El offsets are asserted in test_beam_fitting.py
+        # After ORC-1716, only teh shape would be required all of these
+        # assertions would be done in test_beam_fitting.py
         assert read_out.shape == (3, 4)
+        assert (read_out[:, 0] == ["M001", "M002", "M003"]).all()
+
+        if use_weights:
+            if fitting_method:
+                assert (numpy.isnan(read_out[:, 1].astype(float)[0])).all()
+                assert (
+                    read_out[:, 1].astype(float)[1:] == numpy.zeros(2)
+                ).all()
+
+                assert (numpy.isnan(read_out[:, 2].astype(float)[0])).all()
+                assert (
+                    read_out[:, 2].astype(float)[1:]
+                    == numpy.array([-10.597531820892497, 11.014530406730886])
+                ).all()
+                assert (numpy.isnan(read_out[:, 3].astype(float)[0])).all()
+                assert (
+                    read_out[:, 3].astype(float)[1:] == numpy.array([0.0, 0.0])
+                ).all()
+            else:
+                assert (
+                    read_out[:, 1].astype(float)[0]
+                    == numpy.array([0.0, 0.0, 0.0])
+                ).all()
+        else:
+            if fitting_method:
+                assert (numpy.isnan(read_out[:, 1].astype(float)[0])).all()
+                assert (
+                    read_out[:, 1].astype(float)[1:] == numpy.zeros(2)
+                ).all()
+
+                assert (numpy.isnan(read_out[:, 2].astype(float)[0])).all()
+                assert (
+                    read_out[:, 2].astype(float)[1:]
+                    == numpy.array([-10.597531820892497, 11.014530406730886])
+                ).all()
+                assert (numpy.isnan(read_out[:, 3].astype(float)[0])).all()
+                assert (
+                    read_out[:, 3].astype(float)[1:] == numpy.array([0.0, 0.0])
+                ).all()
+            else:
+                assert (numpy.isnan(read_out[:, 1].astype(float))).all()
+                assert (numpy.isnan(read_out[:, 2].astype(float))).all()
+                assert (numpy.isnan(read_out[:, 3].astype(float))).all()
 
         # If we need to save file to tests directory
         if PERSIST:
