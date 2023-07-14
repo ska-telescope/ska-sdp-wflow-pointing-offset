@@ -119,7 +119,7 @@ def _compute_gains(vis, num_chunks):
         except ValueError:
             log.warning(
                 "Frequency channels not divisible by number of chunks. "
-                "Use num_chunks=1 instead."
+                "Using num_chunks=1 instead."
             )
             gt_list = [
                 solve_gaintable(
