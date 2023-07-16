@@ -81,7 +81,7 @@ def test_compute_gains(vis_array):
     """
     gt_list = []
     for vis in vis_array:
-        gt_list.append(_compute_gains(vis, 5))
+        gt_list.append(_compute_gains(vis, 16)[0])
 
     assert len(gt_list) == 5
     assert gt_list[0][0]["gain"].data.shape == (5, 3, 1, 2, 2)

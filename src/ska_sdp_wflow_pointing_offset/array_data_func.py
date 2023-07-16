@@ -110,7 +110,8 @@ def _compute_gains(vis, num_chunks):
     :param vis: The observed Visibility object
     :param num_chunks: Number of frequency chunks (integer)
 
-    :return: GainTable containing solution
+    :return: GainTable containing solutions and updated
+        number of chunks
     """
     freqs = vis.frequency.data
     if num_chunks > 1:
@@ -121,6 +122,7 @@ def _compute_gains(vis, num_chunks):
                 "Frequency channels not divisible by number of chunks. "
                 "Using num_chunks=1 instead."
             )
+            num_chunks = 1
             gt_list = [
                 solve_gaintable(
                     vis=vis,
@@ -186,7 +188,7 @@ def _compute_gains(vis, num_chunks):
             )
         ]
 
-    return gt_list
+    return gt_list, num_chunks
 
 
 def _time_avg_amp(data, time_avg=None):
@@ -322,23 +324,32 @@ class ExtractPerScan:
             calibration
 
         :return source offset per scan, gain amplitudes per scan,
-        weights_per_scan, and frequencies of observation
+            weights_per_scan, frequencies of observation, and updated
+            number of chunks
         """
         # Solve for the un-normalised G terms for each scan
-        if num_chunks > 1:
-            freqs = numpy.zeros(num_chunks)
-            y_per_scan = numpy.zeros(
-                (len(self.ants), num_chunks, len(self.vis_list))
-            )
-            weights_per_scan = numpy.zeros(
-                (len(self.ants), num_chunks, len(self.vis_list))
-            )
-            for scan, vis in enumerate(self.vis_list):
+        for scan, vis in enumerate(self.vis_list):
+            gt_list, num_chunks = _compute_gains(vis, num_chunks)
+            if scan == 0 and num_chunks > 1:
+                freqs = numpy.zeros(num_chunks)
+                y_per_scan = numpy.zeros(
+                    (len(self.ants), num_chunks, len(self.vis_list))
+                )
+                weights_per_scan = numpy.zeros(
+                    (len(self.ants), num_chunks, len(self.vis_list))
+                )
+            elif scan == 0 and num_chunks == 1:
+                freqs = 0.0
+                y_per_scan = numpy.zeros((len(self.ants), len(self.vis_list)))
+                weights_per_scan = numpy.zeros(
+                    (len(self.ants), len(self.vis_list))
+                )
+
+            if num_chunks > 1:
                 log.info(
                     "Solving for the antenna complex gains for Scan %d",
                     scan + 1,
                 )
-                gt_list = _compute_gains(vis, num_chunks)
                 for chunk in range(num_chunks):
                     # Gains have shape (ntimes, nants, nfreqs,
                     # receptor1, receptor2)
@@ -364,19 +375,11 @@ class ExtractPerScan:
                     freqs[chunk] = numpy.squeeze(gt_list[chunk].frequency.data)
                     y_per_scan[:, chunk, scan] = gt_amp
                     weights_per_scan[:, chunk, scan] = gt_weights
-        else:
-            freqs = 0.0
-            y_per_scan = numpy.zeros((len(self.ants), len(self.vis_list)))
-            weights_per_scan = numpy.zeros(
-                (len(self.ants), len(self.vis_list))
-            )
-            for scan, vis in enumerate(self.vis_list):
+            else:
                 log.info(
                     "Solving for the antenna complex gains for scan %d",
                     scan + 1,
                 )
-                gt_list = _compute_gains(vis, 1)
-
                 # Gains have shape (ntimes, nants, nfreqs,
                 # receptor1, receptor2)
                 gt_amp = numpy.abs(gt_list[0].gain.data)
@@ -388,20 +391,18 @@ class ExtractPerScan:
                     (gt_weights[:, :, :, 0, 0], gt_weights[:, :, :, 1, 1])
                 )
 
-                # Average in polarisation
-                gt_amp = gt_amp.mean(axis=2)
-                gt_weights = gt_weights.mean(axis=2)
-
-                # Perform no or time-averaging of gain amplitudes and weights
-                gt_amp = _time_avg_amp(gt_amp, self.time_avg)
-                gt_weights = _time_avg_amp(gt_weights, self.time_avg)
-
+                # Perform no or time-averaging of gain amplitudes
+                # and weights after averaging in polarisation
+                gt_amp = _time_avg_amp(gt_amp.mean(axis=2), self.time_avg)
+                gt_weights = _time_avg_amp(
+                    gt_weights.mean(axis=2), self.time_avg
+                )
                 if scan == 0:
                     freqs = numpy.squeeze(gt_list[0].frequency.data)
                 y_per_scan[:, scan] = gt_amp
                 weights_per_scan[:, scan] = gt_weights
 
-        return self.x_per_scan, y_per_scan, weights_per_scan, freqs
+        return self.x_per_scan, y_per_scan, weights_per_scan, freqs, num_chunks
 
 
 def weighted_average(

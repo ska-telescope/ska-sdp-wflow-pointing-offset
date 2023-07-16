@@ -132,7 +132,14 @@ def compute_offset(args):
     log.info(
         "Maximum fitted beamwidth to expected beamwidth: %f", thresh_width
     )
-    if not args["--fit_to_vis"]:
+    if args["--fit_to_vis"]:
+        if num_chunks > 1:
+            log.warning(
+                "num_chunks > 1 is only used when fitting "
+                "to gain amplitudes. Using num_chunks=1 instead!"
+            )
+        num_chunks = 1
+    else:
         log.info(
             "Number of frequency chunks for gain calibration: %d", num_chunks
         )
@@ -168,9 +175,16 @@ def compute_offset(args):
             x_per_scan, y_per_scan, freqs, beamwidth_factor, ants, thresh_width
         ).fit_to_visibilities()
     else:
-        x_per_scan, y_per_scan, weights_per_scan, freqs = params.from_gains(
-            num_chunks
-        )
+        # Update the num_chunks as it is changed to 1 if there are too
+        # few channels to allow for splitting into the requested number
+        # of chunks
+        (
+            x_per_scan,
+            y_per_scan,
+            weights_per_scan,
+            freqs,
+            num_chunks,
+        ) = params.from_gains(num_chunks)
         if not args["--use_weights"]:
             weights_per_scan = numpy.ones(numpy.shape(weights_per_scan))
         fitted_beams = SolveForOffsets(
