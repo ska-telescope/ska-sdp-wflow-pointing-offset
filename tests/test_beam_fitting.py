@@ -88,16 +88,16 @@ def test_fit_to_gain(
     ).all()
     numpy.testing.assert_almost_equal(
         pointing_offset[:, 1].astype(float),
-        numpy.array([-0.534807, -1.496948, -1.615558]),
+        numpy.array([0.036106, -1.117453, -0.269871]),
         decimal=6,
     )
     numpy.testing.assert_almost_equal(
         pointing_offset[:, 2].astype(float),
-        numpy.array([-0.776804, -0.816107, -0.90116]),
+        numpy.array([-0.253749, -0.411981, -0.551581]),
         decimal=6,
     )
     numpy.testing.assert_almost_equal(
         pointing_offset[:, 3].astype(float),
-        numpy.array([-0.435635, -1.219365, -1.315978]),
+        numpy.array([0.02941, -0.910241, -0.219828]),
         decimal=6,
     )

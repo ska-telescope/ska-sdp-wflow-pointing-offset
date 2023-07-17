@@ -42,8 +42,8 @@ def test_read_batch_visibilities(mock_dir, mock_tables, mock_ms, vis_array):
     ) = read_batch_visibilities("test_dir")
 
     # Specific attributes
-    assert vis[0].vis.data.shape == (5, 6, 2064, 2)
-    assert vis[0].weight.data.shape == (5, 6, 2064, 2)
+    assert vis[0].vis.data.shape == (5, 6, 128, 2)
+    assert vis[0].weight.data.shape == (5, 6, 128, 2)
     assert (vis[0].frequency.data == FREQS).all()
     assert (vis[0].polarisation.data == CORR_TYPE).all()
     assert source_offset[0].shape == (5, 3, 2)

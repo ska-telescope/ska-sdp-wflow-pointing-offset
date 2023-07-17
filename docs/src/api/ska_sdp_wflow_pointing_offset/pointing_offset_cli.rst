@@ -46,7 +46,7 @@ Usage
                             [default:16]
       --bw_factor           Beamwidth factor [default:0.976, 1.098]
       --thresh_width=<float>  The maximum ratio of the fitted to expected beamwidth
-                              [default:1.5]
+                              [default:1.15]
       --time_avg=None       Perform no, median, or mean time-averaging of the
                             gain amplitudes when fitting to gains. These options
                             can be set with None, "median", or "mean".

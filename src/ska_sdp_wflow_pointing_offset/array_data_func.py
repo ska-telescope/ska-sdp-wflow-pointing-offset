@@ -103,7 +103,7 @@ def interp_timestamps(origin_data, origin_times, new_times):
     return output
 
 
-def _compute_gains(vis, num_chunks):
+def _compute_gains(vis, num_chunks=16):
     """
     Solves for the antenna gains for the parallel hands only.
 
@@ -410,7 +410,7 @@ def weighted_average(
     fitted_beams,
     target,
     offset_timestamps,
-    num_chunks,
+    num_chunks=16,
 ):
     """
     Compute the weighted average of the fitted pointing offsets

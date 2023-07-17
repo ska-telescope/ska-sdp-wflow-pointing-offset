@@ -66,7 +66,7 @@ def test_wflow_pointing_offset(
     :param mode: Which mode it is testing
     :param start_freq: Start frequency (Hz)
     :param end_freq: End frequency (Hz)
-    :param vis_array: Visibility object
+    :param vis_array: List of Visibility objects
     :param source_offset: Antenna positions relative to the
         pointing calibrator in azel coordinates
     :param pointing_timestamps: Source offset timestamps
@@ -87,7 +87,7 @@ def test_wflow_pointing_offset(
 
         outfile = f"{tempdir}/pointing_offsets.txt"
         beamwidth_factor = [0.976, 1.098]
-        thresh_width = 1.5
+        thresh_width = 1.15
         num_chunks = 1
 
         read_batch_visibilities.return_value = (
@@ -123,6 +123,63 @@ def test_wflow_pointing_offset(
 
         # Output data: Antenna name, Az offset, El offset, Cross-el offset
         assert read_out.shape == (3, 4)
+        assert (read_out[:, 0] == ["M001", "M002", "M003"]).all()
+        if use_weights:
+            if fitting_method:
+                assert (numpy.isnan(read_out[:, 1].astype(float)[0])).all()
+                assert (
+                    read_out[:, 1].astype(float)[1:] == numpy.zeros(2)
+                ).all()
+                assert (numpy.isnan(read_out[:, 2].astype(float)[0])).all()
+                numpy.testing.assert_almost_equal(
+                    read_out[:, 2].astype(float)[1:],
+                    numpy.array([-15.626522, -21.253288]),
+                    decimal=6,
+                )
+                assert (numpy.isnan(read_out[:, 3].astype(float)[0])).all()
+                assert (
+                    read_out[:, 3].astype(float)[1:] == numpy.array([0.0, 0.0])
+                ).all()
+            else:
+                assert (
+                    read_out[:, 1].astype(float)[0]
+                    == numpy.array([0.0, 0.0, 0.0])
+                ).all()
+
+        else:
+            if fitting_method:
+                assert (numpy.isnan(read_out[:, 1].astype(float)[0])).all()
+                assert (
+                    read_out[:, 1].astype(float)[1:] == numpy.zeros(2)
+                ).all()
+
+                assert (numpy.isnan(read_out[:, 2].astype(float)[0])).all()
+                numpy.testing.assert_almost_equal(
+                    read_out[:, 2].astype(float)[1:],
+                    numpy.array([-15.626522, -21.253288]),
+                    decimal=6,
+                )
+                assert (numpy.isnan(read_out[:, 3].astype(float)[0])).all()
+                assert (
+                    read_out[:, 3].astype(float)[1:] == numpy.array([0.0, 0.0])
+                ).all()
+            else:
+                assert (numpy.isnan(read_out[:, 1].astype(float)[0])).all()
+                assert (
+                    read_out[:, 1].astype(float)[1:] == numpy.array([0.0, 0.0])
+                ).all()
+
+                assert (numpy.isnan(read_out[:, 2].astype(float)[0])).all()
+                numpy.testing.assert_almost_equal(
+                    read_out[:, 2].astype(float)[1:],
+                    numpy.array([-19.701555, -1.958396]),
+                    decimal=6,
+                )
+
+                assert (numpy.isnan(read_out[:, 3].astype(float)[0])).all()
+                assert (
+                    read_out[:, 3].astype(float)[1:] == numpy.array([0.0, 0.0])
+                ).all()
 
         # If we need to save file to tests directory
         if PERSIST:

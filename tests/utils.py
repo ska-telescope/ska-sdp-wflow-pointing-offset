@@ -17,11 +17,11 @@ from ska_sdp_wflow_pointing_offset import construct_antennas
 
 NTIMES = 5
 NANTS = 3
-NCHAN = 2064
+NCHAN = 128
 NCORR = 15
 NPOL = 2
 BEAMWIDTH_FACTOR = (0.96, 1.098)
-THRESH_WIDTH = 1.5
+THRESH_WIDTH = 1.15
 XYZ = numpy.array(
     [
         [5109271.497354163, 2006808.8930278125, -3239130.7361407224],

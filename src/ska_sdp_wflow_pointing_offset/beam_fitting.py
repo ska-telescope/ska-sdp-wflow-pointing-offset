@@ -89,7 +89,7 @@ class BeamPatternFit(ScatterFit):
         self.is_valid = False
         self.std_centre = self.std_width = self.std_height = None
 
-    def fit(self, x, y, std_y=1.0, thresh_width=1.5):
+    def fit(self, x, y, std_y=1.0, thresh_width=1.15):
         """
         Fit a beam pattern to data.
         The centre, width and height of the fitted beam pattern

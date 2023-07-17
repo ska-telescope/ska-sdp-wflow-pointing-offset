@@ -35,7 +35,7 @@ Options:
                         [default:16]
   --bw_factor           Beamwidth factor [default:0.976, 1.098]
   --thresh_width=<float>  The maximum ratio of the fitted to expected beamwidth
-                          [default:1.5]
+                          [default:1.15]
   --time_avg=None       Perform no, median, or mean time-averaging of the
                         gain amplitudes when fitting to gains. These options
                         can be set with None, "median", or "mean".
@@ -118,7 +118,7 @@ def compute_offset(args):
     if args["--thresh_width"]:
         thresh_width = float(args["--thresh_width"])
     else:
-        thresh_width = 1.5
+        thresh_width = 1.15
 
     # Set number of frequency chunks for gain calibration
     if args["--num_chunks"]:
