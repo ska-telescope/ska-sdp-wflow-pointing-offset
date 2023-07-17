@@ -293,7 +293,6 @@ class ExtractPerScan:
         :return: source offset per scan, visibility amplitude per scan,
         weights_per_scan, and frequencies of observation
         """
-        freqs = 0.0
         y_per_scan = numpy.zeros((len(self.ants), len(self.vis_list)))
         weights_per_scan = numpy.zeros((len(self.ants), len(self.vis_list)))
         for scan, vis in enumerate(self.vis_list):
@@ -339,7 +338,6 @@ class ExtractPerScan:
                     (len(self.ants), num_chunks, len(self.vis_list))
                 )
             elif scan == 0 and num_chunks == 1:
-                freqs = 0.0
                 y_per_scan = numpy.zeros((len(self.ants), len(self.vis_list)))
                 weights_per_scan = numpy.zeros(
                     (len(self.ants), len(self.vis_list))
