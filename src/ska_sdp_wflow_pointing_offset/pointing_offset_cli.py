@@ -167,7 +167,7 @@ def compute_offset(args):
     # Get the datasets required for the fitting and fit for the
     # pointing offsets
     params = ExtractPerScan(
-        vis_list, source_offset_list, ants, args["--time_avg"]
+        vis_list, source_offset_list, ants, args["--time_avg"], num_chunks
     )
     if args["--fit_to_vis"]:
         x_per_scan, y_per_scan, _, freqs = params.from_vis()
@@ -175,16 +175,7 @@ def compute_offset(args):
             x_per_scan, y_per_scan, freqs, beamwidth_factor, ants, thresh_width
         ).fit_to_visibilities()
     else:
-        # Update the num_chunks as it is changed to 1 if there are too
-        # few channels to allow for splitting into the requested number
-        # of chunks
-        (
-            x_per_scan,
-            y_per_scan,
-            weights_per_scan,
-            freqs,
-            num_chunks,
-        ) = params.from_gains(num_chunks)
+        x_per_scan, y_per_scan, weights_per_scan, freqs = params.from_gains()
         if not args["--use_weights"]:
             weights_per_scan = numpy.ones(numpy.shape(weights_per_scan))
         fitted_beams = SolveForOffsets(

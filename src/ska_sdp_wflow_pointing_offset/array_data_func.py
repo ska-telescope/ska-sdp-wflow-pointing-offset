@@ -1,4 +1,5 @@
-# pylint: disable=too-many-locals
+# pylint: disable=too-many-locals,too-many-instance-attributes
+# pylint: disable=too-many-arguments
 """
 Functions for manipulation of data that are numpy arrays.
 Currently contains:
@@ -110,22 +111,41 @@ def _compute_gains(vis, num_chunks=16):
     :param vis: The observed Visibility object
     :param num_chunks: Number of frequency chunks (integer)
 
-    :return: GainTable containing solutions and updated
-        number of chunks
+    :return: GainTable containing solutions
     """
     freqs = vis.frequency.data
     if num_chunks > 1:
+        gt_list = []
         try:
             channels = numpy.arange(len(freqs)).reshape(num_chunks, -1)
         except ValueError:
             log.warning(
-                "Frequency channels not divisible by number of chunks. "
-                "Using num_chunks=1 instead."
+                "Frequency channels cannot be equally divided so they "
+                "would be unequally divided. "
             )
-            num_chunks = 1
-            gt_list = [
+            channels = numpy.array_split(numpy.arange(len(freqs)), num_chunks)
+        for chan in channels:
+            start = chan[0]
+            end = chan[-1] + 1
+            new_vis = Visibility.constructor(
+                frequency=freqs[start:end],
+                channel_bandwidth=vis.channel_bandwidth.data[start:end],
+                phasecentre=vis.phasecentre,
+                baselines=vis["baselines"],
+                configuration=vis.attrs["configuration"],
+                uvw=vis["uvw"].data,
+                time=vis["time"].data,
+                vis=vis.vis.data[:, :, start:end, :],
+                flags=vis.flags.data[:, :, start:end, :],
+                weight=vis.weight.data[:, :, start:end, :],
+                integration_time=vis["integration_time"].data,
+                polarisation_frame=vis.visibility_acc.polarisation_frame,
+                source=vis.attrs["source"],
+                meta=vis.attrs["meta"],
+            )
+            gt_list.append(
                 solve_gaintable(
-                    vis=vis,
+                    vis=new_vis,
                     modelvis=None,
                     gain_table=None,
                     phase_only=False,
@@ -136,42 +156,7 @@ def _compute_gains(vis, num_chunks=16):
                     jones_type="G",
                     timeslice=None,
                 )
-            ]
-        else:
-            gt_list = []
-            for chan in channels:
-                start = chan[0]
-                end = chan[-1] + 1
-                new_vis = Visibility.constructor(
-                    frequency=freqs[start:end],
-                    channel_bandwidth=vis.channel_bandwidth.data[start:end],
-                    phasecentre=vis.phasecentre,
-                    baselines=vis["baselines"],
-                    configuration=vis.attrs["configuration"],
-                    uvw=vis["uvw"].data,
-                    time=vis["time"].data,
-                    vis=vis.vis.data[:, :, start:end, :],
-                    flags=vis.flags.data[:, :, start:end, :],
-                    weight=vis.weight.data[:, :, start:end, :],
-                    integration_time=vis["integration_time"].data,
-                    polarisation_frame=vis.visibility_acc.polarisation_frame,
-                    source=vis.attrs["source"],
-                    meta=vis.attrs["meta"],
-                )
-                gt_list.append(
-                    solve_gaintable(
-                        vis=new_vis,
-                        modelvis=None,
-                        gain_table=None,
-                        phase_only=False,
-                        niter=200,
-                        tol=1e-06,
-                        crosspol=False,
-                        normalise_gains=None,
-                        jones_type="G",
-                        timeslice=None,
-                    )
-                )
+            )
     else:
         gt_list = [
             solve_gaintable(
@@ -188,7 +173,7 @@ def _compute_gains(vis, num_chunks=16):
             )
         ]
 
-    return gt_list, num_chunks
+    return gt_list
 
 
 def _time_avg_amp(data, time_avg=None):
@@ -268,19 +253,39 @@ class ExtractPerScan:
     :param ants: List of katpoint Antennas
     :param time_avg: Type of visibility or gain amplitude averaging. Options
         are None, "median", "mean"]
+    :pram num_chunks: Number of frequency chunks for gain calibration
+        if fitting primary beams to gain amplitudes
     """
 
-    def __init__(self, vis_list, source_offset_list, ants, time_avg):
+    def __init__(
+        self, vis_list, source_offset_list, ants, time_avg=None, num_chunks=16
+    ):
         self.vis_list = vis_list
         self.source_offset_list = source_offset_list
         self.ants = ants
         self.time_avg = time_avg
+        self.num_chunks = num_chunks
         self.x_per_scan = numpy.zeros(
             (len(self.source_offset_list), len(self.ants), 2)
         )
         for scan, source_offset in enumerate(self.source_offset_list):
             # Average antenna pointings in time
             self.x_per_scan[scan] = source_offset.mean(axis=0)
+
+        if self.num_chunks > 1:
+            self.freqs = numpy.zeros(self.num_chunks)
+            self.y_per_scan = numpy.zeros(
+                (len(self.ants), self.num_chunks, len(self.vis_list))
+            )
+            self.weights_per_scan = numpy.zeros(
+                (len(self.ants), self.num_chunks, len(self.vis_list))
+            )
+        else:
+            self.freqs = 0.0
+            self.y_per_scan = numpy.zeros((len(self.ants), len(self.vis_list)))
+            self.weights_per_scan = numpy.zeros(
+                (len(self.ants), len(self.vis_list))
+            )
 
     def from_vis(self):
         """
@@ -293,8 +298,6 @@ class ExtractPerScan:
         :return: source offset per scan, visibility amplitude per scan,
         weights_per_scan, and frequencies of observation
         """
-        y_per_scan = numpy.zeros((len(self.ants), len(self.vis_list)))
-        weights_per_scan = numpy.zeros((len(self.ants), len(self.vis_list)))
         for scan, vis in enumerate(self.vis_list):
             # Get autocorrelations visibility amplitudes
             vis_amp, vis_weights = _get_autocorrelations(vis)
@@ -308,13 +311,18 @@ class ExtractPerScan:
             if scan == 0:
                 # We want to use the frequency at the higher end of the
                 # frequency for better pointing accuracy
-                freqs = numpy.squeeze(vis.frequency.data[-1])
-            y_per_scan[:, scan] = vis_amp
-            weights_per_scan[:, scan] = vis_weights
+                self.freqs = numpy.squeeze(vis.frequency.data[-1])
+            self.y_per_scan[:, scan] = vis_amp
+            self.weights_per_scan[:, scan] = vis_weights
 
-        return self.x_per_scan, y_per_scan, weights_per_scan, freqs
+        return (
+            self.x_per_scan,
+            self.y_per_scan,
+            self.weights_per_scan,
+            self.freqs,
+        )
 
-    def from_gains(self, num_chunks):
+    def from_gains(self):
         """
         Extracts the gain amplitude for each scan required for the
         beam fitting routine.
@@ -323,32 +331,17 @@ class ExtractPerScan:
             calibration
 
         :return source offset per scan, gain amplitudes per scan,
-            weights_per_scan, frequencies of observation, and updated
-            number of chunks
+            weights_per_scan, and frequencies of observation
         """
         # Solve for the un-normalised G terms for each scan
         for scan, vis in enumerate(self.vis_list):
-            gt_list, num_chunks = _compute_gains(vis, num_chunks)
-            if scan == 0 and num_chunks > 1:
-                freqs = numpy.zeros(num_chunks)
-                y_per_scan = numpy.zeros(
-                    (len(self.ants), num_chunks, len(self.vis_list))
-                )
-                weights_per_scan = numpy.zeros(
-                    (len(self.ants), num_chunks, len(self.vis_list))
-                )
-            elif scan == 0 and num_chunks == 1:
-                y_per_scan = numpy.zeros((len(self.ants), len(self.vis_list)))
-                weights_per_scan = numpy.zeros(
-                    (len(self.ants), len(self.vis_list))
-                )
-
-            if num_chunks > 1:
+            gt_list = _compute_gains(vis, self.num_chunks)
+            if self.num_chunks > 1:
                 log.info(
                     "Solving for the antenna complex gains for Scan %d",
                     scan + 1,
                 )
-                for chunk in range(num_chunks):
+                for chunk in range(self.num_chunks):
                     # Gains have shape (ntimes, nants, nfreqs,
                     # receptor1, receptor2)
                     gt_amp = numpy.abs(gt_list[chunk].gain.data)
@@ -370,9 +363,11 @@ class ExtractPerScan:
                         gt_weights.mean(axis=2), self.time_avg
                     )
 
-                    freqs[chunk] = numpy.squeeze(gt_list[chunk].frequency.data)
-                    y_per_scan[:, chunk, scan] = gt_amp
-                    weights_per_scan[:, chunk, scan] = gt_weights
+                    self.freqs[chunk] = numpy.squeeze(
+                        gt_list[chunk].frequency.data
+                    )
+                    self.y_per_scan[:, chunk, scan] = gt_amp
+                    self.weights_per_scan[:, chunk, scan] = gt_weights
             else:
                 log.info(
                     "Solving for the antenna complex gains for scan %d",
@@ -396,11 +391,16 @@ class ExtractPerScan:
                     gt_weights.mean(axis=2), self.time_avg
                 )
                 if scan == 0:
-                    freqs = numpy.squeeze(gt_list[0].frequency.data)
-                y_per_scan[:, scan] = gt_amp
-                weights_per_scan[:, scan] = gt_weights
+                    self.freqs = numpy.squeeze(gt_list[0].frequency.data)
+                self.y_per_scan[:, scan] = gt_amp
+                self.weights_per_scan[:, scan] = gt_weights
 
-        return self.x_per_scan, y_per_scan, weights_per_scan, freqs, num_chunks
+        return (
+            self.x_per_scan,
+            self.y_per_scan,
+            self.weights_per_scan,
+            self.freqs,
+        )
 
 
 def weighted_average(
