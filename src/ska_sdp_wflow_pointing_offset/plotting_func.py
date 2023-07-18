@@ -10,17 +10,18 @@ import numpy
 log = logging.getLogger("ska-sdp-pointing-offset")
 
 
-def plot_offsets(azel_offset, cross_el_offset):
+def plot_offsets(azel_offset, cross_el_offset, prefix="test"):
     """
-    Direct scatter plot of offset outputs.
+    Direct scatter plot of offset outputs for a single antenna.
     The information are in save_offsets.txt
     Top panel: El offset - Az offset
     Bottom panel: El offset - cross_el offet
 
     :param azel_offset: Offset array in arcminutes (contains az, el)
     :param cross_el_offset: Cross_el offset array in arcminutes
+    :param prefix: Unique plot name prefix (e.g. Meerkat)
     """
-    _, [ax1, ax2] = plt.subplots(2, 1, sharex=True)
+    fig, [ax1, ax2] = plt.subplots(2, 1, sharex=True)
     ax1.scatter(azel_offset[:, 1], azel_offset[:, 0], c="r")
     ax1.set_title("Az-El Offset")
     ax1.set_ylabel("Azimuth (arcmin)")
@@ -33,16 +34,17 @@ def plot_offsets(azel_offset, cross_el_offset):
     ax2.yaxis.set_label_position("right")
     ax2.yaxis.tick_right()
 
-    plt.savefig("Azel_offset.png")
+    plt.savefig(prefix + "_azel_offset.png")
     plt.cla()
 
 
-def plot_gain_amp(gain_sol, num_chunks):
+def plot_gain_amp(gain_sol, num_chunks, prefix="test"):
     """
     Plot gain amplitude for each antenna
 
     :param gain_sol: Gain solutions in shape (nants, nchan)
     :param num_chunks: Number of frequency chunks
+    :param prefix: Unique plot name prefix (e.g. Meerkat)
     """
     plt.figure(figsize=(12, 6))
     nants = gain_sol.shape[0]
@@ -57,15 +59,16 @@ def plot_gain_amp(gain_sol, num_chunks):
     plt.ylabel("Number of antennas")
     plt.xlabel("Un-normalised G amplitude")
 
-    plt.savefig("gain_amplitude.png")
+    plt.savefig(prefix + "_gain_amplitude.png")
     plt.cla()
 
 
-def plot_vis_amp(vis):
+def plot_vis_amp(vis, prefix="test"):
     """
     Plot Visibility amplitude data over time and frequency
 
     :param vis: A Visibility object
+    :param prefix: Unique plot name prefix (e.g. Meerkat)
     """
 
     _, [ax1, ax2] = plt.subplots(1, 2, sharey=True)
@@ -88,12 +91,12 @@ def plot_vis_amp(vis):
     ax2.set_xlabel("Frequency [MHz]")
 
     plt.title("Average visibility")
-    plt.savefig("vis_amplitude.png")
+    plt.savefig(prefix + "_vis_amplitude.png")
     plt.cla()
 
 
 # pylint:disable=too-many-locals
-def plot_fitting(result, target, gain_sol, num_chunks):
+def plot_fitting(result, target, gain_sol, num_chunks, prefix="test"):
     """
     Plot fitting results in individual bands.
     Currently, for subplot design purposes
@@ -103,6 +106,7 @@ def plot_fitting(result, target, gain_sol, num_chunks):
     :param target: Katpoint target object
     :param gain_sol: Gain solutions in shape (nants, nchan)
     :param num_chunks: Number of frequency bands
+    :param prefix: Unique plot name prefix (e.g. Meerkat)
     """
 
     assert isinstance(
@@ -164,7 +168,7 @@ def plot_fitting(result, target, gain_sol, num_chunks):
                 )
 
             plt.tight_layout()
-            plt.savefig("fitting_results.png")
+            plt.savefig(prefix + "_fitting_results.png")
             plt.cla()
 
     except KeyError:
