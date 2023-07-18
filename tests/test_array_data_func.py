@@ -20,6 +20,7 @@ from tests.utils import (
 
 NCHAN = 5
 FREQS = numpy.linspace(1.0e8, 3.0e8, NCHAN)
+NUM_CHUNKS = 16
 
 
 @patch("numpy.loadtxt")
@@ -81,7 +82,7 @@ def test_compute_gains(vis_array):
     """
     gt_list = []
     for vis in vis_array:
-        gt_list.append(_compute_gains(vis, 16))
+        gt_list.append(_compute_gains(vis, NUM_CHUNKS))
 
     assert len(gt_list) == 5
     assert gt_list[0][0]["gain"].data.shape == (5, 3, 1, 2, 2)

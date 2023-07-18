@@ -1,5 +1,5 @@
 # pylint: disable=inconsistent-return-statements,too-many-arguments
-# pylint: disable=too-many-locals
+# pylint: disable=too-many-locals,too-many-statements)
 """ Regression test for the pointing offset pipeline
 
 """
@@ -23,7 +23,8 @@ PERSIST = False
 @patch(
     "ska_sdp_wflow_pointing_offset.pointing_offset_cli.read_batch_visibilities"
 )
-@pytest.mark.parametrize("fitting_method", [True, False])
+@pytest.mark.parametrize("num_chunks", [1, 16])
+@pytest.mark.parametrize("fitting_type", [True, False])
 @pytest.mark.parametrize("use_weights", [True, False])
 @pytest.mark.parametrize(
     "enabled, mode, start_freq, end_freq",
@@ -44,7 +45,8 @@ PERSIST = False
 )
 def test_wflow_pointing_offset(
     read_batch_visibilities,
-    fitting_method,
+    num_chunks,
+    fitting_type,
     use_weights,
     enabled,
     mode,
@@ -88,7 +90,6 @@ def test_wflow_pointing_offset(
         outfile = f"{tempdir}/pointing_offsets.txt"
         beamwidth_factor = [0.976, 1.098]
         thresh_width = 1.15
-        num_chunks = 1
 
         read_batch_visibilities.return_value = (
             vis_array,
@@ -104,7 +105,8 @@ def test_wflow_pointing_offset(
             "--apply_mask": False,
             "--rfi_file": None,
             "--save_offset": True,
-            "--fit_to_vis": fitting_method,
+            "--num_chunks": num_chunks,
+            "--fit_to_vis": fitting_type,
             "--use_weights": use_weights,
             "--results_dir": tempdir,
             "--msdir": tempdir,
@@ -112,7 +114,6 @@ def test_wflow_pointing_offset(
             "<bw_factor>": beamwidth_factor,
             "--thresh_width": thresh_width,
             "--time_avg": None,
-            "--num_chunks": num_chunks,
         }
 
         compute_offset(args)
@@ -122,64 +123,92 @@ def test_wflow_pointing_offset(
         read_out = numpy.loadtxt(outfile, delimiter=",", dtype=object)
 
         # Output data: Antenna name, Az offset, El offset, Cross-el offset
+        # nan values for the offsets indicate no valid fits were obtained
+        # and zero values indicate no offsets need to be applied to the
+        # antenna pointings
         assert read_out.shape == (3, 4)
         assert (read_out[:, 0] == ["M001", "M002", "M003"]).all()
-        if use_weights:
-            if fitting_method:
-                assert (numpy.isnan(read_out[:, 1].astype(float)[0])).all()
-                assert (
-                    read_out[:, 1].astype(float)[1:] == numpy.zeros(2)
-                ).all()
-                assert (numpy.isnan(read_out[:, 2].astype(float)[0])).all()
-                numpy.testing.assert_almost_equal(
-                    read_out[:, 2].astype(float)[1:],
-                    numpy.array([-15.626522, -21.253288]),
-                    decimal=6,
-                )
-                assert (numpy.isnan(read_out[:, 3].astype(float)[0])).all()
-                assert (
-                    read_out[:, 3].astype(float)[1:] == numpy.array([0.0, 0.0])
-                ).all()
-            else:
-                assert (
-                    read_out[:, 1].astype(float)[0]
-                    == numpy.array([0.0, 0.0, 0.0])
-                ).all()
-
+        if num_chunks > 1:
+            # When fitting to gains only
+            if not fitting_type:  # fitting to visibility
+                if use_weights:
+                    assert (
+                        numpy.isnan(read_out[:, 1].astype(float)[:2])
+                    ).all()
+                    assert read_out[:, 1].astype(float)[2] == 0.0
+                    assert (numpy.isnan(read_out[:, 2].astype(float))).all()
+                    assert (
+                        numpy.isnan(read_out[:, 2].astype(float)[:2])
+                    ).all()
+                    assert (
+                        numpy.isnan(read_out[:, 3].astype(float)[:2])
+                    ).all()
+                    assert read_out[:, 3].astype(float)[2] == 0.0
+                else:
+                    assert read_out[:, 1].astype(float)[0] == 0.0
+                    assert (numpy.isnan(read_out[:, 1].astype(float)[1])).all()
+                    assert read_out[:, 1].astype(float)[2] == 0.0
+                    numpy.testing.assert_almost_equal(
+                        read_out[:, 2].astype(float)[:2],
+                        numpy.array([-18.492012, -0.635930]),
+                        decimal=6,
+                    )
+                    assert (numpy.isnan(read_out[:, 2].astype(float)[2])).all()
+                    assert read_out[:, 3].astype(float)[0] == 0.0
+                    assert (numpy.isnan(read_out[:, 3].astype(float)[1])).all()
+                    assert read_out[:, 3].astype(float)[2] == 0.0
         else:
-            if fitting_method:
-                assert (numpy.isnan(read_out[:, 1].astype(float)[0])).all()
-                assert (
-                    read_out[:, 1].astype(float)[1:] == numpy.zeros(2)
-                ).all()
+            # When fitting to visibility and gains
+            if fitting_type:  # fitting to visibility
+                if not use_weights:
+                    # weights are not used when fitting to visibility
+                    assert (numpy.isnan(read_out[:, 1].astype(float)[0])).all()
+                    assert read_out[:, 1].astype(float)[1] == 0.0
+                    assert read_out[:, 1].astype(float)[2] == 0.0
 
-                assert (numpy.isnan(read_out[:, 2].astype(float)[0])).all()
-                numpy.testing.assert_almost_equal(
-                    read_out[:, 2].astype(float)[1:],
-                    numpy.array([-15.626522, -21.253288]),
-                    decimal=6,
-                )
-                assert (numpy.isnan(read_out[:, 3].astype(float)[0])).all()
-                assert (
-                    read_out[:, 3].astype(float)[1:] == numpy.array([0.0, 0.0])
-                ).all()
-            else:
-                assert (numpy.isnan(read_out[:, 1].astype(float)[0])).all()
-                assert (
-                    read_out[:, 1].astype(float)[1:] == numpy.array([0.0, 0.0])
-                ).all()
-
-                assert (numpy.isnan(read_out[:, 2].astype(float)[0])).all()
-                numpy.testing.assert_almost_equal(
-                    read_out[:, 2].astype(float)[1:],
-                    numpy.array([-19.701555, -1.958396]),
-                    decimal=6,
-                )
-
-                assert (numpy.isnan(read_out[:, 3].astype(float)[0])).all()
-                assert (
-                    read_out[:, 3].astype(float)[1:] == numpy.array([0.0, 0.0])
-                ).all()
+                    assert (numpy.isnan(read_out[:, 2].astype(float)[0])).all()
+                    numpy.testing.assert_almost_equal(
+                        read_out[:, 2].astype(float)[1:],
+                        numpy.array([-15.626522, -21.253288]),
+                        decimal=6,
+                    )
+                    assert (numpy.isnan(read_out[:, 3].astype(float)[0])).all()
+                    assert (
+                        read_out[:, 3].astype(float)[1:]
+                        == numpy.array([0.0, 0.0])
+                    ).all()
+            else:  # fitting to gains
+                if use_weights:
+                    assert (
+                        read_out[:, 1].astype(float)
+                        == numpy.array([0.0, 0.0, 0.0])
+                    ).all()
+                    numpy.testing.assert_almost_equal(
+                        read_out[:, 2].astype(float),
+                        numpy.array([-23.450353, -1.803029, -2.010596]),
+                        decimal=6,
+                    )
+                    assert (
+                        read_out[:, 3].astype(float)
+                        == numpy.array([0.0, 0.0, 0.0])
+                    ).all()
+                else:
+                    assert (numpy.isnan(read_out[:, 1].astype(float)[0])).all()
+                    assert (
+                        read_out[:, 1].astype(float)[1:]
+                        == numpy.array([0.0, 0.0])
+                    ).all()
+                    assert (numpy.isnan(read_out[:, 2].astype(float)[0])).all()
+                    numpy.testing.assert_almost_equal(
+                        read_out[:, 2].astype(float)[1:],
+                        numpy.array([-19.701555, -1.958396]),
+                        decimal=6,
+                    )
+                    assert (numpy.isnan(read_out[:, 3].astype(float)[0])).all()
+                    assert (
+                        read_out[:, 3].astype(float)[1:]
+                        == numpy.array([0.0, 0.0])
+                    ).all()
 
         # If we need to save file to tests directory
         if PERSIST:
